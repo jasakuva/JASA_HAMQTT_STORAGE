@@ -1,0 +1,116 @@
+STEP 1/12: FROM docker.io/library/python:3.13-slim
+STEP 2/12: ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1     PYTHONPATH=/app/src
+--> Using cache 83dd633d2f62913bf7a98e1cc44cb4f8fe8bf8dcbb43832e2a46263ce9c43ace
+--> 83dd633d2f62
+STEP 3/12: WORKDIR /app
+--> Using cache 7f3a378ca767708183c069e3d025ccaf112d11aa10940b462eb6d921a74d0320
+--> 7f3a378ca767
+STEP 4/12: COPY pyproject.toml requirements.txt ./
+--> Using cache f7fc44aad4ffa6a8e719d36b26da8002f8920ec55cc44ade20b929beb82685c3
+--> f7fc44aad4ff
+STEP 5/12: COPY src ./src
+--> a0bde8dbc591
+STEP 6/12: COPY templates ./templates
+--> 40d4653efc13
+STEP 7/12: COPY static ./static
+--> eb53d329fc40
+STEP 8/12: COPY alembic.ini ./
+--> bf7c96aa1e5b
+STEP 9/12: COPY migrations ./migrations
+--> ca723b872f40
+STEP 10/12: RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -r requirements.txt
+Requirement already satisfied: pip in /usr/local/lib/python3.13/site-packages (26.2.1)
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+Obtaining file:///app (from -r requirements.txt (line 1))
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Collecting Flask<4,>=3.1 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading flask-3.1.3-py3-none-any.whl.metadata (3.2 kB)
+Collecting SQLAlchemy<3,>=2.0 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading sqlalchemy-2.1.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.7 kB)
+Collecting psycopg<4,>=3.2 (from psycopg[binary]<4,>=3.2->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading psycopg-3.3.6-py3-none-any.whl.metadata (4.4 kB)
+Collecting alembic<2,>=1.15 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading alembic-1.20.0-py3-none-any.whl.metadata (7.3 kB)
+Collecting paho-mqtt<3,>=2.1 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading paho_mqtt-2.1.0-py3-none-any.whl.metadata (23 kB)
+Collecting websocket-client<2,>=1.8 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading websocket_client-1.9.2-py3-none-any.whl.metadata (8.3 kB)
+Collecting python-dotenv<2,>=1.1 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading python_dotenv-1.2.4-py3-none-any.whl.metadata (29 kB)
+Collecting cryptography<46,>=44 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading cryptography-45.0.7-cp311-abi3-manylinux_2_34_x86_64.whl.metadata (5.7 kB)
+Collecting gunicorn<27,>=23 (from hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading gunicorn-26.2.0-py3-none-any.whl.metadata (5.5 kB)
+Collecting Mako (from alembic<2,>=1.15->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading mako-1.4.3-py3-none-any.whl.metadata (2.9 kB)
+Collecting typing-extensions>=4.12 (from alembic<2,>=1.15->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting cffi>=1.14 (from cryptography<46,>=44->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading cffi-2.1.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.5 kB)
+Collecting blinker>=1.9.0 (from Flask<4,>=3.1->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+Collecting click>=8.1.3 (from Flask<4,>=3.1->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting itsdangerous>=2.2.0 (from Flask<4,>=3.1->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+Collecting jinja2>=3.1.2 (from Flask<4,>=3.1->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Collecting markupsafe>=2.1.1 (from Flask<4,>=3.1->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading markupsafe-3.0.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting werkzeug>=3.1.0 (from Flask<4,>=3.1->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)
+Collecting psycopg-binary==3.3.6 (from psycopg[binary]<4,>=3.2->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading psycopg_binary-3.3.6-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.7 kB)
+Collecting pycparser (from cffi>=1.14->cryptography<46,>=44->hamqtt-store==0.1.0->-r requirements.txt (line 1))
+  Downloading pycparser-3.1-py3-none-any.whl.metadata (8.2 kB)
+Downloading alembic-1.20.0-py3-none-any.whl (268 kB)
+Downloading cryptography-45.0.7-cp311-abi3-manylinux_2_34_x86_64.whl (4.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 35.7 MB/s  0:00:00
+Downloading flask-3.1.3-py3-none-any.whl (103 kB)
+Downloading gunicorn-26.2.0-py3-none-any.whl (228 kB)
+Downloading paho_mqtt-2.1.0-py3-none-any.whl (67 kB)
+Downloading psycopg-3.3.6-py3-none-any.whl (215 kB)
+Downloading psycopg_binary-3.3.6-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.2/5.2 MB 31.9 MB/s  0:00:00
+Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+Downloading sqlalchemy-2.1.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.6/4.6 MB 24.3 MB/s  0:00:00
+Downloading websocket_client-1.9.2-py3-none-any.whl (95 kB)
+Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Downloading cffi-2.1.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+Downloading click-8.5.0-py3-none-any.whl (125 kB)
+Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+Downloading markupsafe-3.0.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (23 kB)
+Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)
+Downloading mako-1.4.3-py3-none-any.whl (80 kB)
+Downloading pycparser-3.1-py3-none-any.whl (48 kB)
+Building wheels for collected packages: hamqtt-store
+  Building editable for hamqtt-store (pyproject.toml): started
+  Building editable for hamqtt-store (pyproject.toml): finished with status 'done'
+  Created wheel for hamqtt-store: filename=hamqtt_store-0.1.0-0.editable-py3-none-any.whl size=1448 sha256=902568fc061707a452cacd967439d0a7ce64b0874e487063a2e6e20d3a860a9f
+  Stored in directory: /tmp/pip-ephem-wheel-cache-mxq_4g4a/wheels/19/62/e5/caf0138816cbbc0c92b8fb19626cf9ac282f22194a65231821
+Successfully built hamqtt-store
+Installing collected packages: websocket-client, typing-extensions, python-dotenv, pycparser, psycopg-binary, psycopg, paho-mqtt, markupsafe, itsdangerous, gunicorn, click, blinker, werkzeug, SQLAlchemy, Mako, jinja2, cffi, Flask, cryptography, alembic, hamqtt-store
+  Attempting uninstall: hamqtt-store
+    Found existing installation: hamqtt-store 0.1.0
+    Can't uninstall 'hamqtt-store'. No files were found to uninstall.
+
+Successfully installed Flask-3.1.3 Mako-1.4.3 SQLAlchemy-2.1.4 alembic-1.20.0 blinker-1.9.0 cffi-2.1.1 click-8.5.0 cryptography-45.0.7 gunicorn-26.2.0 hamqtt-store-0.1.0 itsdangerous-2.2.0 jinja2-3.1.6 markupsafe-3.0.4 paho-mqtt-2.1.0 psycopg-3.3.6 psycopg-binary-3.3.6 pycparser-3.1 python-dotenv-1.2.4 typing-extensions-4.16.0 websocket-client-1.9.2 werkzeug-3.1.9
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+--> 54d3a7efe374
+STEP 11/12: EXPOSE 8000
+--> c5fd310662f7
+STEP 12/12: CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "hamqtt_store.wsgi:app"]
+COMMIT localhost/hamqtt-store:dev
+--> a9330005e72b
+Successfully tagged localhost/hamqtt-store:dev
+a9330005e72be3d11db1bbcb4dcb0c5eac4acbf826ad7fe87d3c96b2afd0827e

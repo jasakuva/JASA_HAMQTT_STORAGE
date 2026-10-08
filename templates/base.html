@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HA MQTT Store</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='layout-fixes.css') }}">
+</head>
+<body>
+  {% set endpoint = request.endpoint or '' %}
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">H</span><span>HA MQTT Store<small>data console</small></span></div>
+      <div class="nav-label">Workspace</div>
+      <a class="nav-link {{ 'active' if endpoint == 'dashboard' else '' }}" href="{{ url_for('dashboard') }}"><span class="nav-icon">⌂</span>Dashboard</a>
+      <a class="nav-link {{ 'active' if endpoint in ['ha_view', 'ha_entity_detail'] else '' }}" href="{{ url_for('ha_view') }}"><span class="nav-icon">◉</span>Home Assistant</a>
+      <a class="nav-link {{ 'active' if endpoint in ['mqtt_view', 'mqtt_topic_detail'] else '' }}" href="{{ url_for('mqtt_view') }}"><span class="nav-icon">≋</span>MQTT data</a>
+      <a class="nav-link {{ 'active' if endpoint in ['objects', 'update_object'] else '' }}" href="{{ url_for('objects') }}"><span class="nav-icon">◇</span>Objects</a>
+      <div class="nav-label">System</div>
+      <a class="nav-link {{ 'active' if endpoint == 'settings_view' else '' }}" href="{{ url_for('settings_view') }}"><span class="nav-icon">⚙</span>Settings</a>
+      <div class="sidebar-footer">PostgreSQL · pgvector<br><span id="sidebar-clock">—</span></div>
+    </aside>
+    <div class="content-shell">
+      <header class="topbar"><span class="topbar-title">{% block topbar_title %}Data overview{% endblock %}</span><span class="topbar-meta"><span><i class="live-dot"></i>Live workspace</span><span id="topbar-clock">—</span></span></header>
+      <main>{% block content %}{% endblock %}</main>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

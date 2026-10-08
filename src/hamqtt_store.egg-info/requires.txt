@@ -1,0 +1,13 @@
+Flask<4,>=3.1
+SQLAlchemy<3,>=2.0
+psycopg[binary]<4,>=3.2
+alembic<2,>=1.15
+paho-mqtt<3,>=2.1
+websocket-client<2,>=1.8
+python-dotenv<2,>=1.1
+cryptography<46,>=44
+gunicorn<24,>=23
+
+[dev]
+pytest<9,>=8.3
+ruff<1,>=0.9

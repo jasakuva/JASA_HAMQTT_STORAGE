@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block topbar_title %}Home Assistant entities{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Home Assistant entities</h1>
+    <p>Current state, timestamps and historical data.</p>
+  </div>
+</div>
+
+<form class="search-form">
+  <input name="q" value="{{ search }}" placeholder="Search entity ID, name, or nickname">
+  <button>Search</button>
+  {% if search %}<a href="{{ url_for('ha_view') }}">Clear</a>{% endif %}
+</form>
+
+<div class="table-wrap entity-table-wrap">
+  <table class="entity-table">
+    <colgroup>
+      <col style="width:300px">
+      <col style="width:120px">
+      <col style="width:285px">
+      <col style="width:145px">
+      <col style="width:175px">
+      <col style="width:175px">
+      <col style="width:190px">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Entity</th>
+        <th>Domain</th>
+        <th>Name</th>
+        <th>Current state</th>
+        <th>Last changed</th>
+        <th>Last updated</th>
+        <th aria-label="Actions"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entity in entities %}
+        {% set state = current.get(entity.id) %}
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="{{ entity.entity_id }}">{{ entity.entity_id }}</span></td>
+          <td><span class="badge">{{ entity.domain }}</span></td>
+          <td class="name-cell" title="{{ entity.original_name or '' }}"><span class="table-truncate">{{ entity.original_name or '—' }}</span></td>
+          <td>{% if state %}<span class="state-value" title="{{ state.state_text }}">{{ state.state_text }}</span>{% else %}<span class="muted">unknown</span>{% endif %}</td>
+          <td class="time-cell muted" title="{{ state.last_changed_at if state else '—' }}"><span class="table-truncate">{% if state %}{{ (state.last_changed_at|string)[:16] }}{% else %}—{% endif %}</span></td>
+          <td class="time-cell muted" title="{{ state.last_updated_at if state else '—' }}"><span class="table-truncate">{% if state %}{{ (state.last_updated_at|string)[:16] }}{% else %}—{% endif %}</span></td>
+          <td class="action-cell"><a class="button secondary" href="{{ url_for('ha_entity_detail', entity_id=entity.id) }}">View state/history</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7"><div class="empty-state">No Home Assistant entities match the search.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

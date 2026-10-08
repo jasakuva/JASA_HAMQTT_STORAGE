@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: hamqtt-store
+Version: 0.1.0
+Summary: Home Assistant and MQTT data store with PostgreSQL and pgvector
+Requires-Python: >=3.12
+Requires-Dist: Flask<4,>=3.1
+Requires-Dist: SQLAlchemy<3,>=2.0
+Requires-Dist: psycopg[binary]<4,>=3.2
+Requires-Dist: alembic<2,>=1.15
+Requires-Dist: paho-mqtt<3,>=2.1
+Requires-Dist: websocket-client<2,>=1.8
+Requires-Dist: python-dotenv<2,>=1.1
+Requires-Dist: cryptography<46,>=44
+Requires-Dist: gunicorn<24,>=23
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8.3; extra == "dev"
+Requires-Dist: ruff<1,>=0.9; extra == "dev"

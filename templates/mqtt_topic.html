@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block topbar_title %}MQTT topic details{% endblock %}{% block content %}
+<a class="back-link" href="{{ url_for('mqtt_view') }}">← Back to MQTT topics</a>
+<div class="page-header"><div><h1>{{ topic.topic }}</h1><p>Messages {{ topic.message_count }} · First seen {{ topic.first_seen_at }} · Last seen {{ topic.last_seen_at }}</p></div></div>
+<section class="detail-card"><h3>Current parsed fields</h3><table><tr><th>Field</th><th>Type</th><th>Current value</th><th>Updated</th><th>Observations</th></tr>
+{% for field in fields %}{% set value = current_values.get(field.id) %}<tr><td>{{ field.field_path }}</td><td>{{ field.data_type }}</td><td>{% if value %}{{ value.value_numeric if value.value_numeric is not none else value.value_boolean if value.value_boolean is not none else value.value_text or value.value_json }}{% else %}—{% endif %}</td><td>{{ value.received_at if value else '—' }}</td><td>{{ field.observation_count }}</td></tr>{% else %}<tr><td colspan="5">No parsed fields have been discovered.</td></tr>{% endfor %}</table></section>
+
+<section class="detail-card"><h3>Parsed observation history</h3><table><tr><th>Field ID</th><th>Value</th><th>Type</th><th>Observed</th><th>Received</th><th>Quality</th></tr>
+{% for row in observations %}<tr><td>{{ row.mqtt_payload_field_id }}</td><td>{{ row.value_numeric if row.value_numeric is not none else row.value_boolean if row.value_boolean is not none else row.value_text or row.value_json }}</td><td>{{ row.value_type }}</td><td>{{ row.observed_at }}</td><td>{{ row.received_at }}</td><td>{{ row.quality }}</td></tr>{% else %}<tr><td colspan="6">No parsed observations have been recorded.</td></tr>{% endfor %}</table></section>
+
+<section class="detail-card"><h3>Raw message history</h3><table><tr><th>Received</th><th>Type</th><th>QoS</th><th>Retained</th><th>Payload</th></tr>
+{% for message in messages %}<tr><td>{{ message.received_at }}</td><td>{{ message.payload_type }}</td><td>{{ message.qos }}</td><td>{{ message.retain }}</td><td><pre class="json-view compact">{{ (message.payload_json if message.payload_json is not none else message.payload_text or '[binary]')|pretty_json if message.payload_json is not none else message.payload_text or '[binary]' }}</pre></td></tr>{% else %}<tr><td colspan="5">No raw messages have been recorded.</td></tr>{% endfor %}</table></section>
+{% endblock %}

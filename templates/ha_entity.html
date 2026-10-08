@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block topbar_title %}Entity details{% endblock %}{% block content %}
+<a class="back-link" href="{{ url_for('ha_view') }}">← Back to Home Assistant entities</a>
+<div class="page-header"><div><h1>{{ object.nickname or object.display_name or entity.entity_id }}</h1><p>{{ entity.entity_id }} · {{ entity.domain }}</p></div></div>
+<section class="detail-card">
+  <h3>Current state</h3>
+  {% if current %}
+  <dl class="state-details">
+    <dt>Value</dt><dd><strong>{{ current.state_text }}</strong></dd>
+    <dt>Last changed</dt><dd>{{ current.last_changed_at }}</dd>
+    <dt>Last updated</dt><dd>{{ current.last_updated_at }}</dd>
+    <dt>Recorded</dt><dd>{{ current.updated_at }}</dd>
+  </dl>
+  <h4>Attributes</h4>
+  <pre class="json-view">{{ current.attributes|pretty_json }}</pre>
+  <h4>Raw Home Assistant state</h4>
+  <pre class="json-view">{{ current.raw_state|pretty_json }}</pre>
+  {% else %}<p>No state has been recorded for this entity yet.</p>{% endif %}
+</section>
+
+<section class="detail-card">
+  <h3>State history</h3>
+  <table><tr><th>Observed at</th><th>State</th><th>Attributes</th></tr>
+  {% for row in history %}<tr><td>{{ row.observed_at }}</td><td>{{ row.state_text }}</td><td><details><summary>Show JSON</summary><pre class="json-view compact">{{ row.attributes|pretty_json }}</pre></details></td></tr>{% else %}<tr><td colspan="3">No history has been recorded for this entity.</td></tr>{% endfor %}</table>
+</section>
+{% endblock %}

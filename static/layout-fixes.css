@@ -1,0 +1,15 @@
+.entity-table-wrap{width:100%;overflow-x:auto}
+.entity-table{display:block;width:100%;min-width:1100px;font-size:11px;line-height:1.2}
+.entity-table colgroup{display:none}
+.entity-table thead,.entity-table tbody{display:block}
+.entity-table thead tr,.entity-table tbody tr{display:grid;grid-template-columns:minmax(220px,1.6fr) 100px minmax(180px,1.4fr) 125px 145px 145px 160px;width:100%;min-width:1100px}
+.entity-table th{display:block;padding:7px 9px;font-size:9px;line-height:1.1;text-align:left}
+.entity-table td{display:block;min-width:0;padding:6px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entity-table th,.entity-table td{box-sizing:border-box}
+.entity-id-cell,.name-cell,.time-cell{min-width:0;max-width:none}
+.entity-id-cell .table-primary,.table-truncate{display:block;width:100%;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entity-table .action-cell{position:relative;z-index:1;overflow:visible;text-align:right;pointer-events:auto}
+.entity-table .action-cell .button{position:relative;z-index:2;display:inline-block;max-width:100%;padding:5px 8px;font-size:10px;line-height:1.1;white-space:nowrap;pointer-events:auto;cursor:pointer}
+.entity-table tbody tr{min-height:38px;border-bottom:1px solid var(--line)}
+.entity-table tbody tr:has(.empty-state){display:block}
+.entity-table tbody tr:has(.empty-state) td{width:100%;min-width:1100px;grid-column:1 / -1} 

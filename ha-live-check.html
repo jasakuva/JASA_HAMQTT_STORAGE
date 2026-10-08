@@ -1,0 +1,1880 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HA MQTT Store</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/layout-fixes.css">
+</head>
+<body>
+  
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">H</span><span>HA MQTT Store<small>data console</small></span></div>
+      <div class="nav-label">Workspace</div>
+      <a class="nav-link " href="/"><span class="nav-icon">⌂</span>Dashboard</a>
+      <a class="nav-link active" href="/ha"><span class="nav-icon">◉</span>Home Assistant</a>
+      <a class="nav-link " href="/mqtt"><span class="nav-icon">≋</span>MQTT data</a>
+      <a class="nav-link " href="/objects"><span class="nav-icon">◇</span>Objects</a>
+      <div class="nav-label">System</div>
+      <a class="nav-link " href="/settings"><span class="nav-icon">⚙</span>Settings</a>
+      <div class="sidebar-footer">PostgreSQL · pgvector<br><span id="sidebar-clock">—</span></div>
+    </aside>
+    <div class="content-shell">
+      <header class="topbar"><span class="topbar-title">Home Assistant entities</span><span class="topbar-meta"><span><i class="live-dot"></i>Live workspace</span><span id="topbar-clock">—</span></span></header>
+      <main>
+<div class="page-header">
+  <div>
+    <h1>Home Assistant entities</h1>
+    <p>Current state, timestamps and historical data.</p>
+  </div>
+</div>
+
+<form class="search-form">
+  <input name="q" value="" placeholder="Search entity ID, name, or nickname">
+  <button>Search</button>
+  
+</form>
+
+<div class="table-wrap entity-table-wrap">
+  <table class="entity-table">
+    <colgroup>
+      <col class="entity-col">
+      <col class="domain-col">
+      <col class="name-col">
+      <col class="state-col">
+      <col class="time-col">
+      <col class="time-col">
+      <col class="action-col">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Entity</th>
+        <th>Domain</th>
+        <th>Name</th>
+        <th>Current state</th>
+        <th>Last changed</th>
+        <th>Last updated</th>
+        <th aria-label="Actions"></th>
+      </tr>
+    </thead>
+    <tbody>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="ai_task.openai_ai_task">ai_task.openai_ai_task</span></td>
+          <td><span class="badge">ai_task</span></td>
+          <td class="name-cell" title="OpenAI AI Task">OpenAI AI Task</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.838093+00:00">2026-09-09 20:43:03.838093+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.838093+00:00">2026-09-09 20:43:03.838093+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/84">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="ai_task.openai_ai_task_2">ai_task.openai_ai_task_2</span></td>
+          <td><span class="badge">ai_task</span></td>
+          <td class="name-cell" title="OpenAI AI Task">OpenAI AI Task</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.838684+00:00">2026-09-09 20:43:03.838684+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.838684+00:00">2026-09-09 20:43:03.838684+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/85">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.climate_off_by_temp">automation.climate_off_by_temp</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Climate off by temp">Climate off by temp</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.779187+00:00">2026-09-09 20:43:03.779187+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.779187+00:00">2026-09-09 20:43:03.779187+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/82">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.cool_on_by_temperature">automation.cool_on_by_temperature</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Cool on by temperature">Cool on by temperature</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.769037+00:00">2026-09-09 20:43:03.769037+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.769037+00:00">2026-09-09 20:43:03.769037+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/71">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.jouluvalot_aamu_on">automation.jouluvalot_aamu_on</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Jouluvalot, aamu, ON">Jouluvalot, aamu, ON</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.775455+00:00">2026-09-09 20:43:03.775455+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 03:51:51.101615+00:00">2026-09-10 03:51:51.101615+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/72">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.jouluvalot_napista_paalle">automation.jouluvalot_napista_paalle</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Jouluvalot napista päälle">Jouluvalot napista päälle</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.777589+00:00">2026-09-09 20:43:03.777589+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.777589+00:00">2026-09-09 20:43:03.777589+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/75">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.jouluvalot_napista_pois_heti">automation.jouluvalot_napista_pois_heti</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Jouluvalot napista pois, heti">Jouluvalot napista pois, heti</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.778091+00:00">2026-09-09 20:43:03.778091+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.778091+00:00">2026-09-09 20:43:03.778091+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/77">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.jouluvalot_napista_pois_viive">automation.jouluvalot_napista_pois_viive</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Jouluvalot napista pois, viive">Jouluvalot napista pois, viive</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.777944+00:00">2026-09-09 20:43:03.777944+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.777944+00:00">2026-09-09 20:43:03.777944+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/76">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.jouluvalot_off_viiveella">automation.jouluvalot_off_viiveella</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Jouluvalot, off, viiveella">Jouluvalot, off, viiveella</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.776451+00:00">2026-09-09 20:43:03.776451+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.776451+00:00">2026-09-09 20:43:03.776451+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/73">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.kampan_tila_paiva">automation.kampan_tila_paiva</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Kämpän tila, päivä">Kämpän tila, päivä</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.778573+00:00">2026-09-09 20:43:03.778573+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 03:51:51.080052+00:00">2026-09-10 03:51:51.080052+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/79">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.kampan_tila_yo_pakotus">automation.kampan_tila_yo_pakotus</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Kämpän tila Yö, pakotus">Kämpän tila Yö, pakotus</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.778718+00:00">2026-09-09 20:43:03.778718+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 22:00:00.221558+00:00">2026-09-10 22:00:00.221558+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/80">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.reload_gree_integration">automation.reload_gree_integration</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Reload gree integration">Reload gree integration</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.779040+00:00">2026-09-09 20:43:03.779040+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 07:00:00.352920+00:00">2026-10-08 07:00:00.352920+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/81">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.remote_button1">automation.remote_button1</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="remote_button1">remote_button1</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.776965+00:00">2026-09-09 20:43:03.776965+00:00</td>
+          <td class="time-cell muted" title="2026-09-28 09:55:21.441280+00:00">2026-09-28 09:55:21.441280+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/74">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.ulko_ovelta_sisaan">automation.ulko_ovelta_sisaan</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="ulko-ovelta sisään">ulko-ovelta sisään</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.768755+00:00">2026-09-09 20:43:03.768755+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.768755+00:00">2026-09-09 20:43:03.768755+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/70">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="automation.yovaloo_liikkeesta">automation.yovaloo_liikkeesta</span></td>
+          <td><span class="badge">automation</span></td>
+          <td class="name-cell" title="Yövaloo, liikkeestä">Yövaloo, liikkeestä</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.778237+00:00">2026-09-09 20:43:03.778237+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.778237+00:00">2026-09-09 20:43:03.778237+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/78">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.backups_stale">binary_sensor.backups_stale</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="Backups Stale">Backups Stale</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:15.485615+00:00">2026-09-09 20:43:15.485615+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:15.485615+00:00">2026-09-09 20:43:15.485615+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/153">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.bedroom_microphone">binary_sensor.bedroom_microphone</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="Bedroom Microphone">Bedroom Microphone</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077386+00:00">2026-10-07 15:52:59.077386+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077386+00:00">2026-10-07 15:52:59.077386+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/147">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.iphone_focus">binary_sensor.iphone_focus</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="iPhone Focus">iPhone Focus</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.424424+00:00">2026-09-16 13:54:13.424424+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.424424+00:00">2026-09-16 13:54:13.424424+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/162">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.iphone_kiosk_mode">binary_sensor.iphone_kiosk_mode</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="iPhone Kiosk Mode">iPhone Kiosk Mode</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.658154+00:00">2026-09-09 20:43:03.658154+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.658154+00:00">2026-09-09 20:43:03.658154+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/48">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.iphone_kiosk_screensaver">binary_sensor.iphone_kiosk_screensaver</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="iPhone Kiosk Screensaver">iPhone Kiosk Screensaver</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.661223+00:00">2026-09-09 20:43:03.661223+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.661223+00:00">2026-09-09 20:43:03.661223+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/49">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.jasabee_ethernet">binary_sensor.jasabee_ethernet</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="jasabee Ethernet">jasabee Ethernet</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.620937+00:00">2026-09-09 20:43:03.620937+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.620937+00:00">2026-09-09 20:43:03.620937+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/38">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.jasabee_internet">binary_sensor.jasabee_internet</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="jasabee Internet">jasabee Internet</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.810964+00:00">2026-09-09 20:43:03.810964+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.810964+00:00">2026-09-09 20:43:03.810964+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/83">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.kake_button_1">binary_sensor.kake_button_1</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="Kake_button_1">Kake_button_1</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597617+00:00">2026-09-10 01:27:34.597617+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597617+00:00">2026-09-10 01:27:34.597617+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/127">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.m1_motion">binary_sensor.m1_motion</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="M1_motion">M1_motion</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-10 20:07:55.843317+00:00">2026-09-10 20:07:55.843317+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 20:07:55.843317+00:00">2026-09-10 20:07:55.843317+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/129">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.m2_motion">binary_sensor.m2_motion</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="M2_motion">M2_motion</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:21:23.956816+00:00">2026-10-08 19:21:23.956816+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:21:23.956816+00:00">2026-10-08 19:21:23.956816+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/130">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.m3_motion">binary_sensor.m3_motion</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="M3_motion">M3_motion</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597794+00:00">2026-09-10 01:27:34.597794+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597794+00:00">2026-09-10 01:27:34.597794+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/131">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.m4_motion">binary_sensor.m4_motion</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="M4_motion">M4_motion</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597556+00:00">2026-09-10 01:27:34.597556+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597556+00:00">2026-09-10 01:27:34.597556+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/126">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.parveke_precense">binary_sensor.parveke_precense</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="Parveke_precense">Parveke_precense</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597659+00:00">2026-09-10 01:27:34.597659+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597659+00:00">2026-09-10 01:27:34.597659+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/128">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="binary_sensor.t3_trend">binary_sensor.t3_trend</span></td>
+          <td><span class="badge">binary_sensor</span></td>
+          <td class="name-cell" title="t3_trend">t3_trend</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.939809+00:00">2026-09-09 20:43:03.939809+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.939809+00:00">2026-09-09 20:43:03.939809+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/37">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="button.jasabee_core_restart">button.jasabee_core_restart</span></td>
+          <td><span class="badge">button</span></td>
+          <td class="name-cell" title="jasabee Core restart">jasabee Core restart</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.625543+00:00">2026-09-09 20:43:03.625543+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.625543+00:00">2026-09-09 20:43:03.625543+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/39">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="button.jasabee_zigbee_restart">button.jasabee_zigbee_restart</span></td>
+          <td><span class="badge">button</span></td>
+          <td class="name-cell" title="jasabee Zigbee restart">jasabee Zigbee restart</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.626062+00:00">2026-09-09 20:43:03.626062+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.626062+00:00">2026-09-09 20:43:03.626062+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/40">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="climate.9424b82d7ec0">climate.9424b82d7ec0</span></td>
+          <td><span class="badge">climate</span></td>
+          <td class="name-cell" title="9424b82d7ec0">9424b82d7ec0</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-08 07:10:10.650363+00:00">2026-10-08 07:10:10.650363+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 07:11:09.990886+00:00">2026-10-08 07:11:09.990886+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/141">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="conversation.home_assistant">conversation.home_assistant</span></td>
+          <td><span class="badge">conversation</span></td>
+          <td class="name-cell" title="Home Assistant">Home Assistant</td>
+          <td><span class="state-value" title="2026-08-26T17:46:55.518591+00:00">2026-08-26T17:46:55.518591+00:00</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:55.145406+00:00">2026-09-09 20:42:55.145406+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:55.145406+00:00">2026-09-09 20:42:55.145406+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/11">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="conversation.openai_conversation">conversation.openai_conversation</span></td>
+          <td><span class="badge">conversation</span></td>
+          <td class="name-cell" title="OpenAI Conversation">OpenAI Conversation</td>
+          <td><span class="state-value" title="2026-08-26T18:01:52.905236+00:00">2026-08-26T18:01:52.905236+00:00</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.839616+00:00">2026-09-09 20:43:03.839616+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.839616+00:00">2026-09-09 20:43:03.839616+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/86">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="device_tracker.iphone">device_tracker.iphone</span></td>
+          <td><span class="badge">device_tracker</span></td>
+          <td class="name-cell" title="iPhone">iPhone</td>
+          <td><span class="state-value" title="home">home</span></td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.747221+00:00">2026-10-08 17:45:14.747221+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.747221+00:00">2026-10-08 17:45:14.747221+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/50">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="event.backup_automatic_backup">event.backup_automatic_backup</span></td>
+          <td><span class="badge">event</span></td>
+          <td class="name-cell" title="Backup Automatic backup">Backup Automatic backup</td>
+          <td><span class="state-value" title="2026-10-08T02:21:38.064+00:00">2026-10-08T02:21:38.064+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 02:21:38.064880+00:00">2026-10-08 02:21:38.064880+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 02:21:38.064880+00:00">2026-10-08 02:21:38.064880+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/12">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="input_boolean.etuovi_sisaan_switch">input_boolean.etuovi_sisaan_switch</span></td>
+          <td><span class="badge">input_boolean</span></td>
+          <td class="name-cell" title="etuovi_sisään_switch">etuovi_sisään_switch</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.765300+00:00">2026-09-09 20:42:56.765300+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.765300+00:00">2026-09-09 20:42:56.765300+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/18">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="input_boolean.kukkuu">input_boolean.kukkuu</span></td>
+          <td><span class="badge">input_boolean</span></td>
+          <td class="name-cell" title="kukkuu">kukkuu</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.765470+00:00">2026-09-09 20:42:56.765470+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.765470+00:00">2026-09-09 20:42:56.765470+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/19">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="input_number.etuovi_sisaan">input_number.etuovi_sisaan</span></td>
+          <td><span class="badge">input_number</span></td>
+          <td class="name-cell" title="etuovi_sisaan">etuovi_sisaan</td>
+          <td><span class="state-value" title="1.0">1.0</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.766329+00:00">2026-09-09 20:42:56.766329+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.766329+00:00">2026-09-09 20:42:56.766329+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/21">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="input_number.etuovi_sisaan_2">input_number.etuovi_sisaan_2</span></td>
+          <td><span class="badge">input_number</span></td>
+          <td class="name-cell" title="etuovi_sisaan_2">etuovi_sisaan_2</td>
+          <td><span class="state-value" title="1.0">1.0</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.766470+00:00">2026-09-09 20:42:56.766470+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.766470+00:00">2026-09-09 20:42:56.766470+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/22">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="input_select.tila">input_select.tila</span></td>
+          <td><span class="badge">input_select</span></td>
+          <td class="name-cell" title="Tila">Tila</td>
+          <td><span class="state-value" title="Päivä">Päivä</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.765889+00:00">2026-09-09 20:42:56.765889+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:56.765889+00:00">2026-09-09 20:42:56.765889+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/20">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="input_text.kampan_tila">input_text.kampan_tila</span></td>
+          <td><span class="badge">input_text</span></td>
+          <td class="name-cell" title="Kämpän tila">Kämpän tila</td>
+          <td><span class="state-value" title="Yö">Yö</span></td>
+          <td class="time-cell muted" title="2026-09-10 22:00:00.221334+00:00">2026-09-10 22:00:00.221334+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 22:00:00.221334+00:00">2026-09-10 22:00:00.221334+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/32">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="input_text.remote_button_1_action">input_text.remote_button_1_action</span></td>
+          <td><span class="badge">input_text</span></td>
+          <td class="name-cell" title="remote_button_1_action">remote_button_1_action</td>
+          <td><span class="state-value" title=""></span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:58.144918+00:00">2026-09-09 20:42:58.144918+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:58.144918+00:00">2026-09-09 20:42:58.144918+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/31">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="media_player.bedroom">media_player.bedroom</span></td>
+          <td><span class="badge">media_player</span></td>
+          <td class="name-cell" title="Bedroom">Bedroom</td>
+          <td><span class="state-value" title="paused">paused</span></td>
+          <td class="time-cell muted" title="2026-10-08 10:32:09.845071+00:00">2026-10-08 10:32:09.845071+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 11:26:03.802943+00:00">2026-10-08 11:26:03.802943+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/146">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="number.bedroom_balance">number.bedroom_balance</span></td>
+          <td><span class="badge">number</span></td>
+          <td class="name-cell" title="Bedroom Balance">Bedroom Balance</td>
+          <td><span class="state-value" title="0">0</span></td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077103+00:00">2026-10-07 15:52:59.077103+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077103+00:00">2026-10-07 15:52:59.077103+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/151">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="number.bedroom_bass">number.bedroom_bass</span></td>
+          <td><span class="badge">number</span></td>
+          <td class="name-cell" title="Bedroom Bass">Bedroom Bass</td>
+          <td><span class="state-value" title="0">0</span></td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077000+00:00">2026-10-07 15:52:59.077000+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077000+00:00">2026-10-07 15:52:59.077000+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/150">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="number.bedroom_treble">number.bedroom_treble</span></td>
+          <td><span class="badge">number</span></td>
+          <td class="name-cell" title="Bedroom Treble">Bedroom Treble</td>
+          <td><span class="state-value" title="0">0</span></td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077191+00:00">2026-10-07 15:52:59.077191+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.077191+00:00">2026-10-07 15:52:59.077191+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/152">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="person.janne">person.janne</span></td>
+          <td><span class="badge">person</span></td>
+          <td class="name-cell" title="Janne">Janne</td>
+          <td><span class="state-value" title="home">home</span></td>
+          <td class="time-cell muted" title="2026-09-18 20:53:37.102754+00:00">2026-09-18 20:53:37.102754+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.749245+00:00">2026-10-08 17:45:14.749245+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/23">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.backup_backup_manager_state">sensor.backup_backup_manager_state</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Backup Backup Manager state">Backup Backup Manager state</td>
+          <td><span class="state-value" title="idle">idle</span></td>
+          <td class="time-cell muted" title="2026-10-08 02:21:38.065295+00:00">2026-10-08 02:21:38.065295+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 02:21:38.065295+00:00">2026-10-08 02:21:38.065295+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/13">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.backup_last_attempted_automatic_backup">sensor.backup_last_attempted_automatic_backup</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Backup Last attempted automatic backup">Backup Last attempted automatic backup</td>
+          <td><span class="state-value" title="2026-10-08T02:21:33+00:00">2026-10-08T02:21:33+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 02:21:33.002162+00:00">2026-10-08 02:21:33.002162+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 02:21:33.002162+00:00">2026-10-08 02:21:33.002162+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/16">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.backup_last_successful_automatic_backup">sensor.backup_last_successful_automatic_backup</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Backup Last successful automatic backup">Backup Last successful automatic backup</td>
+          <td><span class="state-value" title="2026-10-08T02:21:38+00:00">2026-10-08T02:21:38+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 02:21:38.065146+00:00">2026-10-08 02:21:38.065146+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 02:21:38.065146+00:00">2026-10-08 02:21:38.065146+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/15">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.backup_next_scheduled_automatic_backup">sensor.backup_next_scheduled_automatic_backup</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Backup Next scheduled automatic backup">Backup Next scheduled automatic backup</td>
+          <td><span class="state-value" title="2026-10-09T01:48:39+00:00">2026-10-09T01:48:39+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 02:21:33.001946+00:00">2026-10-08 02:21:33.001946+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 02:21:33.001946+00:00">2026-10-08 02:21:33.001946+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/14">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.backup_state">sensor.backup_state</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Backup State">Backup State</td>
+          <td><span class="state-value" title="backed_up">backed_up</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:25.756623+00:00">2026-09-09 20:43:25.756623+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 02:22:04.000919+00:00">2026-10-08 02:22:04.000919+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/154">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.co2">sensor.co2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="CO2">CO2</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597183+00:00">2026-09-10 01:27:34.597183+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597183+00:00">2026-09-10 01:27:34.597183+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/120">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.eemil_huone_koesteus">sensor.eemil_huone_koesteus</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Eemil huone koesteus">Eemil huone koesteus</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596099+00:00">2026-09-10 01:27:34.596099+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596099+00:00">2026-09-10 01:27:34.596099+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/104">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.eemil_huone_lampo">sensor.eemil_huone_lampo</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Eemil huone lämpö">Eemil huone lämpö</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949795+00:00">2026-09-09 20:43:03.949795+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949795+00:00">2026-09-09 20:43:03.949795+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/134">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.eemil_huone_lampo_2">sensor.eemil_huone_lampo_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Eemil huone lämpö">Eemil huone lämpö</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595797+00:00">2026-09-10 01:27:34.595797+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595797+00:00">2026-09-10 01:27:34.595797+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/101">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.eemil_huone_lampo_battery">sensor.eemil_huone_lampo_battery</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Eemil huone lämpö battery">Eemil huone lämpö battery</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595896+00:00">2026-09-10 01:27:34.595896+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595896+00:00">2026-09-10 01:27:34.595896+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/103">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.eemil_huone_lampo_link">sensor.eemil_huone_lampo_link</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Eemil huone lämpö link">Eemil huone lämpö link</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595847+00:00">2026-09-10 01:27:34.595847+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595847+00:00">2026-09-10 01:27:34.595847+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/102">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.formaldehyd">sensor.formaldehyd</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="formaldehyd">formaldehyd</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597238+00:00">2026-09-10 01:27:34.597238+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597238+00:00">2026-09-10 01:27:34.597238+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/121">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.hum1">sensor.hum1</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Hum_AMS">Hum_AMS</td>
+          <td><span class="state-value" title="41">41</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:14:47.626069+00:00">2026-10-08 19:14:47.626069+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:14:47.626069+00:00">2026-10-08 19:14:47.626069+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/100">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_activity">sensor.iphone_activity</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Activity">iPhone Activity</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.343072+00:00">2026-09-16 13:54:13.343072+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.343072+00:00">2026-09-16 13:54:13.343072+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/155">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_app_version">sensor.iphone_app_version</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone App Version">iPhone App Version</td>
+          <td><span class="state-value" title="2026.9.3">2026.9.3</span></td>
+          <td class="time-cell muted" title="2026-10-07 04:46:48.169917+00:00">2026-10-07 04:46:48.169917+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 04:46:48.169917+00:00">2026-10-07 04:46:48.169917+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/60">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_audio_output">sensor.iphone_audio_output</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Audio Output">iPhone Audio Output</td>
+          <td><span class="state-value" title="Built-in Speaker">Built-in Speaker</span></td>
+          <td class="time-cell muted" title="2026-10-08 13:59:25.251590+00:00">2026-10-08 13:59:25.251590+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 13:59:25.251590+00:00">2026-10-08 13:59:25.251590+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/61">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_average_active_pace">sensor.iphone_average_active_pace</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Average Active Pace">iPhone Average Active Pace</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.388621+00:00">2026-09-16 13:54:13.388621+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.388621+00:00">2026-09-16 13:54:13.388621+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/160">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_battery_level">sensor.iphone_battery_level</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Battery Level">iPhone Battery Level</td>
+          <td><span class="state-value" title="60">60</span></td>
+          <td class="time-cell muted" title="2026-10-08 17:25:56.162740+00:00">2026-10-08 17:25:56.162740+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:25:56.162740+00:00">2026-10-08 17:25:56.162740+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/51">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_battery_state">sensor.iphone_battery_state</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Battery State">iPhone Battery State</td>
+          <td><span class="state-value" title="Not Charging">Not Charging</span></td>
+          <td class="time-cell muted" title="2026-10-08 04:31:13.477748+00:00">2026-10-08 04:31:13.477748+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 16:03:00.861989+00:00">2026-10-08 16:03:00.861989+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/52">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_bssid">sensor.iphone_bssid</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone BSSID">iPhone BSSID</td>
+          <td><span class="state-value" title="40:ed:00:69:7d:2b">40:ed:00:69:7d:2b</span></td>
+          <td class="time-cell muted" title="2026-10-08 17:38:55.485614+00:00">2026-10-08 17:38:55.485614+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:38:55.485614+00:00">2026-10-08 17:38:55.485614+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/58">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_connection_type">sensor.iphone_connection_type</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Connection Type">iPhone Connection Type</td>
+          <td><span class="state-value" title="Wi-Fi">Wi-Fi</span></td>
+          <td class="time-cell muted" title="2026-10-08 17:25:56.164813+00:00">2026-10-08 17:25:56.164813+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:25:56.164813+00:00">2026-10-08 17:25:56.164813+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/55">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_current_cadence">sensor.iphone_current_cadence</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Current Cadence">iPhone Current Cadence</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.428512+00:00">2026-09-16 13:54:13.428512+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.428512+00:00">2026-09-16 13:54:13.428512+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/163">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_current_pace">sensor.iphone_current_pace</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Current Pace">iPhone Current Pace</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.403049+00:00">2026-09-16 13:54:13.403049+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.403049+00:00">2026-09-16 13:54:13.403049+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/161">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_distance">sensor.iphone_distance</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Distance">iPhone Distance</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.367985+00:00">2026-09-16 13:54:13.367985+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.367985+00:00">2026-09-16 13:54:13.367985+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/156">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_floors_ascended">sensor.iphone_floors_ascended</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Floors Ascended">iPhone Floors Ascended</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.373497+00:00">2026-09-16 13:54:13.373497+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.373497+00:00">2026-09-16 13:54:13.373497+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/157">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_floors_descended">sensor.iphone_floors_descended</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Floors Descended">iPhone Floors Descended</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.383778+00:00">2026-09-16 13:54:13.383778+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.383778+00:00">2026-09-16 13:54:13.383778+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/159">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_geocoded_location">sensor.iphone_geocoded_location</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Geocoded Location">iPhone Geocoded Location</td>
+          <td><span class="state-value" title="Koivikkotie 2
+01620 Vantaa
+Finland">Koivikkotie 2
+01620 Vantaa
+Finland</span></td>
+          <td class="time-cell muted" title="2026-10-08 16:31:57.129841+00:00">2026-10-08 16:31:57.129841+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.969332+00:00">2026-10-08 17:45:14.969332+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/63">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_last_update_trigger">sensor.iphone_last_update_trigger</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Last Update Trigger">iPhone Last Update Trigger</td>
+          <td><span class="state-value" title="Launch">Launch</span></td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.907388+00:00">2026-10-08 17:45:14.907388+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.907388+00:00">2026-10-08 17:45:14.907388+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/59">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_location_permission">sensor.iphone_location_permission</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Location permission">iPhone Location permission</td>
+          <td><span class="state-value" title="Authorized Always">Authorized Always</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.673455+00:00">2026-09-09 20:43:03.673455+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.673455+00:00">2026-09-09 20:43:03.673455+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/62">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_pressure">sensor.iphone_pressure</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Pressure">iPhone Pressure</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.439433+00:00">2026-09-16 13:54:13.439433+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.439433+00:00">2026-09-16 13:54:13.439433+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/164">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_sim_1">sensor.iphone_sim_1</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone SIM 1">iPhone SIM 1</td>
+          <td><span class="state-value" title="--">--</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.670343+00:00">2026-09-09 20:43:03.670343+00:00</td>
+          <td class="time-cell muted" title="2026-09-18 17:37:30.847758+00:00">2026-09-18 17:37:30.847758+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/54">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_sim_2">sensor.iphone_sim_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone SIM 2">iPhone SIM 2</td>
+          <td><span class="state-value" title="--">--</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.669733+00:00">2026-09-09 20:43:03.669733+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.669733+00:00">2026-09-09 20:43:03.669733+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/53">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_ssid">sensor.iphone_ssid</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone SSID">iPhone SSID</td>
+          <td><span class="state-value" title="jasadeko">jasadeko</span></td>
+          <td class="time-cell muted" title="2026-10-08 17:25:56.163354+00:00">2026-10-08 17:25:56.163354+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:25:56.163354+00:00">2026-10-08 17:25:56.163354+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/56">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_steps">sensor.iphone_steps</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Steps">iPhone Steps</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.377741+00:00">2026-09-16 13:54:13.377741+00:00</td>
+          <td class="time-cell muted" title="2026-09-16 13:54:13.377741+00:00">2026-09-16 13:54:13.377741+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/158">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.iphone_storage">sensor.iphone_storage</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="iPhone Storage">iPhone Storage</td>
+          <td><span class="state-value" title="11.96">11.96</span></td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.906066+00:00">2026-10-08 17:45:14.906066+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 17:45:14.906066+00:00">2026-10-08 17:45:14.906066+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/57">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.jasabee_connection_mode">sensor.jasabee_connection_mode</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="jasabee Connection mode">jasabee Connection mode</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.627375+00:00">2026-09-09 20:43:03.627375+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.627375+00:00">2026-09-09 20:43:03.627375+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/41">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.jasabee_core_chip_temp">sensor.jasabee_core_chip_temp</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="jasabee Core chip temp">jasabee Core chip temp</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.628324+00:00">2026-09-09 20:43:03.628324+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.628324+00:00">2026-09-09 20:43:03.628324+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/43">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.jasabee_firmware_channel">sensor.jasabee_firmware_channel</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="jasabee Firmware channel">jasabee Firmware channel</td>
+          <td><span class="state-value" title="release">release</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.627908+00:00">2026-09-09 20:43:03.627908+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.627908+00:00">2026-09-09 20:43:03.627908+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/42">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.jasabee_zigbee_chip_temp">sensor.jasabee_zigbee_chip_temp</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="jasabee Zigbee chip temp">jasabee Zigbee chip temp</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.628646+00:00">2026-09-09 20:43:03.628646+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.628646+00:00">2026-09-09 20:43:03.628646+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/44">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.jasabee_zigbee_type">sensor.jasabee_zigbee_type</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="jasabee Zigbee type">jasabee Zigbee type</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.631478+00:00">2026-09-09 20:43:03.631478+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.631478+00:00">2026-09-09 20:43:03.631478+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/45">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.kooe">sensor.kooe</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Kooe">Kooe</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949826+00:00">2026-09-09 20:43:03.949826+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949826+00:00">2026-09-09 20:43:03.949826+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/135">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.kylppari_kosteus">sensor.kylppari_kosteus</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Kylppari kosteus">Kylppari kosteus</td>
+          <td><span class="state-value" title="47.45">47.45</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596608+00:00">2026-09-10 01:27:34.596608+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596608+00:00">2026-09-10 01:27:34.596608+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/111">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.kylppari_lampo">sensor.kylppari_lampo</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Eemil huone">Eemil huone</td>
+          <td><span class="state-value" title="23.93">23.93</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596544+00:00">2026-09-10 01:27:34.596544+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596544+00:00">2026-09-10 01:27:34.596544+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/110">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.kylppari_lampo_uusi">sensor.kylppari_lampo_uusi</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Kylppari lampo uusi">Kylppari lampo uusi</td>
+          <td><span class="state-value" title="23.93">23.93</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596175+00:00">2026-09-10 01:27:34.596175+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596175+00:00">2026-09-10 01:27:34.596175+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/105">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.kylppari_link">sensor.kylppari_link</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Kylppari link">Kylppari link</td>
+          <td><span class="state-value" title="61">61</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596711+00:00">2026-09-10 01:27:34.596711+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596711+00:00">2026-09-10 01:27:34.596711+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/113">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.kylppari_link_2">sensor.kylppari_link_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Kylppari link">Kylppari link</td>
+          <td><span class="state-value" title="61">61</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596761+00:00">2026-09-10 01:27:34.596761+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596761+00:00">2026-09-10 01:27:34.596761+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/114">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.kylppari_voltage">sensor.kylppari_voltage</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Kylppari voltage">Kylppari voltage</td>
+          <td><span class="state-value" title="2825">2825</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596659+00:00">2026-09-10 01:27:34.596659+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596659+00:00">2026-09-10 01:27:34.596659+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/112">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.message_from_mqtt_to_display1">sensor.message_from_mqtt_to_display1</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Message from MQTT to display1">Message from MQTT to display1</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597398+00:00">2026-09-10 01:27:34.597398+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597398+00:00">2026-09-10 01:27:34.597398+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/124">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.mqtt_button_action">sensor.mqtt_button_action</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="MQTT Button Action">MQTT Button Action</td>
+          <td><span class="state-value" title=""></span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597447+00:00">2026-09-10 01:27:34.597447+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597447+00:00">2026-09-10 01:27:34.597447+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/125">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.nordpool_kwh_fi_eur_2_10_0255">sensor.nordpool_kwh_fi_eur_2_10_0255</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="nordpool_kwh_fi_eur_2_10_0255">nordpool_kwh_fi_eur_2_10_0255</td>
+          <td><span class="state-value" title="0.09">0.09</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:00:00.434079+00:00">2026-10-08 19:00:00.434079+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:00:00.434079+00:00">2026-10-08 19:00:00.434079+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/33">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.pm25">sensor.pm25</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="pm25">pm25</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597294+00:00">2026-09-10 01:27:34.597294+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597294+00:00">2026-09-10 01:27:34.597294+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/122">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.power_1h">sensor.power_1h</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Power 1h">Power 1h</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949975+00:00">2026-09-09 20:43:03.949975+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949975+00:00">2026-09-09 20:43:03.949975+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/140">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sahko_h_avg">sensor.sahko_h_avg</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sähkö h avg">Sähkö h avg</td>
+          <td><span class="state-value" title="687">687</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913608+00:00">2026-10-08 19:42:39.913608+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913608+00:00">2026-10-08 19:42:39.913608+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/107">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sahko_kvh_meter">sensor.sahko_kvh_meter</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="sähkö_kvh_meter">sähkö_kvh_meter</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949932+00:00">2026-09-09 20:43:03.949932+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949932+00:00">2026-09-09 20:43:03.949932+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/138">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sahko_kwh">sensor.sahko_kwh</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sähkö kWh">Sähkö kWh</td>
+          <td><span class="state-value" title="0.6869999999999999">0.6869999999999999</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913802+00:00">2026-10-08 19:42:39.913802+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913802+00:00">2026-10-08 19:42:39.913802+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/108">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sahko_tarkka_w">sensor.sahko_tarkka_w</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sähkö tarkka W">Sähkö tarkka W</td>
+          <td><span class="state-value" title="715.7057654075546">715.7057654075546</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913126+00:00">2026-10-08 19:42:39.913126+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913126+00:00">2026-10-08 19:42:39.913126+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/106">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sahko_tarkka_w_rounded">sensor.sahko_tarkka_w_rounded</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sahko Tarkka W Rounded">Sahko Tarkka W Rounded</td>
+          <td><span class="state-value" title="716">716</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.916371+00:00">2026-10-08 19:42:39.916371+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.916371+00:00">2026-10-08 19:42:39.916371+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/34">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sahko_total_w">sensor.sahko_total_w</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sähkö total w">Sähkö total w</td>
+          <td><span class="state-value" title="804896">804896</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913941+00:00">2026-10-08 19:42:39.913941+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:42:39.913941+00:00">2026-10-08 19:42:39.913941+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/109">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sahko_total_w_cost">sensor.sahko_total_w_cost</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="sensor Cost">sensor Cost</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.617540+00:00">2026-09-09 20:43:03.617540+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.617540+00:00">2026-09-09 20:43:03.617540+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/36">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sensor_messagedisplay1">sensor.sensor_messagedisplay1</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="sensor.messagedisplay1">sensor.messagedisplay1</td>
+          <td><span class="state-value" title="{&#34;sprite&#34;:{&#34;x&#34;:5,&#34;y&#34;:160,&#34;width&#34;:155,&#34;height&#34;:60,&#34;type&#34;:&#34;info&#34;},&#34;texts&#34;:[{&#34;x&#34;:6,&#34;y&#34;:7,&#34;size&#34;:2,&#34;text&#34;:&#34;Eemil 23.93&#34;},{&#34;x&#34;:6,&#34;y&#34;:33,&#34;size&#34;:2,&#34;text&#34;:&#34;testi&#34;}]}">{&#34;sprite&#34;:{&#34;x&#34;:5,&#34;y&#34;:160,&#34;width&#34;:155,&#34;height&#34;:60,&#34;type&#34;:&#34;info&#34;},&#34;texts&#34;:[{&#34;x&#34;:6,&#34;y&#34;:7,&#34;size&#34;:2,&#34;text&#34;:&#34;Eemil 23.93&#34;},{&#34;x&#34;:6,&#34;y&#34;:33,&#34;size&#34;:2,&#34;text&#34;:&#34;testi&#34;}]}</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.606334+00:00">2026-09-10 01:27:34.606334+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.606334+00:00">2026-09-10 01:27:34.606334+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/35">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sun_next_dawn_2">sensor.sun_next_dawn_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sun Next dawn">Sun Next dawn</td>
+          <td><span class="state-value" title="2026-10-09T04:02:49+00:00">2026-10-09T04:02:49+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 04:00:26.370341+00:00">2026-10-08 04:00:26.370341+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 04:00:26.370341+00:00">2026-10-08 04:00:26.370341+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/25">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sun_next_dusk_2">sensor.sun_next_dusk_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sun Next dusk">Sun Next dusk</td>
+          <td><span class="state-value" title="2026-10-09T16:11:30+00:00">2026-10-09T16:11:30+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 16:14:25.952482+00:00">2026-10-08 16:14:25.952482+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 16:14:25.952482+00:00">2026-10-08 16:14:25.952482+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/26">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sun_next_midnight_2">sensor.sun_next_midnight_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sun Next midnight">Sun Next midnight</td>
+          <td><span class="state-value" title="2026-10-08T22:07:51+00:00">2026-10-08T22:07:51+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-07 22:08:07.003066+00:00">2026-10-07 22:08:07.003066+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 22:08:07.003066+00:00">2026-10-07 22:08:07.003066+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/27">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sun_next_noon_2">sensor.sun_next_noon_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sun Next noon">Sun Next noon</td>
+          <td><span class="state-value" title="2026-10-09T10:07:57+00:00">2026-10-09T10:07:57+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 10:08:14.010964+00:00">2026-10-08 10:08:14.010964+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 10:08:14.010964+00:00">2026-10-08 10:08:14.010964+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/28">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sun_next_rising_2">sensor.sun_next_rising_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sun Next rising">Sun Next rising</td>
+          <td><span class="state-value" title="2026-10-09T04:45:44+00:00">2026-10-09T04:45:44+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 04:43:17.193762+00:00">2026-10-08 04:43:17.193762+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 04:43:17.193762+00:00">2026-10-08 04:43:17.193762+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/29">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.sun_next_setting_2">sensor.sun_next_setting_2</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Sun Next setting">Sun Next setting</td>
+          <td><span class="state-value" title="2026-10-09T15:28:44+00:00">2026-10-09T15:28:44+00:00</span></td>
+          <td class="time-cell muted" title="2026-10-08 15:31:44.706906+00:00">2026-10-08 15:31:44.706906+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 15:31:44.706906+00:00">2026-10-08 15:31:44.706906+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/30">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.t_3_kosteus">sensor.t_3_kosteus</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="T_3 KOsteus">T_3 KOsteus</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597116+00:00">2026-09-10 01:27:34.597116+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597116+00:00">2026-09-10 01:27:34.597116+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/119">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.t_3_lampo">sensor.t_3_lampo</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="T_3 Lampo">T_3 Lampo</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596940+00:00">2026-09-10 01:27:34.596940+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596940+00:00">2026-09-10 01:27:34.596940+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/118">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.temp1">sensor.temp1</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Temp_AMS">Temp_AMS</td>
+          <td><span class="state-value" title="21.5">21.5</span></td>
+          <td class="time-cell muted" title="2026-10-08 18:19:43.667398+00:00">2026-10-08 18:19:43.667398+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 18:19:43.667398+00:00">2026-10-08 18:19:43.667398+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/99">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.tuntikulutus">sensor.tuntikulutus</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="tuntikulutus">tuntikulutus</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949849+00:00">2026-09-09 20:43:03.949849+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949849+00:00">2026-09-09 20:43:03.949849+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/136">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.tuntikulutus_daily">sensor.tuntikulutus_daily</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="tuntikulutus_daily">tuntikulutus_daily</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949882+00:00">2026-09-09 20:43:03.949882+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949882+00:00">2026-09-09 20:43:03.949882+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/137">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.tuntikulutus_daily_cost">sensor.tuntikulutus_daily_cost</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="">—</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949956+00:00">2026-09-09 20:43:03.949956+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949956+00:00">2026-09-09 20:43:03.949956+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/139">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.ulko_etu_kosteus">sensor.ulko_etu_kosteus</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Ulko_etu_kosteus">Ulko_etu_kosteus</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596894+00:00">2026-09-10 01:27:34.596894+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596894+00:00">2026-09-10 01:27:34.596894+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/117">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.ulko_etu_lampo">sensor.ulko_etu_lampo</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Ulko_etu_lampo">Ulko_etu_lampo</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596806+00:00">2026-09-10 01:27:34.596806+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596806+00:00">2026-09-10 01:27:34.596806+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/115">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.ulko_etu_paine">sensor.ulko_etu_paine</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Ulko_etu_paine">Ulko_etu_paine</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596850+00:00">2026-09-10 01:27:34.596850+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.596850+00:00">2026-09-10 01:27:34.596850+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/116">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.ulko_hum">sensor.ulko_hum</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Ulko_hum">Ulko_hum</td>
+          <td><span class="state-value" title="88.1">88.1</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:33:11.394620+00:00">2026-10-08 19:33:11.394620+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:33:11.394620+00:00">2026-10-08 19:33:11.394620+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/92">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.ulko_temp">sensor.ulko_temp</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Ulko_temp">Ulko_temp</td>
+          <td><span class="state-value" title="11.8">11.8</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:33:11.197405+00:00">2026-10-08 19:33:11.197405+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:33:11.197405+00:00">2026-10-08 19:33:11.197405+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/91">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.ulko_th_batt">sensor.ulko_th_batt</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Ulko_th_batt">Ulko_th_batt</td>
+          <td><span class="state-value" title="90">90</span></td>
+          <td class="time-cell muted" title="2026-10-08 06:46:12.913729+00:00">2026-10-08 06:46:12.913729+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 06:46:12.913729+00:00">2026-10-08 06:46:12.913729+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/94">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.ulko_th_link">sensor.ulko_th_link</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Ulko_th_link">Ulko_th_link</td>
+          <td><span class="state-value" title="91">91</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:33:11.394198+00:00">2026-10-08 19:33:11.394198+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:33:11.394198+00:00">2026-10-08 19:33:11.394198+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/93">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.varasto_hum">sensor.varasto_hum</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Varasto_hum">Varasto_hum</td>
+          <td><span class="state-value" title="18.2">18.2</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:05:20.036800+00:00">2026-10-08 19:05:20.036800+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:05:20.036800+00:00">2026-10-08 19:05:20.036800+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/96">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.varasto_temp">sensor.varasto_temp</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Varasto_temp">Varasto_temp</td>
+          <td><span class="state-value" title="23.6">23.6</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:05:19.832332+00:00">2026-10-08 19:05:19.832332+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:05:19.832332+00:00">2026-10-08 19:05:19.832332+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/95">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.varasto_th_batt">sensor.varasto_th_batt</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Varasto_th_batt">Varasto_th_batt</td>
+          <td><span class="state-value" title="100">100</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595558+00:00">2026-09-10 01:27:34.595558+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.595558+00:00">2026-09-10 01:27:34.595558+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/98">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.varasto_th_link">sensor.varasto_th_link</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="Varasto_th_link">Varasto_th_link</td>
+          <td><span class="state-value" title="72">72</span></td>
+          <td class="time-cell muted" title="2026-10-08 19:31:32.312970+00:00">2026-10-08 19:31:32.312970+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:31:32.312970+00:00">2026-10-08 19:31:32.312970+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/97">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sensor.voc">sensor.voc</span></td>
+          <td><span class="badge">sensor</span></td>
+          <td class="name-cell" title="voc">voc</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597348+00:00">2026-09-10 01:27:34.597348+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.597348+00:00">2026-09-10 01:27:34.597348+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/123">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="sun.sun">sun.sun</span></td>
+          <td><span class="badge">sun</span></td>
+          <td class="name-cell" title="Sun">Sun</td>
+          <td><span class="state-value" title="below_horizon">below_horizon</span></td>
+          <td class="time-cell muted" title="2026-10-08 15:35:44.708793+00:00">2026-10-08 15:35:44.708793+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 19:32:35.538580+00:00">2026-10-08 19:32:35.538580+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/24">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.9424b82d7ec0_fresh_air">switch.9424b82d7ec0_fresh_air</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="9424b82d7ec0 Fresh air">9424b82d7ec0 Fresh air</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-08 07:10:10.651393+00:00">2026-10-08 07:10:10.651393+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 07:10:10.651393+00:00">2026-10-08 07:10:10.651393+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/144">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.9424b82d7ec0_panel_light">switch.9424b82d7ec0_panel_light</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="9424b82d7ec0 Panel light">9424b82d7ec0 Panel light</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-08 07:10:10.650978+00:00">2026-10-08 07:10:10.650978+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 07:10:10.650978+00:00">2026-10-08 07:10:10.650978+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/142">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.9424b82d7ec0_quiet_mode">switch.9424b82d7ec0_quiet_mode</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="9424b82d7ec0 Quiet mode">9424b82d7ec0 Quiet mode</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-08 07:11:09.991145+00:00">2026-10-08 07:11:09.991145+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 07:11:09.991145+00:00">2026-10-08 07:11:09.991145+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/143">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.9424b82d7ec0_xtra_fan">switch.9424b82d7ec0_xtra_fan</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="9424b82d7ec0 Xtra fan">9424b82d7ec0 Xtra fan</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-08 07:10:10.651644+00:00">2026-10-08 07:10:10.651644+00:00</td>
+          <td class="time-cell muted" title="2026-10-08 07:10:10.651644+00:00">2026-10-08 07:10:10.651644+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/145">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.bedroom_crossfade">switch.bedroom_crossfade</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="Bedroom Crossfade">Bedroom Crossfade</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.076553+00:00">2026-10-07 15:52:59.076553+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.076553+00:00">2026-10-07 15:52:59.076553+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/148">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.bedroom_loudness">switch.bedroom_loudness</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="Bedroom Loudness">Bedroom Loudness</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.076851+00:00">2026-10-07 15:52:59.076851+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 15:52:59.076851+00:00">2026-10-07 15:52:59.076851+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/149">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.jasabee_disable_leds">switch.jasabee_disable_leds</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="jasabee Disable LEDs">jasabee Disable LEDs</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.633925+00:00">2026-09-09 20:43:03.633925+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.633925+00:00">2026-09-09 20:43:03.633925+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/46">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.jasabee_led_night_mode">switch.jasabee_led_night_mode</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="jasabee LED night mode">jasabee LED night mode</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.634388+00:00">2026-09-09 20:43:03.634388+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.634388+00:00">2026-09-09 20:43:03.634388+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/47">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.switch_1">switch.switch_1</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="switch_1">switch_1</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594538+00:00">2026-09-10 01:27:34.594538+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594538+00:00">2026-09-10 01:27:34.594538+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/87">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.switch_2">switch.switch_2</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="switch_2">switch_2</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594656+00:00">2026-09-10 01:27:34.594656+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594656+00:00">2026-09-10 01:27:34.594656+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/88">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.switch_3">switch.switch_3</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="switch_3">switch_3</td>
+          <td><span class="state-value" title="unknown">unknown</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594703+00:00">2026-09-10 01:27:34.594703+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594703+00:00">2026-09-10 01:27:34.594703+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/89">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="switch.switch_4">switch.switch_4</span></td>
+          <td><span class="badge">switch</span></td>
+          <td class="name-cell" title="switch_4">switch_4</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594747+00:00">2026-09-10 01:27:34.594747+00:00</td>
+          <td class="time-cell muted" title="2026-09-10 01:27:34.594747+00:00">2026-09-10 01:27:34.594747+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/90">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="todo.shopping_list">todo.shopping_list</span></td>
+          <td><span class="badge">todo</span></td>
+          <td class="name-cell" title="Shopping List">Shopping List</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949687+00:00">2026-09-09 20:43:03.949687+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949687+00:00">2026-09-09 20:43:03.949687+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/132">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="tts.google_translate_en_com">tts.google_translate_en_com</span></td>
+          <td><span class="badge">tts</span></td>
+          <td class="name-cell" title="Google Translate en com">Google Translate en com</td>
+          <td><span class="state-value" title="unavailable">unavailable</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949753+00:00">2026-09-09 20:43:03.949753+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.949753+00:00">2026-09-09 20:43:03.949753+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/133">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.advanced_ssh_web_terminal_update">update.advanced_ssh_web_terminal_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Advanced SSH &amp; Web Terminal Update">Advanced SSH &amp; Web Terminal Update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.909395+00:00">2026-09-09 20:42:51.909395+00:00</td>
+          <td class="time-cell muted" title="2026-10-02 14:57:54.573783+00:00">2026-10-02 14:57:54.573783+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/5">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.bambu_lab_update">update.bambu_lab_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Bambu Lab update">Bambu Lab update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.697159+00:00">2026-09-09 20:43:03.697159+00:00</td>
+          <td class="time-cell muted" title="2026-09-15 20:43:18.278743+00:00">2026-09-15 20:43:18.278743+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/64">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.f1_sensor_live_data_card_update">update.f1_sensor_live_data_card_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="F1 Sensor Live Data Card update">F1 Sensor Live Data Card update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.700889+00:00">2026-09-09 20:43:03.700889+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.700889+00:00">2026-09-09 20:43:03.700889+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/69">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.file_editor_update">update.file_editor_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="File editor Update">File editor Update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.905808+00:00">2026-09-09 20:42:51.905808+00:00</td>
+          <td class="time-cell muted" title="2026-10-05 20:57:54.150002+00:00">2026-10-05 20:57:54.150002+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/3">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.get_hacs_update">update.get_hacs_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Get HACS Update">Get HACS Update</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.907820+00:00">2026-09-09 20:42:51.907820+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.907820+00:00">2026-09-09 20:42:51.907820+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/4">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.grafana_update">update.grafana_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Grafana Update">Grafana Update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.910127+00:00">2026-09-09 20:42:51.910127+00:00</td>
+          <td class="time-cell muted" title="2026-09-29 23:47:54.998705+00:00">2026-09-29 23:47:54.998705+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/6">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.hacs_update">update.hacs_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="HACS update">HACS update</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.697781+00:00">2026-09-09 20:43:03.697781+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.697781+00:00">2026-09-09 20:43:03.697781+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/65">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.home_assistant_core_update">update.home_assistant_core_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Home Assistant Core Update">Home Assistant Core Update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.904749+00:00">2026-09-09 20:42:51.904749+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 20:47:54.174261+00:00">2026-10-07 20:47:54.174261+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/2">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.home_assistant_google_drive_backup_update">update.home_assistant_google_drive_backup_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Home Assistant Google Drive Backup Update">Home Assistant Google Drive Backup Update</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.911486+00:00">2026-09-09 20:42:51.911486+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.911486+00:00">2026-09-09 20:42:51.911486+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/9">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.home_assistant_operating_system_update">update.home_assistant_operating_system_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Home Assistant Operating System Update">Home Assistant Operating System Update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.912002+00:00">2026-09-09 20:42:51.912002+00:00</td>
+          <td class="time-cell muted" title="2026-09-18 20:47:53.399083+00:00">2026-09-18 20:47:53.399083+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/10">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.home_assistant_supervisor_update">update.home_assistant_supervisor_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Home Assistant Supervisor Update">Home Assistant Supervisor Update</td>
+          <td><span class="state-value" title="off">off</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.903441+00:00">2026-09-09 20:42:51.903441+00:00</td>
+          <td class="time-cell muted" title="2026-09-28 20:47:54.956426+00:00">2026-09-28 20:47:54.956426+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/1">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.mariadb_update">update.mariadb_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="MariaDB Update">MariaDB Update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.910666+00:00">2026-09-09 20:42:51.910666+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.910666+00:00">2026-09-09 20:42:51.910666+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/7">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.nordpool_update">update.nordpool_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="nordpool update">nordpool update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.698991+00:00">2026-09-09 20:43:03.698991+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.698991+00:00">2026-09-09 20:43:03.698991+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/67">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.phpmyadmin_update">update.phpmyadmin_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="phpMyAdmin Update">phpMyAdmin Update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.911173+00:00">2026-09-09 20:42:51.911173+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:42:51.911173+00:00">2026-09-09 20:42:51.911173+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/8">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.simple_timer_update">update.simple_timer_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Simple Timer update">Simple Timer update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.700184+00:00">2026-09-09 20:43:03.700184+00:00</td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.700184+00:00">2026-09-09 20:43:03.700184+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/68">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="update.utility_meter_next_gen_update">update.utility_meter_next_gen_update</span></td>
+          <td><span class="badge">update</span></td>
+          <td class="name-cell" title="Utility Meter Next Gen update">Utility Meter Next Gen update</td>
+          <td><span class="state-value" title="on">on</span></td>
+          <td class="time-cell muted" title="2026-09-09 20:43:03.698466+00:00">2026-09-09 20:43:03.698466+00:00</td>
+          <td class="time-cell muted" title="2026-10-07 20:43:21.040618+00:00">2026-10-07 20:43:21.040618+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/66">View state/history</a></td>
+        </tr>
+      
+        
+        <tr>
+          <td class="entity-id-cell"><span class="table-primary" title="zone.home">zone.home</span></td>
+          <td><span class="badge">zone</span></td>
+          <td class="name-cell" title="Home">Home</td>
+          <td><span class="state-value" title="1">1</span></td>
+          <td class="time-cell muted" title="2026-09-18 20:53:37.106078+00:00">2026-09-18 20:53:37.106078+00:00</td>
+          <td class="time-cell muted" title="2026-09-18 20:53:37.106078+00:00">2026-09-18 20:53:37.106078+00:00</td>
+          <td class="action-cell"><a class="button secondary" href="/ha/entities/17">View state/history</a></td>
+        </tr>
+      
+    </tbody>
+  </table>
+</div>
+</main>
+    </div>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
