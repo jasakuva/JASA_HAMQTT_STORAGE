@@ -1,8 +1,16 @@
 # HA MQTT Store - Implementation Plan
 
-**Status:** Planning
-**Last updated:** 2026-10-08
+**Status:** Active implementation roadmap
+**Last updated:** 2026-10-09
 **Repository:** `C:\Users\janne\Documents\VS_HAMQTT_STORE`
+
+Status legend:
+
+- `[x]` Implemented and verified in the current repository.
+- `[~]` Partially implemented or implemented only for the current development baseline.
+- `[ ]` Planned or not yet implemented.
+
+For restart/setup instructions, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md). This file tracks implementation status; the restart guide tracks how to resume work.
 
 ## 1. Purpose
 
@@ -12,19 +20,18 @@ The application must preserve source data while also extracting useful structure
 
 ## 2. Current scope
 
-### Included
+### Implemented baseline
 
-- Home Assistant connection, initial synchronization, and event/state ingestion.
-- MQTT broker connection, configurable subscriptions, raw message storage, and reconnect handling.
-- MQTT parsing for scalar payloads and JSON payloads, including nested fields.
-- Normalized current values and historical observations.
-- Home Assistant entities, devices, areas, services, states, events, and actions.
-- Generic object catalog with nicknames, descriptions, tags, and custom attributes.
-- Many-to-many, typed links between MQTT topics/fields/devices and Home Assistant entities/devices.
-- PostgreSQL relational schema with JSONB raw data and pgvector embeddings.
-- Flask web UI and JSON API.
-- Docker Compose deployment for local/Linux operation.
-- Retention, health, logging, migration, and test foundations.
+- `[~]` Home Assistant connection and state/event ingestion; the worker and core HA history views exist, but broader synchronization and production hardening remain.
+- `[~]` MQTT broker connection, subscriptions, raw message storage, and reconnect behavior; the development worker is operational, while resilience tests remain.
+- `[x]` MQTT parsing for scalar and nested JSON payloads.
+- `[x]` Normalized MQTT current values and historical observations linked to source messages.
+- `[~]` Home Assistant entities, states, and history views; broader device/area/service workflows remain.
+- `[~]` Generic object catalog and metadata editing; the catalog exists, but the full metadata/linking workflow is incomplete.
+- `[~]` PostgreSQL relational schema with JSON/BLOB-compatible raw data and pgvector support; vector search is not implemented yet.
+- `[x]` Flask web UI, health endpoint, and initial JSON API.
+- `[x]` Podman Compose deployment for local development/Linux-style containers.
+- `[~]` Health, logging, migration, and test foundations; integration coverage and production operations remain.
 
 ### Not in the first implementation unless explicitly approved
 
@@ -51,31 +58,28 @@ The application must preserve source data while also extracting useful structure
 | Raw data | Immutable source payloads in JSONB/BLOB-compatible columns | Reprocessing and auditability |
 | Secrets | Encrypted at rest, encryption key outside database | Avoid plaintext credentials in database and logs |
 
-## 4. Planned repository structure
+## 4. Current repository structure
 
 ```text
 IMPLEMENTATION_PLAN.md
 README.md
-docker-compose.yml
+podman-compose.yml
 Dockerfile
 pyproject.toml
 docs/
   ARCHITECTURE.md
   HAMQTT_STORE_ARCHITECTURE.docx
+  POSTGRESQL_SETUP.md
+  RESTART_GUIDE.md
 src/
   hamqtt_store/
-    web/
-    api/
-    db/
-    domain/
-    integrations/
     services/
-    workers/
-    security/
+    integrations/
 tests/
-  unit/
-  integration/
-  fixtures/
+  test_mqtt_parser.py
+migrations/
+templates/
+static/
 ```
 
 ## 5. Implementation phases and task checklist
@@ -95,50 +99,50 @@ tests/
 
 ### Phase 1 - Project foundation
 
-- [ ] Create Python package and dependency configuration.
-- [ ] Add Flask application factory.
-- [ ] Add SQLAlchemy session and configuration layer.
-- [ ] Add Alembic migrations.
-- [ ] Add Docker Compose with PostgreSQL/pgvector and application services.
-- [ ] Add health and readiness endpoints.
+- [x] Create Python package and dependency configuration.
+- [x] Add Flask application factory.
+- [x] Add SQLAlchemy session and configuration layer.
+- [x] Add Alembic migrations.
+- [x] Add Podman Compose with PostgreSQL/pgvector and application services.
+- [x] Add health endpoint.
 - [ ] Add structured logging and correlation IDs.
-- [ ] Add initial test configuration.
-- [ ] Add initial database migration and migration test.
+- [x] Add initial test configuration.
+- [~] Add initial database migration; automated migration tests remain.
 
 ### Phase 2 - Database and object catalog
 
-- [ ] Implement connection/settings tables.
-- [ ] Implement generic `objects` table and aliases/tags/custom metadata.
-- [ ] Implement HA entity/device/area/service tables.
-- [ ] Implement MQTT connection/topic/message tables.
-- [ ] Implement typed object link tables.
-- [ ] Add foreign keys, uniqueness rules, and indexes.
-- [ ] Add JSONB validation boundaries in the service layer.
+- [x] Implement connection/settings tables.
+- [~] Implement generic `objects` table and metadata fields; complete UI editing is still pending.
+- [~] Implement HA entity/device/area/service tables; entity/state coverage is ahead of device/area/service UI coverage.
+- [x] Implement MQTT connection/topic/message tables.
+- [x] Implement typed object link tables.
+- [x] Add foreign keys, uniqueness rules, and indexes.
+- [~] Add JSON validation boundaries in the service layer; broader validation remains.
 
 ### Phase 3 - Settings and connection UI
 
-- [ ] Add Home Assistant connection settings.
-- [ ] Add MQTT broker settings.
-- [ ] Add MQTT subscription rules.
+- [x] Add Home Assistant connection settings.
+- [x] Add MQTT broker settings.
+- [x] Add MQTT subscription rules.
 - [ ] Add encrypted secret storage.
 - [ ] Add test-connection actions.
-- [ ] Add connection status and last-error display.
+- [~] Add connection status and last-error display.
 
 ### Phase 4 - Home Assistant ingestion
 
-- [ ] Implement WebSocket authentication.
-- [ ] Implement initial state/entity/device/area/service synchronization.
-- [ ] Implement state-change event subscription.
-- [ ] Store current states and state history.
-- [ ] Store relevant events and service/action records.
-- [ ] Implement reconnect and backoff.
-- [ ] Add idempotent upsert behavior.
+- [x] Implement WebSocket authentication.
+- [~] Implement initial state/entity/device/area/service synchronization; entity/state synchronization is implemented, with broader coverage pending.
+- [x] Implement state-change event subscription.
+- [x] Store current states and state history.
+- [~] Store relevant events and service/action records.
+- [x] Implement reconnect and backoff.
+- [x] Add idempotent upsert behavior.
 - [ ] Add ingestion metrics and status.
 
 ### Phase 5 - MQTT ingestion and parsing
 
-- [ ] Implement broker connection and reconnect behavior.
-- [ ] Implement configured topic subscriptions.
+- [x] Implement broker connection and reconnect behavior for the development worker.
+- [x] Implement configured topic subscriptions.
 - [x] Store every raw MQTT message before parsing.
 - [x] Detect JSON, number, boolean, text, binary, and unknown payloads.
 - [x] Extract scalar JSON leaf fields using stable field paths.
@@ -152,8 +156,8 @@ tests/
 
 ### Phase 6 - Web UI and object management
 
-- [ ] Add dashboard.
-- [ ] Add HA entities/devices/areas/services views.
+- [x] Add dashboard.
+- [~] Add HA entities/devices/areas/services views; entity/current/history views exist, broader views remain.
 - [x] Add MQTT topic tree and message views.
 - [x] Add parsed MQTT field/value views.
 - [ ] Add object detail pages.
@@ -241,10 +245,10 @@ This preserves delayed-message behavior and supports accurate history analysis.
 
 ## 9. Definition of done for the first usable release
 
-- [ ] Compose starts PostgreSQL/pgvector, web, and ingestion services.
-- [ ] User can configure and test HA and MQTT connections through the UI.
-- [ ] HA entities and current states are visible.
-- [ ] HA state changes are stored historically.
+- [x] Podman Compose starts PostgreSQL/pgvector, web, and ingestion services.
+- [~] User can configure HA and MQTT connections through the UI; test-connection actions remain.
+- [x] HA entities and current states are visible.
+- [x] HA state changes are stored historically.
 - [x] MQTT raw messages are visible.
 - [x] Scalar MQTT values are parsed and historized.
 - [x] Multi-field JSON MQTT values are parsed and historized independently.
@@ -252,14 +256,16 @@ This preserves delayed-message behavior and supports accurate history analysis.
 - [ ] Users can link MQTT fields to HA entities.
 - [x] Users can inspect current and historical values.
 - [ ] Application survives temporary source disconnections.
-- [ ] Database migrations and backups are documented.
+- [~] Database migrations are documented; backup/restore procedures remain to be completed.
 
 ## 10. Decision log
 
 | Date | Decision | Status |
 |---|---|---|
-| 2026-10-08 | Prefer PostgreSQL with pgvector | Proposed |
-| 2026-10-08 | Use Python and Flask unless implementation findings show a strong reason otherwise | Proposed |
-| 2026-10-08 | Preserve raw MQTT/HA source data and normalize extracted values separately | Proposed |
-| 2026-10-08 | Support scalar MQTT payloads and multi-field/nested JSON payloads | Proposed |
-| 2026-10-08 | Link at topic, field, device, and entity levels through typed object links | Proposed |
+| 2026-10-08 | Prefer PostgreSQL with pgvector | Accepted |
+| 2026-10-08 | Use Python and Flask unless implementation findings show a strong reason otherwise | Accepted |
+| 2026-10-08 | Preserve raw MQTT/HA source data and normalize extracted values separately | Accepted |
+| 2026-10-08 | Support scalar MQTT payloads and multi-field/nested JSON payloads | Accepted |
+| 2026-10-08 | Link at topic, field, device, and entity levels through typed object links | Accepted; workflows pending |
+| 2026-10-09 | Use Podman Compose with standalone containers for the local development stack | Accepted |
+| 2026-10-09 | Keep restart/setup instructions in `docs/RESTART_GUIDE.md` and implementation status here | Accepted |
