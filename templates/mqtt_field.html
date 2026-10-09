@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block topbar_title %}MQTT field history{% endblock %}{% block content %}
+<a class="back-link" href="{{ url_for('mqtt_topic_detail', topic_id=topic.id) }}">← Back to {{ topic.topic }}</a>
+<div class="page-header"><div><h1>{{ field.field_path }}</h1><p>{{ topic.topic }} · {{ field.data_type }} · {{ field.observation_count }} observations</p></div></div>
+<section class="detail-card">
+  <h3>Field value history</h3>
+  <table><tr><th>Value</th><th>Type</th><th>Observed</th><th>Received</th><th>Quality</th><th>Raw MQTT message</th></tr>
+  {% for row in history %}{% set message = source_messages.get(row.source_message_id) %}<tr><td>{{ row.value_numeric if row.value_numeric is not none else row.value_boolean if row.value_boolean is not none else row.value_text or row.value_json }}</td><td>{{ row.value_type }}</td><td>{{ row.observed_at }}</td><td>{{ row.received_at }}</td><td>{{ row.quality }}</td><td>{% if message %}<details><summary>{{ message.payload_type }} · QoS {{ message.qos }}{% if message.retain %} · retained{% endif %}</summary><p class="muted">Message {{ message.id }} · {{ message.received_at }}</p><pre class="json-view compact">{{ (message.payload_json|pretty_json) if message.payload_json is not none else message.payload_text or '[binary]' }}</pre></details>{% else %}—{% endif %}</td></tr>{% else %}<tr><td colspan="6">No values have been recorded for this field.</td></tr>{% endfor %}</table>
+</section>
+{% endblock %}

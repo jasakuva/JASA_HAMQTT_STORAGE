@@ -83,7 +83,15 @@ def create_app():
                 topic_query = topic_query.where(MQTTTopic.topic.ilike(f"%{search}%"))
             topics = session.scalars(topic_query.limit(500)).all()
             recent = session.scalars(select(MQTTMessage).order_by(MQTTMessage.received_at.desc()).limit(100)).all()
-        return render_template("mqtt.html", topics=topics, messages=recent, search=search)
+            topic_names = {
+                topic.id: topic.topic
+                for topic in session.scalars(
+                    select(MQTTTopic).where(
+                        MQTTTopic.id.in_({message.mqtt_topic_id for message in recent})
+                    )
+                ).all()
+            } if recent else {}
+        return render_template("mqtt.html", topics=topics, messages=recent, topic_names=topic_names, search=search)
 
     @app.get("/mqtt/topics/<int:topic_id>")
     def mqtt_topic_detail(topic_id):
@@ -123,6 +131,35 @@ def create_app():
             fields=fields,
             current_values=current_values,
             observations=observations,
+        )
+
+    @app.get("/mqtt/fields/<int:field_id>")
+    def mqtt_field_history(field_id):
+        with SessionLocal() as session:
+            field = session.get(MQTTPayloadField, field_id)
+            if not field:
+                return "MQTT field not found", 404
+            topic = session.get(MQTTTopic, field.mqtt_topic_id)
+            history = session.scalars(
+                select(MQTTObservation)
+                .where(MQTTObservation.mqtt_payload_field_id == field_id)
+                .order_by(MQTTObservation.observed_at.desc())
+                .limit(500)
+            ).all()
+            source_messages = {
+                message.id: message
+                for message in session.scalars(
+                    select(MQTTMessage).where(
+                        MQTTMessage.id.in_([row.source_message_id for row in history])
+                    )
+                ).all()
+            } if history else {}
+        return render_template(
+            "mqtt_field.html",
+            topic=topic,
+            field=field,
+            history=history,
+            source_messages=source_messages,
         )
 
     @app.route("/settings", methods=["GET", "POST"])
