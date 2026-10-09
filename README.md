@@ -15,6 +15,8 @@ Containerized Python/Flask application for collecting Home Assistant and MQTT da
 - Field-specific value history with the originating raw MQTT payload linked to each observation.
 - Generic object catalog and object metadata editing.
 
+For a detailed restart/resume procedure, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
+
 ## Start all services
 
 The Podman machine must be running:
