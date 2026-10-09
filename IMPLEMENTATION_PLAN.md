@@ -139,13 +139,13 @@ tests/
 
 - [ ] Implement broker connection and reconnect behavior.
 - [ ] Implement configured topic subscriptions.
-- [ ] Store every raw MQTT message before parsing.
-- [ ] Detect JSON, number, boolean, text, binary, and unknown payloads.
-- [ ] Extract scalar JSON leaf fields using stable field paths.
-- [ ] Create/update MQTT field objects.
-- [ ] Store normalized current values.
-- [ ] Store historical observations linked to source messages.
-- [ ] Preserve payload timestamps separately from receive timestamps.
+- [x] Store every raw MQTT message before parsing.
+- [x] Detect JSON, number, boolean, text, binary, and unknown payloads.
+- [x] Extract scalar JSON leaf fields using stable field paths.
+- [x] Create/update MQTT field objects.
+- [x] Store normalized current values.
+- [x] Store historical observations linked to source messages.
+- [x] Preserve payload timestamps separately from receive timestamps.
 - [ ] Add parser error and partial-success tracking.
 - [ ] Add configurable parser rules and transformations.
 - [ ] Add protocol decoder interface for Zigbee2MQTT, Tasmota, discovery, and custom formats.
@@ -154,12 +154,12 @@ tests/
 
 - [ ] Add dashboard.
 - [ ] Add HA entities/devices/areas/services views.
-- [ ] Add MQTT topic tree and message views.
-- [ ] Add parsed MQTT field/value views.
+- [x] Add MQTT topic tree and message views.
+- [x] Add parsed MQTT field/value views.
 - [ ] Add object detail pages.
 - [ ] Add nicknames, descriptions, tags, and custom attributes.
 - [ ] Add history timelines and numeric charts.
-- [ ] Add raw payload viewer with safe display handling.
+- [x] Add raw payload viewer with safe display handling.
 
 ### Phase 7 - Mapping and search
 
@@ -245,12 +245,12 @@ This preserves delayed-message behavior and supports accurate history analysis.
 - [ ] User can configure and test HA and MQTT connections through the UI.
 - [ ] HA entities and current states are visible.
 - [ ] HA state changes are stored historically.
-- [ ] MQTT raw messages are visible.
-- [ ] Scalar MQTT values are parsed and historized.
-- [ ] Multi-field JSON MQTT values are parsed and historized independently.
+- [x] MQTT raw messages are visible.
+- [x] Scalar MQTT values are parsed and historized.
+- [x] Multi-field JSON MQTT values are parsed and historized independently.
 - [ ] Users can assign names, attributes, and tags.
 - [ ] Users can link MQTT fields to HA entities.
-- [ ] Users can inspect current and historical values.
+- [x] Users can inspect current and historical values.
 - [ ] Application survives temporary source disconnections.
 - [ ] Database migrations and backups are documented.
 

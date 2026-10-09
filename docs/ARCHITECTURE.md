@@ -382,7 +382,11 @@ Entities, devices, areas, services, current states, history charts, attributes, 
 
 ### MQTT views
 
-Topic tree, raw messages, retained values, parsed fields, latest values, observations, parser rules, parse errors, and linked HA entities.
+The current MQTT UI provides a topic overview and topic detail pages. The overview shows topic IDs, topic names, message counts, last-seen timestamps, and recent raw messages. A topic detail page shows current parsed fields, current values, observation counts, parsed observation history, and raw message history.
+
+Each parsed field can be opened in a field-specific history view. Field history is ordered newest first and includes the typed value, observed/received timestamps, quality, and an expandable copy of the originating raw MQTT message. Observations link to their source messages through `source_message_id`.
+
+Planned MQTT features that are not yet implemented include parser rules and transformations, protocol-specific decoders, charts, retention controls, and linked Home Assistant entity workflows.
 
 ### Object detail
 
