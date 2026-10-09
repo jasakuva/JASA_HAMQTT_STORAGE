@@ -191,11 +191,17 @@ def create_app():
     @app.get("/ha")
     def ha_view():
         search = request.args.get("q", "").strip()
+        sort = request.args.get("sort", "entity_id")
+        direction = request.args.get("direction", "asc")
+        sort_fields = {"entity_id", "domain", "name", "state", "last_changed"}
+        if sort not in sort_fields:
+            sort = "entity_id"
+        if direction not in {"asc", "desc"}:
+            direction = "asc"
         with SessionLocal() as session:
             entity_query = (
                 select(HAEntity)
                 .join(Object, Object.id == HAEntity.object_id)
-                .order_by(HAEntity.entity_id)
             )
             if search:
                 pattern = f"%{search}%"
@@ -207,7 +213,31 @@ def create_app():
                 ))
             entities = session.scalars(entity_query.limit(500)).all()
             current = {row.ha_entity_id: row for row in session.scalars(select(HAStateCurrent)).all()}
-        return render_template("ha.html", entities=entities, current=current, search=search)
+
+        def sort_value(entity):
+            state = current.get(entity.id)
+            values = {
+                "entity_id": entity.entity_id,
+                "domain": entity.domain,
+                "name": entity.original_name or "",
+                "state": state.state_text if state else None,
+                "last_changed": state.last_changed_at if state else None,
+            }
+            value = values[sort]
+            return value.lower() if isinstance(value, str) else value
+
+        present = [entity for entity in entities if sort_value(entity) is not None]
+        missing = [entity for entity in entities if sort_value(entity) is None]
+        present.sort(key=sort_value, reverse=direction == "desc")
+        entities = present + missing
+        return render_template(
+            "ha.html",
+            entities=entities,
+            current=current,
+            search=search,
+            sort=sort,
+            direction=direction,
+        )
 
     @app.get("/ha/entities/<int:entity_id>")
     def ha_entity_detail(entity_id):

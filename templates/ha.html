@@ -21,18 +21,21 @@
       <col style="width:120px">
       <col style="width:285px">
       <col style="width:145px">
-      <col style="width:175px">
-      <col style="width:175px">
+      <col style="width:145px">
       <col style="width:190px">
     </colgroup>
     <thead>
       <tr>
-        <th>Entity</th>
-        <th>Domain</th>
-        <th>Name</th>
-        <th>Current state</th>
-        <th>Last changed</th>
-        <th>Last updated</th>
+        {% set entity_direction = 'asc' if sort != 'entity_id' or direction == 'desc' else 'desc' %}
+        {% set domain_direction = 'asc' if sort != 'domain' or direction == 'desc' else 'desc' %}
+        {% set name_direction = 'asc' if sort != 'name' or direction == 'desc' else 'desc' %}
+        {% set state_direction = 'asc' if sort != 'state' or direction == 'desc' else 'desc' %}
+        {% set changed_direction = 'asc' if sort != 'last_changed' or direction == 'desc' else 'desc' %}
+        <th aria-sort="{{ 'ascending' if sort == 'entity_id' and direction == 'asc' else 'descending' if sort == 'entity_id' else 'none' }}"><a class="sort-link" href="{{ url_for('ha_view', q=search, sort='entity_id', direction=entity_direction) }}">Entity{% if sort == 'entity_id' %} <span class="sort-arrow">{{ '↑' if direction == 'asc' else '↓' }}</span>{% endif %}</a></th>
+        <th aria-sort="{{ 'ascending' if sort == 'domain' and direction == 'asc' else 'descending' if sort == 'domain' else 'none' }}"><a class="sort-link" href="{{ url_for('ha_view', q=search, sort='domain', direction=domain_direction) }}">Domain{% if sort == 'domain' %} <span class="sort-arrow">{{ '↑' if direction == 'asc' else '↓' }}</span>{% endif %}</a></th>
+        <th aria-sort="{{ 'ascending' if sort == 'name' and direction == 'asc' else 'descending' if sort == 'name' else 'none' }}"><a class="sort-link" href="{{ url_for('ha_view', q=search, sort='name', direction=name_direction) }}">Name{% if sort == 'name' %} <span class="sort-arrow">{{ '↑' if direction == 'asc' else '↓' }}</span>{% endif %}</a></th>
+        <th aria-sort="{{ 'ascending' if sort == 'state' and direction == 'asc' else 'descending' if sort == 'state' else 'none' }}"><a class="sort-link" href="{{ url_for('ha_view', q=search, sort='state', direction=state_direction) }}">Current state{% if sort == 'state' %} <span class="sort-arrow">{{ '↑' if direction == 'asc' else '↓' }}</span>{% endif %}</a></th>
+        <th aria-sort="{{ 'ascending' if sort == 'last_changed' and direction == 'asc' else 'descending' if sort == 'last_changed' else 'none' }}"><a class="sort-link" href="{{ url_for('ha_view', q=search, sort='last_changed', direction=changed_direction) }}">Last changed{% if sort == 'last_changed' %} <span class="sort-arrow">{{ '↑' if direction == 'asc' else '↓' }}</span>{% endif %}</a></th>
         <th aria-label="Actions"></th>
       </tr>
     </thead>
@@ -45,11 +48,10 @@
           <td class="name-cell" title="{{ entity.original_name or '' }}"><span class="table-truncate">{{ entity.original_name or '—' }}</span></td>
           <td>{% if state %}<span class="state-value" title="{{ state.state_text }}">{{ state.state_text }}</span>{% else %}<span class="muted">unknown</span>{% endif %}</td>
           <td class="time-cell muted" title="{{ state.last_changed_at if state else '—' }}"><span class="table-truncate">{% if state %}{{ (state.last_changed_at|string)[:16] }}{% else %}—{% endif %}</span></td>
-          <td class="time-cell muted" title="{{ state.last_updated_at if state else '—' }}"><span class="table-truncate">{% if state %}{{ (state.last_updated_at|string)[:16] }}{% else %}—{% endif %}</span></td>
           <td class="action-cell"><a class="button secondary" href="{{ url_for('ha_entity_detail', entity_id=entity.id) }}">View state/history</a></td>
         </tr>
       {% else %}
-        <tr><td colspan="7"><div class="empty-state">No Home Assistant entities match the search.</div></td></tr>
+        <tr><td colspan="6"><div class="empty-state">No Home Assistant entities match the search.</div></td></tr>
       {% endfor %}
     </tbody>
   </table>
