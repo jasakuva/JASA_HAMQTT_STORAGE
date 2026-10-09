@@ -101,6 +101,7 @@ class HAStateCurrent(Base):
 
 class HAStateHistory(Base):
     __tablename__ = "ha_state_history"
+    __table_args__ = (UniqueConstraint("ha_entity_id", "observed_at"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     ha_entity_id: Mapped[int] = mapped_column(ForeignKey("ha_entities.id", ondelete="CASCADE"), index=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

@@ -56,7 +56,18 @@ def upsert_state(session, connection_id, state):
     if not current: session.add(HAStateCurrent(ha_entity_id=entity.id, **values))
     else:
         for key, val in values.items(): setattr(current, key, val)
-    session.add(HAStateHistory(ha_entity_id=entity.id, observed_at=updated, **{k: values[k] for k in ["state_text", "state_numeric", "state_boolean", "attributes", "raw_state"]}))
+    history_exists = session.scalar(
+        select(HAStateHistory.id).where(
+            HAStateHistory.ha_entity_id == entity.id,
+            HAStateHistory.observed_at == updated,
+        )
+    )
+    if history_exists is None:
+        session.add(HAStateHistory(
+            ha_entity_id=entity.id,
+            observed_at=updated,
+            **{k: values[k] for k in ["state_text", "state_numeric", "state_boolean", "attributes", "raw_state"]},
+        ))
 
 def run():
     while True:
