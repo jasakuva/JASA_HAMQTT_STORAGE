@@ -1,7 +1,7 @@
 # HA MQTT Store - Implementation Plan
 
 **Status:** Active implementation roadmap
-**Last updated:** 2026-10-09
+**Last updated:** 2026-10-10
 **Repository:** `%INSTALL_PATH%`
 
 `%INSTALL_PATH%` means the local directory where this repository is installed.
@@ -65,7 +65,7 @@ The application must preserve source data while also extracting useful structure
 ```text
 IMPLEMENTATION_PLAN.md
 README.md
-podman-compose.yml
+compose.yml
 Dockerfile
 pyproject.toml
 docs/
@@ -188,7 +188,30 @@ static/
 - [ ] Add integration tests using disposable services.
 - [ ] Add reconnect, malformed payload, duplicate message, and migration tests.
 - [ ] Add production Compose profile and reverse-proxy guidance.
-- [ ] Add monitoring/metrics and operational runbook.
+- [ ] Add self-diagnostics, monitoring/metrics, and operational runbook.
+
+### Phase 9 - Self-diagnostics and monitoring
+
+#### First monitoring milestone
+
+- [ ] Add worker heartbeats for MQTT and Home Assistant ingestors, including service identity, status, last-seen time, last successful operation, error details, processed counts, and metadata.
+- [ ] Add detailed `GET /api/diagnostics` output while keeping `/health` lightweight for container health checks.
+- [ ] Report database connectivity, migration status, enabled integration status, broker/HA connection timestamps, latest errors, latest MQTT message, latest HA update, and parser success/failure counts.
+- [ ] Add configurable freshness thresholds for MQTT messages, MQTT topics/subscriptions, and Home Assistant updates.
+- [ ] Distinguish stopped services, disconnected integrations, stale input, parser failures, and database write failures.
+- [ ] Add tests for stale heartbeats, stopped workers, stale MQTT data, connection errors, and database write failures.
+
+#### Operations and UI
+
+- [ ] Add a system-health dashboard showing overall status, worker heartbeat age, integration status, ingestion freshness, parser errors, database health, recent errors, and remediation guidance.
+- [ ] Add container health checks for web and ingestor services where the check can accurately reflect application readiness.
+- [ ] Verify restart policies and startup ordering for all long-running services, including recovery after workers are recreated or stopped.
+- [ ] Add structured operational log fields and a monitoring runbook with diagnostic commands.
+
+#### Later monitoring integrations
+
+- [ ] Add Prometheus-compatible metrics and Grafana dashboard guidance.
+- [ ] Add configurable email, webhook, Home Assistant, or equivalent notifications for stale ingestion, expired heartbeats, and repeated database failures.
 
 ## 6. Core data model decisions
 

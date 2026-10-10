@@ -27,7 +27,7 @@ The current application includes:
 | `IMPLEMENTATION_PLAN.md` | Feature checklist and remaining work |
 | `docs/ARCHITECTURE.md` | Data model and architectural decisions |
 | `docs/POSTGRESQL_SETUP.md` | PostgreSQL/pgvector setup and data-volume guidance |
-| `podman-compose.yml` | PostgreSQL, migration, web, MQTT, and HA services |
+| `compose.yml` | PostgreSQL, migration, web, MQTT, HA, and MCP services |
 | `.env` | Local secrets and connection configuration; never commit it |
 | `src/hamqtt_store/db.py` | SQLAlchemy models and database engine |
 | `src/hamqtt_store/web.py` | Flask routes and page data loading |
@@ -49,37 +49,35 @@ Run commands from `%INSTALL_PATH%`, the local repository directory:
 %INSTALL_PATH%
 ```
 
-### Start Podman
+### Start the container engine
 
 ```powershell
 podman machine start podman-machine-default
 ```
 
-It is safe if Podman reports that the machine is already running.
+On Linux with Docker, use:
 
-### Build the application image
-
-```powershell
-podman build -t localhost/hamqtt-store:dev .
+```bash
+sudo systemctl enable --now docker
 ```
 
-The image contains the source code, templates, static files, and dependencies.
+It is safe if the container engine is already running.
 
 ### Start the database and application services
 
 Normally use:
 
-```powershell
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
+```bash
+docker compose up -d
 ```
 
-The `--in-pod false` option is important for this local setup because the existing containers are managed as standalone containers rather than in one Podman pod.
+Compose builds the image, waits for PostgreSQL health, runs migrations, and starts the application services only after migrations succeed.
 
 If existing containers with the same names prevent recreation, remove only the containers and recreate them:
 
-```powershell
-podman rm -f hamqtt-migrate hamqtt-web hamqtt-mqtt-ingestor hamqtt-ha-ingestor hamqtt-postgres
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
+```bash
+docker compose down
+docker compose up -d --build
 ```
 
 The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removing the PostgreSQL container does **not** delete that volume. Do not run `podman volume rm hamqtt-postgres-data` unless intentionally resetting all local database data.
@@ -87,10 +85,12 @@ The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removi
 ## 4. Verify that the stack is healthy
 
 ```powershell
-podman ps -a
-curl.exe -sS http://localhost:8000/health
-podman exec hamqtt-postgres pg_isready -U hamqtt -d hamqtt_store
+docker compose ps -a
+curl -sS http://localhost:8000/health
+docker compose exec postgres pg_isready -U hamqtt -d hamqtt_store
 ```
+
+The current lightweight health endpoint verifies web-to-PostgreSQL connectivity only. Detailed worker diagnostics, heartbeat reporting, ingestion-freshness checks, and a system-health dashboard are planned in [the implementation roadmap](../IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
 
 Expected application response:
 
@@ -126,6 +126,18 @@ podman logs hamqtt-web
 ```
 
 MCP is configured under **Settings → AI / MCP service** and is disabled by default. It currently supports only read-only access. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`; restart `hamqtt-mcp` after changing the setting.
+
+For the current manual diagnostic workflow, compare container state, worker logs, broker connection timestamps, and recent MQTT rows:
+
+```powershell
+podman ps -a
+podman logs --since 10m hamqtt-mqtt-ingestor
+podman logs --since 10m hamqtt-ha-ingestor
+curl.exe -sS http://localhost:8000/health
+podman exec hamqtt-postgres pg_isready -U hamqtt -d hamqtt_store
+```
+
+Automated worker heartbeats and freshness diagnostics are planned; until implemented, a worker in `Created` or `Exited` state must be restarted explicitly with the compose command in section 3.
 
 ## 6. Development checks
 

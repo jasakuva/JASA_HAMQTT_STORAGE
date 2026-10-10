@@ -33,6 +33,7 @@ Version 0.2.0 adds read-only MCP access and significantly improves the operation
 - Architecture documentation now distinguishes implemented schema from planned extensions.
 - Documentation validation now checks the implemented schema, MCP access, and SQL examples.
 - Compose configuration includes the `hamqtt-mcp` service on host port `8001`.
+- Compose startup now builds the application, waits for PostgreSQL, runs migrations automatically, and starts application services only after migrations succeed.
 
 ## Security and operational notes
 
@@ -52,12 +53,11 @@ The release was verified with:
 
 ## Upgrade notes
 
-For an existing Podman installation:
+For an existing installation:
 
-```powershell
+```bash
 git pull origin master
-podman build -t localhost/hamqtt-store:dev .
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
+docker compose up -d --build
 ```
 
 Enable MCP read access at `http://localhost:8000/settings` before using the MCP service. Existing PostgreSQL data remains in the named `hamqtt-postgres-data` volume.

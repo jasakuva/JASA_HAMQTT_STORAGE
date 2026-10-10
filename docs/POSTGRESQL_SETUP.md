@@ -1,6 +1,6 @@
 # PostgreSQL and pgvector setup
 
-This project currently runs PostgreSQL in its own Podman container. The setup is designed for Windows with Podman's Linux VM and is also suitable for Linux.
+This project runs PostgreSQL as part of the Docker Compose stack. The setup is also compatible with Podman Compose providers.
 
 ## Chosen image
 
@@ -14,7 +14,7 @@ The image contains PostgreSQL 17 and pgvector 0.8.7. The tag is pinned so that a
 
 - `.env.example`: configuration template.
 - `.env`: local development configuration; do not commit it.
-- `podman-compose.yml`: future multi-container definition; currently it contains PostgreSQL only.
+- `compose.yml`: PostgreSQL, migration, web, MQTT, Home Assistant, and MCP services.
 - `db/init/001-enable-extensions.sql`: enables the `vector` extension during first database initialization.
 
 ## Start with Podman directly
@@ -47,15 +47,15 @@ podman run -d `
 
 The initialization SQL runs only when the named volume is empty.
 
-## Start with Compose provider
+## Start with Compose
 
-Podman 5's `podman compose` command is a wrapper around an external Compose provider. The installed `podman-compose` command may be used directly:
+Docker Compose automatically starts PostgreSQL, waits for its health check, runs migrations, and starts the application services after migration succeeds:
 
-```powershell
-podman-compose -f podman-compose.yml up -d postgres
+```bash
+docker compose up -d
 ```
 
-The direct `podman run` method is the baseline because it does not depend on a Compose provider being available.
+The same `compose.yml` can be used with a compatible Podman Compose provider if required by the host environment.
 
 ## Verify
 

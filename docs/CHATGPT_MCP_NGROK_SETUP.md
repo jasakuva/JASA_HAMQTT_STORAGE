@@ -35,30 +35,30 @@ You need:
 
 ## 1. Start the local HA MQTT Store services
 
-Start the Podman machine. It is safe if it is already running:
+On Linux with Docker, make sure Docker is running:
+
+```bash
+sudo systemctl enable --now docker
+```
+
+On Windows with Podman, start the Podman machine. It is safe if it is already running:
 
 ```powershell
 podman machine start podman-machine-default
 ```
 
-Build the image if the source code has changed:
+Start the database, web application, ingestion workers, and MCP service. Compose automatically builds the image, runs migrations, and starts the application services after migration succeeds:
 
-```powershell
+```bash
 cd "<path-to-installation>"
-podman build -t localhost/hamqtt-store:dev .
-```
-
-Start the database, web application, ingestion workers, and MCP service:
-
-```powershell
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
+docker compose up -d --build
 ```
 
 If old containers prevent recreation, remove only the application containers and start them again:
 
-```powershell
-podman rm -f hamqtt-migrate hamqtt-web hamqtt-mqtt-ingestor hamqtt-ha-ingestor hamqtt-mcp
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
+```bash
+docker compose down
+docker compose up -d --build
 ```
 
 The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Do not remove that volume unless you intentionally want to delete the local database.

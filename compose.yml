@@ -38,6 +38,9 @@ services:
     command: ["python", "-m", "alembic", "upgrade", "head"]
 
   web:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-web
     restart: unless-stopped
@@ -45,8 +48,8 @@ services:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       SECRET_KEY: ${SECRET_KEY:-change-this-development-secret}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "${APP_PORT:-8000}:8000"
     networks:
@@ -54,32 +57,41 @@ services:
     command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "hamqtt_store.wsgi:app"]
 
   mqtt-ingestor:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-mqtt-ingestor
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - hamqtt-store
     command: ["python", "-m", "hamqtt_store.cli", "mqtt"]
 
   ha-ingestor:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-ha-ingestor
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - hamqtt-store
     command: ["python", "-m", "hamqtt_store.cli", "ha"]
 
   mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-mcp
     restart: unless-stopped
@@ -87,8 +99,8 @@ services:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       MCP_TRANSPORT: streamable-http
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "${MCP_PORT:-8001}:8000"
     networks:

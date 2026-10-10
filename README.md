@@ -19,6 +19,8 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
+Detailed worker diagnostics, ingestion freshness monitoring, and a system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
+
 For the full implementation status, see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). For restarting or resuming work later, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
 
 ## Architecture
@@ -46,8 +48,7 @@ Install:
 
 - Git
 - Python 3.12 or newer for local development commands
-- Podman
-- `podman-compose`
+- Docker Engine with Docker Compose v2, or Podman with a Compose-compatible tool
 
 On Windows, make sure the Podman machine is initialized and running. The commands below use PowerShell syntax where applicable.
 
@@ -74,7 +75,15 @@ POSTGRES_PASSWORD=change-this-development-password
 
 `.env` contains local configuration and must not be committed. The repository `.gitignore` is configured to exclude it.
 
-### 3. Start Podman
+### 3. Start the container engine
+
+On Linux, make sure Docker is running:
+
+```bash
+sudo systemctl enable --now docker
+```
+
+On Windows with Podman, start the Podman machine:
 
 ```powershell
 podman machine start podman-machine-default
@@ -82,21 +91,13 @@ podman machine start podman-machine-default
 
 If the machine is already running, Podman will report that and no action is needed.
 
-### 4. Build the application image
+### 4. Start the services
 
-```powershell
-podman build -t localhost/hamqtt-store:dev .
+```bash
+docker compose up -d
 ```
 
-The image includes the Python package, dependencies, source code, templates, static files, and migrations.
-
-### 5. Start the services
-
-```powershell
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
-```
-
-The `--in-pod false` option matches the local standalone-container setup and avoids Podman pod naming conflicts.
+Compose builds the application image, starts PostgreSQL, waits for it to become healthy, applies database migrations, and only then starts the web, MQTT, Home Assistant, and MCP services.
 
 Open the application at:
 
@@ -104,21 +105,21 @@ Open the application at:
 http://localhost:8000
 ```
 
-The migration service normally exits successfully after applying the migrations. The database, web, MQTT, and HA services should remain running.
+The migration service normally exits successfully after applying the migrations. The database, web, MQTT, and HA services should remain running. If migration fails, inspect it with `docker compose logs migrate`; application services intentionally remain stopped.
 
 ## Verify the installation
 
 Check service status:
 
-```powershell
-podman ps -a
+```bash
+docker compose ps -a
 ```
 
 Check the application and database:
 
-```powershell
-curl.exe -sS http://localhost:8000/health
-podman exec hamqtt-postgres pg_isready -U hamqtt -d hamqtt_store
+```bash
+curl -sS http://localhost:8000/health
+docker compose exec postgres pg_isready -U hamqtt -d hamqtt_store
 ```
 
 Expected application response:
@@ -149,10 +150,10 @@ Use the web UI's **Settings** page to configure:
 
 After configuration, inspect the worker logs if data does not appear:
 
-```powershell
-podman logs hamqtt-mqtt-ingestor
-podman logs hamqtt-ha-ingestor
-podman logs hamqtt-web
+```bash
+docker compose logs mqtt-ingestor
+docker compose logs ha-ingestor
+docker compose logs web
 ```
 
 ## MQTT history workflow
@@ -175,20 +176,18 @@ After enabling it in Settings, restart the service. The local Streamable HTTP en
 
 ## Updating an existing installation
 
-Pull the latest code, rebuild the image, and recreate the application containers:
+Pull the latest code and recreate the application containers. Compose will apply any pending migrations automatically before starting them:
 
-```powershell
+```bash
 git pull origin master
-podman build -t localhost/hamqtt-store:dev .
-podman rm -f hamqtt-migrate hamqtt-web hamqtt-mqtt-ingestor hamqtt-ha-ingestor 2>$null
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
+docker compose up -d --build
 ```
 
 If the PostgreSQL container also needs to be recreated, it is safe to remove the container while preserving the named data volume:
 
-```powershell
-podman rm -f hamqtt-postgres
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
+```bash
+docker compose rm -sf postgres
+docker compose up -d --build
 ```
 
 Do **not** remove `hamqtt-postgres-data` unless you intentionally want to delete the local database.
@@ -228,8 +227,8 @@ The database uses the named volume `hamqtt-postgres-data`. Removing containers d
 To intentionally reset all local database data:
 
 ```powershell
-podman-compose --in-pod false down
-podman volume rm hamqtt-postgres-data
+docker compose down
+docker volume rm hamqtt-postgres-data
 ```
 
 Only run the volume removal command when a complete development reset is intended.
