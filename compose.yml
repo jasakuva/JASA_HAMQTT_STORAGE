@@ -9,7 +9,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Bind to all host interfaces so Linux host tools and trusted LAN
+      # clients can connect; restrict this with POSTGRES_BIND_IP if needed.
+      - "${POSTGRES_BIND_IP:-0.0.0.0}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - ${POSTGRES_VOLUME:-hamqtt-postgres-data}:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro

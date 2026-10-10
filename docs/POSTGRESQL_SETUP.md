@@ -88,7 +88,20 @@ From Windows host processes:
 postgresql+psycopg://hamqtt:hamqtt-local-development-password@localhost:5432/hamqtt_store
 ```
 
-The hostname `hamqtt-postgres` works for later containers attached to `hamqtt-store-network`; `localhost` is for tools running on Windows.
+From the Linux host or a trusted machine on the internal network, replace
+`localhost` with the Docker host's LAN IP address, for example:
+
+```text
+postgresql+psycopg://hamqtt:<password>@192.168.1.20:5432/hamqtt_store
+```
+
+The Compose port mapping binds to `0.0.0.0` by default, so the host firewall
+must allow TCP port `5432` from the intended internal subnet. Set
+`POSTGRES_BIND_IP=127.0.0.1` in `.env` if database access should remain local
+to the host. Do not expose this port directly to the public internet.
+
+The hostname `hamqtt-postgres` works for containers attached to
+`hamqtt-store-network`; `localhost` is for tools running on the host itself.
 
 ## Stop and remove
 
