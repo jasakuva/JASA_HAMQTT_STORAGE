@@ -193,6 +193,8 @@ def create_app():
                     for duplicate in ha_connections[1:]:
                         duplicate.enabled = False
                 elif kind == "mqtt":
+                    # Prefer the enabled row so Settings edits the same
+                    # connection that the MQTT worker actually loads.
                     mqtt_connections = session.scalars(
                         select(MQTTConnection).order_by(MQTTConnection.enabled.desc(), MQTTConnection.id)
                     ).all()
@@ -210,6 +212,8 @@ def create_app():
                     connection.client_id = request.form.get("client_id", "").strip() or None
                     connection.username = request.form.get("username", "").strip() or None
                     submitted_password = request.form.get("password", "").strip()
+                    # Blank password fields mean "keep the saved password";
+                    # credentials are never echoed back into the form.
                     if submitted_password:
                         connection.password = submitted_password
                     connection.enabled = bool(request.form.get("enabled"))

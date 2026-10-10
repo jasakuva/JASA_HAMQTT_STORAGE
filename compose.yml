@@ -128,9 +128,13 @@ services:
 networks:
   hamqtt-store:
     name: ${POSTGRES_NETWORK:-hamqtt-store-network}
+    # This network can outlive Compose project recreation and is reused by
+    # the fixed-name HAMQTT containers during upgrades.
     external: true
 
 volumes:
   hamqtt-postgres-data:
     name: ${POSTGRES_VOLUME:-hamqtt-postgres-data}
+    # Never remove this volume during an application update; it contains the
+    # PostgreSQL database shared by all HAMQTT services.
     external: true

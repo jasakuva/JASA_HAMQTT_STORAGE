@@ -9,6 +9,7 @@ depends_on = None
 
 
 def upgrade():
+    # One shared object may represent the same parsed field on multiple topic rows.
     op.drop_constraint("mqtt_payload_fields_object_id_key", "mqtt_payload_fields", type_="unique")
 
 
