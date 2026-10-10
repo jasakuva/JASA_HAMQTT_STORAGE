@@ -79,6 +79,22 @@ services:
       - hamqtt-store
     command: ["python", "-m", "hamqtt_store.cli", "ha"]
 
+  mcp:
+    image: localhost/hamqtt-store:dev
+    container_name: hamqtt-mcp
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      MCP_TRANSPORT: streamable-http
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${MCP_PORT:-8001}:8000"
+    networks:
+      - hamqtt-store
+    command: ["python", "-m", "hamqtt_store.cli", "mcp"]
+
 networks:
   hamqtt-store:
     name: ${POSTGRES_NETWORK:-hamqtt-store-network}

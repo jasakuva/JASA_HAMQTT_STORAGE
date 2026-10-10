@@ -6,4 +6,8 @@
 <h3>MQTT connections</h3>
 <form method="post" class="settings-form"><input type="hidden" name="kind" value="mqtt"><input name="name" placeholder="Name" required><input name="host" placeholder="mqtt.local" required><input name="port" value="1883" type="number"><input name="username" placeholder="Username"><input name="password" placeholder="Password" type="password"><input name="topic_filter" value="#" placeholder="Topic filter"><label><input type="checkbox" name="enabled" checked> Enabled</label><button>Save MQTT connection</button></form>
 <table><tr><th>Name</th><th>Broker</th><th>Port</th><th>Enabled</th><th>Last error</th></tr>{% for connection in mqtt_connections %}<tr><td>{{ connection.name }}</td><td>{{ connection.host }}</td><td>{{ connection.port }}</td><td>{{ connection.enabled }}</td><td>{{ connection.last_error or '' }}</td></tr>{% else %}<tr><td colspan="5">No MQTT connections configured.</td></tr>{% endfor %}</table>
+<h3>AI / MCP service</h3>
+<p class="muted">Expose read-only Home Assistant, MQTT, and object data to an MCP-compatible AI client. The service never writes to this database or controls Home Assistant/MQTT.</p>
+<form method="post" class="settings-form"><input type="hidden" name="kind" value="mcp"><label><input type="checkbox" name="mcp_enabled"{% if mcp_config.enabled %} checked{% endif %}> Enable MCP read access</label><label>Access level <select name="mcp_access_level"><option value="read_only"{% if mcp_config.access_level == 'read_only' %} selected{% endif %}>Read only</option></select></label><button>Save MCP settings</button></form>
+<p class="muted">After changing this setting, restart the MCP service. The first phase supports only read-only access; more levels can be added later.</p>
 {% endblock %}

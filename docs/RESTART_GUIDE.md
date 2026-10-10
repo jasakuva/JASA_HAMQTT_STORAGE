@@ -36,6 +36,7 @@ The current application includes:
 | `templates/mqtt.html` | MQTT topic overview and recent messages |
 | `templates/mqtt_topic.html` | Topic fields, observations, and raw message history |
 | `templates/mqtt_field.html` | Field-specific value history and source messages |
+| `src/hamqtt_store/mcp_server.py` | Read-only MCP tools and resources |
 | `migrations/` | Alembic migration history |
 | `tests/` | Automated tests |
 | `tools/validate_docs.py` | Documentation consistency check |
@@ -69,7 +70,7 @@ The image contains the source code, templates, static files, and dependencies.
 Normally use:
 
 ```powershell
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor
+podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
 ```
 
 The `--in-pod false` option is important for this local setup because the existing containers are managed as standalone containers rather than in one Podman pod.
@@ -78,7 +79,7 @@ If existing containers with the same names prevent recreation, remove only the c
 
 ```powershell
 podman rm -f hamqtt-migrate hamqtt-web hamqtt-mqtt-ingestor hamqtt-ha-ingestor hamqtt-postgres
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor
+podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
 ```
 
 The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removing the PostgreSQL container does **not** delete that volume. Do not run `podman volume rm hamqtt-postgres-data` unless intentionally resetting all local database data.
@@ -104,6 +105,7 @@ Expected running services:
 - `hamqtt-mqtt-ingestor` — running
 - `hamqtt-ha-ingestor` — running
 - `hamqtt-migrate` — normally exited successfully after applying migrations
+- `hamqtt-mcp` — running when configured/enabled
 
 Open the UI at:
 
@@ -122,6 +124,8 @@ podman logs hamqtt-mqtt-ingestor
 podman logs hamqtt-ha-ingestor
 podman logs hamqtt-web
 ```
+
+MCP is configured under **Settings → AI / MCP service** and is disabled by default. It currently supports only read-only access. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`; restart `hamqtt-mcp` after changing the setting.
 
 ## 6. Development checks
 

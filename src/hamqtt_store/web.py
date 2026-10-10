@@ -18,6 +18,7 @@ from .db import (
     MQTTTopic,
     Object,
     ObjectLink,
+    SystemSetting,
     SessionLocal,
     engine,
 )
@@ -167,7 +168,17 @@ def create_app():
         with SessionLocal() as session:
             if request.method == "POST":
                 kind = request.form.get("kind")
-                if kind == "ha":
+                if kind == "mcp":
+                    enabled = bool(request.form.get("mcp_enabled"))
+                    access_level = request.form.get("mcp_access_level", "read_only")
+                    if access_level not in {"read_only"}:
+                        access_level = "read_only"
+                    setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "mcp"))
+                    if not setting:
+                        setting = SystemSetting(setting_key="mcp", setting_value={}, is_secret=False)
+                        session.add(setting)
+                    setting.setting_value = {"enabled": enabled, "access_level": access_level}
+                elif kind == "ha":
                     session.add(HAConnection(
                         name=request.form["name"], base_url=request.form["base_url"].rstrip("/"),
                         access_token=request.form.get("access_token") or None,
@@ -186,7 +197,9 @@ def create_app():
                 return redirect(url_for("settings_view"))
             ha_connections = session.scalars(select(HAConnection).order_by(HAConnection.name)).all()
             mqtt_connections = session.scalars(select(MQTTConnection).order_by(MQTTConnection.name)).all()
-        return render_template("settings.html", ha_connections=ha_connections, mqtt_connections=mqtt_connections)
+            mcp_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "mcp"))
+            mcp_config = mcp_setting.setting_value if mcp_setting else {"enabled": False, "access_level": "read_only"}
+        return render_template("settings.html", ha_connections=ha_connections, mqtt_connections=mqtt_connections, mcp_config=mcp_config)
 
     @app.get("/ha")
     def ha_view():

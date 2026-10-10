@@ -32,6 +32,7 @@ The local stack contains these services:
 | Web | `hamqtt-web` | Flask/Gunicorn UI on port 8000 |
 | MQTT worker | `hamqtt-mqtt-ingestor` | Connects to configured MQTT brokers |
 | HA worker | `hamqtt-ha-ingestor` | Connects to configured Home Assistant instances |
+| MCP | `hamqtt-mcp` | Read-only AI access to stored HA/MQTT data |
 
 The PostgreSQL data is stored in the named Podman volume `hamqtt-postgres-data`.
 
@@ -92,7 +93,7 @@ The image includes the Python package, dependencies, source code, templates, sta
 ### 5. Start the services
 
 ```powershell
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor
+podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
 ```
 
 The `--in-pod false` option matches the local standalone-container setup and avoids Podman pod naming conflicts.
@@ -134,6 +135,8 @@ Expected services:
 - `hamqtt-ha-ingestor` — running
 - `hamqtt-migrate` — exited with status 0 after migration
 
+The `hamqtt-mcp` container is also available. Configure it under **Settings → AI / MCP service**; MCP is disabled by default and currently supports only read-only access.
+
 ## Configure Home Assistant and MQTT
 
 The workers intentionally remain idle until enabled connections and subscriptions have been configured in the application database.
@@ -164,6 +167,12 @@ podman logs hamqtt-web
 
 Each observation is linked to its source message through `mqtt_observations.source_message_id`.
 
+## MCP service
+
+The optional MCP service exposes read-only tools and resources for Home Assistant entities, state history, MQTT topics, messages, parsed fields, current values, and the object catalog. It never publishes MQTT messages, calls Home Assistant services, or writes to the database.
+
+After enabling it in Settings, restart the service. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`.
+
 ## Updating an existing installation
 
 Pull the latest code, rebuild the image, and recreate the application containers:
@@ -172,14 +181,14 @@ Pull the latest code, rebuild the image, and recreate the application containers
 git pull origin master
 podman build -t localhost/hamqtt-store:dev .
 podman rm -f hamqtt-migrate hamqtt-web hamqtt-mqtt-ingestor hamqtt-ha-ingestor 2>$null
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor
+podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
 ```
 
 If the PostgreSQL container also needs to be recreated, it is safe to remove the container while preserving the named data volume:
 
 ```powershell
 podman rm -f hamqtt-postgres
-podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor
+podman-compose --in-pod false up -d postgres migrate web mqtt-ingestor ha-ingestor mcp
 ```
 
 Do **not** remove `hamqtt-postgres-data` unless you intentionally want to delete the local database.
