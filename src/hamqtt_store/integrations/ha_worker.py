@@ -15,6 +15,7 @@ def _dt(value):
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 def run_connection(config):
+    """Synchronize one Home Assistant connection over its WebSocket stream."""
     record_log("INFO", "ha_worker", "connecting", "Connecting to Home Assistant", context={"name": config.name, "url": config.base_url}, connection_id=config.id)
     ws_url = config.base_url.rstrip("/").replace("https://", "wss://").replace("http://", "ws://") + "/api/websocket"
     ws = websocket.create_connection(ws_url, timeout=30)
@@ -84,6 +85,8 @@ def run():
         for config in configs:
             try: run_connection(config)
             except Exception as exc:
+                # Keep the worker alive when Home Assistant or the network is
+                # temporarily unavailable; the next loop retries the stream.
                 detail = str(exc).strip() or repr(exc)
                 exception_type = type(exc).__name__
                 message = f"Home Assistant connection failed for '{config.name}' at {config.base_url}: {exception_type}: {detail}"

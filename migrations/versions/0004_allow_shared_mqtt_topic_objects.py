@@ -9,6 +9,7 @@ depends_on = None
 
 
 def upgrade():
+    # One shared object may represent the same topic on multiple brokers.
     op.drop_constraint("mqtt_topics_object_id_key", "mqtt_topics", type_="unique")
 
 

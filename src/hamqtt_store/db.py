@@ -124,6 +124,8 @@ class HAStateHistory(Base):
 
 class MQTTTopic(Base):
     __tablename__ = "mqtt_topics"
+    # A topic object is shared by identifier, while this row remains specific
+    # to one broker connection. Therefore object_id must not be globally unique.
     __table_args__ = (UniqueConstraint("mqtt_connection_id", "topic"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"))
@@ -151,6 +153,8 @@ class MQTTMessage(Base):
 
 class MQTTPayloadField(Base):
     __tablename__ = "mqtt_payload_fields"
+    # Field objects are also shared by identifier across topic rows. The
+    # topic/path pair, rather than object_id, defines the storage row.
     __table_args__ = (UniqueConstraint("mqtt_topic_id", "field_path"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     mqtt_topic_id: Mapped[int] = mapped_column(ForeignKey("mqtt_topics.id", ondelete="CASCADE"))

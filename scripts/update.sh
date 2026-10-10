@@ -61,6 +61,8 @@ container_is_owned() {
     image="$(container_image "$name")"
     label="$($ENGINE container inspect --format '{{index .Config.Labels "com.hamqtt.product"}}' "$name" 2>/dev/null || true)"
 
+    # Existing installations may predate labels, so the application image is
+    # also accepted as ownership evidence during an upgrade.
     if [[ "$label" == "hamqtt-store" || "$image" == localhost/hamqtt-store:* || "$image" == *hamqtt-store* ]]; then
         return 0
     fi
@@ -94,6 +96,8 @@ ensure_volume() {
     if "$ENGINE" volume inspect "$VOLUME" >/dev/null 2>&1; then
         return
     fi
+    # The volume is intentionally created separately from Compose so an update
+    # can reuse it even when the Compose project metadata has changed.
     log "Creating persistent database volume $VOLUME"
     "$ENGINE" volume create "$VOLUME" >/dev/null
 }
@@ -149,6 +153,8 @@ fi
 wait_for_postgres
 
 log "Applying database migrations"
+# Migrations run before application containers are replaced. If one fails,
+# the existing application remains available and the update stops safely.
 compose run --rm --no-deps migrate
 
 for container in "${APP_CONTAINERS[@]}"; do

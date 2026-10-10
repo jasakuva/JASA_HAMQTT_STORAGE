@@ -39,6 +39,12 @@ def _subscription_failed(reason_code):
             return True
 
 def run():
+    """Load enabled broker settings and keep each MQTT client running.
+
+    Paho's loop_forever() handles reconnects after an established connection
+    drops. Failures before the network loop starts are retried by the outer
+    worker loop after a short delay.
+    """
     record_log("INFO", "mqtt_worker", "worker_started", "MQTT worker started")
     while True:
         with SessionLocal() as session:
@@ -97,6 +103,8 @@ def run():
                 client.on_subscribe = on_subscribe
                 client.on_message = on_message
                 client.connect(host, port, 60)
+                # Queue subscriptions before entering the network loop so the
+                # first broker connection can begin consuming immediately.
                 active_subscriptions = subscriptions or [("#", 0)]
                 for topic_filter, qos in active_subscriptions:
                     result, message_id = client.subscribe(topic_filter, qos)

@@ -5,6 +5,8 @@ from ..db import ApplicationLog, SessionLocal
 
 def record_log(level, source, event, message, *, context=None, connection_id=None):
     """Persist a diagnostic event without allowing logging failures to affect workers."""
+    # Logging is deliberately best effort. A database/logging failure must
+    # never stop an HA or MQTT worker from reconnecting or ingesting data.
     try:
         with SessionLocal() as session:
             session.add(ApplicationLog(
