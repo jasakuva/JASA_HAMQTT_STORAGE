@@ -6,6 +6,7 @@ import websocket
 from sqlalchemy import select
 from ..db import SessionLocal, HAConnection, HAEntity, HAStateCurrent, HAStateHistory
 from ..services.ingestion import get_or_create_object
+from ..services.logging import record_log
 
 log = logging.getLogger(__name__)
 
@@ -14,12 +15,14 @@ def _dt(value):
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 def run_connection(config):
+    record_log("INFO", "ha_worker", "connecting", "Connecting to Home Assistant", context={"name": config.name, "url": config.base_url}, connection_id=config.id)
     ws_url = config.base_url.rstrip("/").replace("https://", "wss://").replace("http://", "ws://") + "/api/websocket"
     ws = websocket.create_connection(ws_url, timeout=30)
     auth = json.loads(ws.recv())
     if auth.get("type") != "auth_required": raise RuntimeError(f"Unexpected HA response: {auth}")
     ws.send(json.dumps({"type": "auth", "access_token": config.access_token}))
     if json.loads(ws.recv()).get("type") != "auth_ok": raise RuntimeError("Home Assistant authentication failed")
+    record_log("INFO", "ha_worker", "connected", "Home Assistant authentication accepted", connection_id=config.id)
     ws.send(json.dumps({"id": 1, "type": "get_states"}))
     states = json.loads(ws.recv()).get("result", [])
     with SessionLocal() as session:
@@ -27,6 +30,7 @@ def run_connection(config):
         session.commit()
     ws.send(json.dumps({"id": 2, "type": "subscribe_events", "event_type": "state_changed"}))
     if not json.loads(ws.recv()).get("success"): raise RuntimeError("Could not subscribe to state_changed")
+    record_log("INFO", "ha_worker", "subscribed", "Subscribed to Home Assistant state changes", connection_id=config.id)
     while True:
         message = json.loads(ws.recv())
         event = message.get("event", {}).get("data", {})
@@ -70,6 +74,7 @@ def upsert_state(session, connection_id, state):
         ))
 
 def run():
+    record_log("INFO", "ha_worker", "worker_started", "Home Assistant worker started")
     while True:
         with SessionLocal() as session:
             configs = session.scalars(select(HAConnection).where(HAConnection.enabled)).all()
@@ -78,6 +83,22 @@ def run():
             time.sleep(10); continue
         for config in configs:
             try: run_connection(config)
-            except Exception:
+            except Exception as exc:
+                detail = str(exc).strip() or repr(exc)
+                exception_type = type(exc).__name__
+                message = f"Home Assistant connection failed for '{config.name}' at {config.base_url}: {exception_type}: {detail}"
                 log.exception("Home Assistant connection failed for %s", config.name)
+                record_log(
+                    "ERROR",
+                    "ha_worker",
+                    "worker_error",
+                    message,
+                    context={
+                        "name": config.name,
+                        "url": config.base_url,
+                        "exception_type": exception_type,
+                        "error": detail,
+                    },
+                    connection_id=config.id,
+                )
                 time.sleep(5)

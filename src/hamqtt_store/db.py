@@ -25,6 +25,17 @@ class SystemSetting(Base, TimestampMixin):
     setting_value: Mapped[dict] = mapped_column(JSON, default=dict)
     is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
 
+class ApplicationLog(Base):
+    __tablename__ = "application_logs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    level: Mapped[str] = mapped_column(String(20), index=True)
+    source: Mapped[str] = mapped_column(String(150), index=True)
+    event: Mapped[str] = mapped_column(String(100), index=True)
+    message: Mapped[str] = mapped_column(Text)
+    context: Mapped[dict] = mapped_column(JSON, default=dict)
+    connection_id: Mapped[int | None] = mapped_column(Integer, index=True)
+
 class HAConnection(Base, TimestampMixin):
     __tablename__ = "ha_connections"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -76,7 +87,7 @@ class Object(Base, TimestampMixin):
 class HAEntity(Base):
     __tablename__ = "ha_entities"
     id: Mapped[int] = mapped_column(primary_key=True)
-    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"), unique=True)
+    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"))
     ha_connection_id: Mapped[int] = mapped_column(ForeignKey("ha_connections.id", ondelete="CASCADE"))
     entity_id: Mapped[str] = mapped_column(String(255), index=True)
     domain: Mapped[str] = mapped_column(String(100))
@@ -115,7 +126,7 @@ class MQTTTopic(Base):
     __tablename__ = "mqtt_topics"
     __table_args__ = (UniqueConstraint("mqtt_connection_id", "topic"),)
     id: Mapped[int] = mapped_column(primary_key=True)
-    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"), unique=True)
+    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"))
     mqtt_connection_id: Mapped[int] = mapped_column(ForeignKey("mqtt_connections.id", ondelete="CASCADE"))
     topic: Mapped[str] = mapped_column(String(1000), index=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -143,7 +154,7 @@ class MQTTPayloadField(Base):
     __table_args__ = (UniqueConstraint("mqtt_topic_id", "field_path"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     mqtt_topic_id: Mapped[int] = mapped_column(ForeignKey("mqtt_topics.id", ondelete="CASCADE"))
-    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"), unique=True)
+    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"))
     field_path: Mapped[str] = mapped_column(String(1000))
     field_name: Mapped[str] = mapped_column(String(500))
     data_type: Mapped[str] = mapped_column(String(30))

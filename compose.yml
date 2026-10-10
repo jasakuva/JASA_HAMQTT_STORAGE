@@ -21,6 +21,9 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "postgres"
 
   migrate:
     build:
@@ -36,6 +39,9 @@ services:
     networks:
       - hamqtt-store
     command: ["python", "-m", "alembic", "upgrade", "head"]
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "migrate"
 
   web:
     build:
@@ -54,6 +60,9 @@ services:
       - "${APP_PORT:-8000}:8000"
     networks:
       - hamqtt-store
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "web"
     command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "hamqtt_store.wsgi:app"]
 
   mqtt-ingestor:
@@ -70,6 +79,9 @@ services:
         condition: service_completed_successfully
     networks:
       - hamqtt-store
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "mqtt-ingestor"
     command: ["python", "-m", "hamqtt_store.cli", "mqtt"]
 
   ha-ingestor:
@@ -86,6 +98,9 @@ services:
         condition: service_completed_successfully
     networks:
       - hamqtt-store
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "ha-ingestor"
     command: ["python", "-m", "hamqtt_store.cli", "ha"]
 
   mcp:
@@ -105,13 +120,17 @@ services:
       - "${MCP_PORT:-8001}:8000"
     networks:
       - hamqtt-store
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "mcp"
     command: ["python", "-m", "hamqtt_store.cli", "mcp"]
 
 networks:
   hamqtt-store:
     name: ${POSTGRES_NETWORK:-hamqtt-store-network}
-    driver: bridge
+    external: true
 
 volumes:
   hamqtt-postgres-data:
     name: ${POSTGRES_VOLUME:-hamqtt-postgres-data}
+    external: true

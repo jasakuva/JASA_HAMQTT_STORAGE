@@ -15,4 +15,46 @@
 .entity-table .sort-arrow{color:var(--accent);font-size:12px;font-weight:800}
 .entity-table tbody tr{min-height:38px;border-bottom:1px solid var(--line)}
 .entity-table tbody tr:has(.empty-state){display:block}
-.entity-table tbody tr:has(.empty-state) td{width:100%;min-width:1100px;grid-column:1 / -1} 
+.entity-table tbody tr:has(.empty-state) td{width:100%;min-width:1100px;grid-column:1 / -1}
+
+.settings-form-labeled{align-items:start;align-content:start;grid-auto-rows:max-content;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.settings-form-labeled .field{display:flex;flex-direction:column;align-items:stretch;align-self:start;gap:5px;min-width:0}
+.settings-form-labeled .field>label{font-size:12px;font-weight:700;color:var(--text)}
+.settings-form-labeled .field small{min-height:30px;color:var(--muted);font-size:11px;line-height:1.35}
+.settings-form-labeled input:not([type="checkbox"]),.settings-form-labeled select{display:block;width:100%;height:40px;min-height:40px;max-height:40px;padding:8px 11px;flex:0 0 40px}
+.settings-form-labeled input:not([type="checkbox"]),.settings-form-labeled select{height:40px!important;min-height:40px!important;max-height:40px!important;box-sizing:border-box!important}
+.settings-form-labeled .field-check{justify-content:start}
+.settings-form-labeled .field-check>label{display:flex;align-items:center;gap:7px;margin-top:25px;height:40px}
+.settings-form-labeled .field-check input[type="checkbox"]{width:auto;height:auto;min-height:0}
+.settings-form-labeled button{grid-column:1 / -1;align-self:start;justify-self:start;margin-top:2px;white-space:nowrap}
+.mqtt-settings-form .field-port{max-width:150px}
+.mqtt-settings-form .topic-filter-field{max-width:280px}
+.mqtt-settings-form code{padding:1px 4px;background:var(--soft);border-radius:4px;font-size:10px}
+
+@media (max-width:900px){
+  .settings-form-labeled{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mqtt-settings-form .field-port,.mqtt-settings-form .topic-filter-field{max-width:none}
+}
+
+@media (max-width:560px){
+  .settings-form-labeled{grid-template-columns:1fr}
+}
+
+.logs-filter-form{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.logs-filter-form input,.logs-filter-form select{width:auto;min-width:150px;height:38px;min-height:38px;padding:7px 10px}
+.logs-filter-form input[name="q"]{min-width:240px}
+.logs-filter-form button,.logs-filter-form .button{height:38px}
+.logs-table-wrap{width:100%;overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.logs-table{width:100%;min-width:1080px;border-collapse:collapse;font-size:12px}
+.logs-table th,.logs-table td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.logs-table th{color:var(--muted);background:var(--soft);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.logs-table tbody tr:last-child td{border-bottom:0}
+.logs-table td:nth-child(1){white-space:nowrap;color:var(--muted)}
+.logs-table td:nth-child(2){white-space:nowrap}
+.logs-table td:nth-child(3),.logs-table td:nth-child(4){white-space:nowrap;font-weight:600}
+.logs-table td:nth-child(5){min-width:360px}
+.logs-table td:nth-child(6){min-width:190px}
+.log-details summary{color:var(--accent);font-weight:700;cursor:pointer}
+.log-details dl{display:grid;grid-template-columns:max-content minmax(180px,1fr);gap:4px 10px;margin:8px 0 0;max-width:420px;font-size:11px}
+.log-details dt{color:var(--muted);font-weight:700}
+.log-details dd{margin:0;overflow-wrap:anywhere}

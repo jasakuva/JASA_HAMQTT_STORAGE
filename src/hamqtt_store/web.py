@@ -6,6 +6,7 @@ from .config import settings
 from .db import (
     Base,
     HAConnection,
+    ApplicationLog,
     HAEntity,
     HAStateCurrent,
     HAStateHistory,
@@ -179,27 +180,95 @@ def create_app():
                         session.add(setting)
                     setting.setting_value = {"enabled": enabled, "access_level": access_level}
                 elif kind == "ha":
-                    session.add(HAConnection(
-                        name=request.form["name"], base_url=request.form["base_url"].rstrip("/"),
-                        access_token=request.form.get("access_token") or None,
-                        enabled=bool(request.form.get("enabled")),
-                    ))
+                    ha_connections = session.scalars(select(HAConnection).order_by(HAConnection.id)).all()
+                    connection = ha_connections[0] if ha_connections else HAConnection()
+                    if not ha_connections:
+                        session.add(connection)
+                    connection.name = request.form["name"].strip()
+                    connection.base_url = request.form["base_url"].rstrip("/")
+                    submitted_token = request.form.get("access_token", "").strip()
+                    if submitted_token:
+                        connection.access_token = submitted_token
+                    connection.enabled = bool(request.form.get("enabled"))
+                    for duplicate in ha_connections[1:]:
+                        duplicate.enabled = False
                 elif kind == "mqtt":
-                    connection = MQTTConnection(
-                        name=request.form["name"], host=request.form["host"],
-                        port=int(request.form.get("port", "1883")), username=request.form.get("username") or None,
-                        password=request.form.get("password") or None, enabled=bool(request.form.get("enabled")),
-                    )
-                    session.add(connection)
+                    mqtt_connections = session.scalars(
+                        select(MQTTConnection).order_by(MQTTConnection.enabled.desc(), MQTTConnection.id)
+                    ).all()
+                    connection = mqtt_connections[0] if mqtt_connections else MQTTConnection()
+                    if not mqtt_connections:
+                        session.add(connection)
+                    connection.name = request.form["name"].strip()
+                    connection.host = request.form["host"].strip()
+                    try:
+                        connection.port = int(request.form.get("port", "1883"))
+                    except ValueError:
+                        return "MQTT port must be a number", 400
+                    if not 1 <= connection.port <= 65535:
+                        return "MQTT port must be between 1 and 65535", 400
+                    connection.client_id = request.form.get("client_id", "").strip() or None
+                    connection.username = request.form.get("username", "").strip() or None
+                    submitted_password = request.form.get("password", "").strip()
+                    if submitted_password:
+                        connection.password = submitted_password
+                    connection.enabled = bool(request.form.get("enabled"))
+                    for duplicate in mqtt_connections[1:]:
+                        duplicate.enabled = False
                     session.flush()
-                    session.add(IngestionSubscription(mqtt_connection_id=connection.id, topic_filter=request.form.get("topic_filter") or "#", qos=0, enabled=True))
+                    subscriptions = session.scalars(
+                        select(IngestionSubscription)
+                        .where(IngestionSubscription.mqtt_connection_id == connection.id)
+                        .order_by(IngestionSubscription.id)
+                    ).all()
+                    subscription = subscriptions[0] if subscriptions else IngestionSubscription(mqtt_connection_id=connection.id)
+                    if not subscriptions:
+                        session.add(subscription)
+                    subscription.topic_filter = request.form.get("topic_filter", "").strip() or "#"
+                    subscription.qos = 0
+                    subscription.enabled = True
+                    for duplicate in subscriptions[1:]:
+                        duplicate.enabled = False
                 session.commit()
                 return redirect(url_for("settings_view"))
-            ha_connections = session.scalars(select(HAConnection).order_by(HAConnection.name)).all()
-            mqtt_connections = session.scalars(select(MQTTConnection).order_by(MQTTConnection.name)).all()
+            ha_connection = session.scalar(select(HAConnection).order_by(HAConnection.id))
+            mqtt_connection = session.scalar(
+                select(MQTTConnection).order_by(MQTTConnection.enabled.desc(), MQTTConnection.id)
+            )
+            mqtt_subscription = None
+            if mqtt_connection:
+                mqtt_subscription = session.scalar(
+                    select(IngestionSubscription)
+                    .where(IngestionSubscription.mqtt_connection_id == mqtt_connection.id)
+                    .order_by(IngestionSubscription.id)
+                )
             mcp_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "mcp"))
             mcp_config = mcp_setting.setting_value if mcp_setting else {"enabled": False, "access_level": "read_only"}
-        return render_template("settings.html", ha_connections=ha_connections, mqtt_connections=mqtt_connections, mcp_config=mcp_config)
+        return render_template(
+            "settings.html",
+            ha_connection=ha_connection,
+            mqtt_connection=mqtt_connection,
+            mqtt_subscription=mqtt_subscription,
+            mcp_config=mcp_config,
+        )
+
+    @app.get("/logs")
+    def logs_view():
+        level = request.args.get("level", "").upper().strip()
+        source = request.args.get("source", "").strip()
+        search = request.args.get("q", "").strip()
+        with SessionLocal() as session:
+            query = select(ApplicationLog).order_by(ApplicationLog.created_at.desc()).limit(500)
+            if level in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+                query = query.where(ApplicationLog.level == level)
+            else:
+                level = ""
+            if source:
+                query = query.where(ApplicationLog.source.ilike(f"%{source}%"))
+            if search:
+                query = query.where(or_(ApplicationLog.message.ilike(f"%{search}%"), ApplicationLog.event.ilike(f"%{search}%")))
+            logs = session.scalars(query).all()
+        return render_template("logs.html", logs=logs, level=level, source=source, search=search)
 
     @app.get("/ha")
     def ha_view():

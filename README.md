@@ -176,21 +176,26 @@ After enabling it in Settings, restart the service. The local Streamable HTTP en
 
 ## Updating an existing installation
 
-Pull the latest code and recreate the application containers. Compose will apply any pending migrations automatically before starting them:
+Use the supplied update script. It builds the new image, creates missing infrastructure, waits for PostgreSQL, applies pending migrations automatically, and recreates only the application containers:
 
 ```bash
 git pull origin master
-docker compose up -d --build
+bash scripts/update.sh
 ```
 
-If the PostgreSQL container also needs to be recreated, it is safe to remove the container while preserving the named data volume:
+The script supports Docker Compose and Podman Compose. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
+
+The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` unless you intentionally want to delete the local database.
+
+For a first installation, use the same command:
 
 ```bash
-docker compose rm -sf postgres
-docker compose up -d --build
+git clone <repository-url> hamqtt-store
+cd hamqtt-store
+cp .env.example .env
+# Edit .env and set POSTGRES_PASSWORD and any deployment-specific values.
+bash scripts/update.sh
 ```
-
-Do **not** remove `hamqtt-postgres-data` unless you intentionally want to delete the local database.
 
 ## Local development
 

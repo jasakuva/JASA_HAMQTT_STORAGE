@@ -18,6 +18,7 @@
       <a class="nav-link {{ 'active' if endpoint in ['mqtt_view', 'mqtt_topic_detail'] else '' }}" href="{{ url_for('mqtt_view') }}"><span class="nav-icon">≋</span>MQTT data</a>
       <a class="nav-link {{ 'active' if endpoint in ['objects', 'update_object'] else '' }}" href="{{ url_for('objects') }}"><span class="nav-icon">◇</span>Objects</a>
       <div class="nav-label">System</div>
+      <a class="nav-link {{ 'active' if endpoint == 'logs_view' else '' }}" href="{{ url_for('logs_view') }}"><span class="nav-icon">▤</span>Logs</a>
       <a class="nav-link {{ 'active' if endpoint == 'settings_view' else '' }}" href="{{ url_for('settings_view') }}"><span class="nav-icon">⚙</span>Settings</a>
       <div class="sidebar-footer">PostgreSQL · pgvector<br><span id="sidebar-clock">—</span></div>
     </aside>
