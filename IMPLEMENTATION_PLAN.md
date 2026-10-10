@@ -2,7 +2,9 @@
 
 **Status:** Active implementation roadmap
 **Last updated:** 2026-10-09
-**Repository:** `C:\Users\janne\Documents\VS_HAMQTT_STORE`
+**Repository:** `%INSTALL_PATH%`
+
+`%INSTALL_PATH%` means the local directory where this repository is installed.
 
 Status legend:
 

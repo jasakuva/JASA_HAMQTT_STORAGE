@@ -43,10 +43,10 @@ The current application includes:
 
 ## 3. Start or resume locally
 
-Run commands from:
+Run commands from `%INSTALL_PATH%`, the local repository directory:
 
 ```text
-C:\Users\janne\Documents\VS_HAMQTT_STORE
+%INSTALL_PATH%
 ```
 
 ### Start Podman

@@ -19,7 +19,7 @@ The image contains PostgreSQL 17 and pgvector 0.8.7. The tag is pinned so that a
 
 ## Start with Podman directly
 
-From `C:\Users\janne\Documents\VS_HAMQTT_STORE`:
+From `%INSTALL_PATH%` (the local repository directory):
 
 ```powershell
 podman machine start podman-machine-default

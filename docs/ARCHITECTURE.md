@@ -1,470 +1,547 @@
-# HA MQTT Store - Architecture and Data Design
+# HA MQTT Store — Architecture and Database Design
 
-**Document status:** Planning
-**Date:** 2026-10-08
+**Document status:** Current implementation reference
+**Last reviewed:** 2026-10-10
+**Database:** PostgreSQL 17 with `pgvector`
+**ORM:** SQLAlchemy 2.x
+**Migrations:** Alembic
+
+`%INSTALL_PATH%` denotes the local directory where the repository is installed.
+
+> This document describes the database implemented in the repository. Planned tables are explicitly marked as planned.
 
 ## 1. Executive summary
 
-HA MQTT Store is a self-hosted, containerized application for collecting and exploring Home Assistant and MQTT data. It connects to Home Assistant and MQTT brokers, stores raw source data, parses MQTT payloads into normalized sensor observations, tracks historical values, and lets users relate MQTT objects to Home Assistant entities.
+HA MQTT Store collects Home Assistant and MQTT data into PostgreSQL. It preserves source data and derives query-friendly records:
 
-The recommended database is PostgreSQL with the pgvector extension. PostgreSQL provides relational integrity, JSONB for source-specific attributes, time-oriented indexes, full-text search, and vector similarity search in one system.
+1. Connection and ingestion settings are stored relationally.
+2. Home Assistant entities and MQTT topics/fields share the `objects` catalog.
+3. Raw MQTT messages are retained in `mqtt_messages`.
+4. Parsed MQTT values are stored in `mqtt_observations` and accelerated by `mqtt_current_values`.
+5. Home Assistant current state and history are stored separately.
+6. `object_links` provides generic relationships between catalog objects.
+7. The read-only MCP service queries this schema and redacts sensitive payload keys.
 
-The central design rule is:
+> Preserve the raw source message or state, then create normalized records for every meaningful value extracted from it.
 
-> Preserve every source message/event, then create normalized records for every meaningful value extracted from it.
-
-This is necessary because an MQTT topic may contain a single scalar value or a JSON document containing temperature, humidity, battery, motion, and other values at the same time.
-
-## 2. Goals and non-goals
-
-### Goals
-
-- Collect Home Assistant entities, states, attributes, events, and actions.
-- Collect MQTT messages from configurable subscriptions.
-- Parse MQTT scalar and JSON payloads, including nested fields.
-- Store current and historical data.
-- Support names, nicknames, descriptions, tags, and custom attributes.
-- Link MQTT topics/fields/devices to Home Assistant entities/devices.
-- Offer relational filters, raw payload inspection, historical charts, and semantic search.
-- Run with Docker Compose on Linux and remain usable for local deployments.
-
-### Non-goals for the initial release
-
-- Replacing Home Assistant as an automation engine.
-- Supporting every proprietary MQTT payload format without configuration.
-- Embedding every historical message by default.
-- Providing high-availability clustering.
-
-## 3. Logical architecture
+## 2. Logical architecture
 
 ```text
-Browser
-   |
-   v
-Flask web/API service ---- PostgreSQL + pgvector
-   ^                              ^
-   |                              |
-HA ingestion worker -------------+
-MQTT ingestion worker ------------+
+Home Assistant ──WebSocket──► HA ingestor ─┐
+                                           │
+MQTT broker ─────MQTT────────► MQTT ingestor ─┼──► PostgreSQL 17 + pgvector
+                                           │
+Browser ─────────HTTP────────► Flask web ───┘
+
+ChatGPT/Codex ◄── read-only MCP ── MCP service ──► same PostgreSQL database
 ```
 
-The web service and ingestion workers share domain services and database models but run as separate processes/containers. This prevents a slow or disconnected broker from blocking the UI.
+| Container | Responsibility | Port |
+|---|---|---:|
+| `hamqtt-postgres` | PostgreSQL and pgvector | `5432` |
+| `hamqtt-migrate` | Alembic migrations | — |
+| `hamqtt-web` | Flask/Gunicorn UI | `8000` |
+| `hamqtt-mqtt-ingestor` | MQTT ingestion and parsing | — |
+| `hamqtt-ha-ingestor` | Home Assistant synchronization | — |
+| `hamqtt-mcp` | Read-only MCP server | host `8001` → container `8000` |
 
-### Main components
+The local MCP endpoint is `http://localhost:8001/mcp`. ChatGPT requires HTTPS, so the temporary bridge is:
 
-#### Web/API service
+```powershell
+ngrok http 8001
+```
 
-- Flask application factory.
-- Server-rendered Jinja views and JSON endpoints.
-- Settings, object management, history, links, and search.
-- Authentication and authorization boundary.
+The ChatGPT URL is the current ngrok HTTPS address followed by `/mcp`.
 
-#### Home Assistant worker
+## 3. Database design principles
 
-- Authenticates through the Home Assistant WebSocket API.
-- Performs initial synchronization.
-- Listens for state/event changes.
-- Upserts entities, devices, areas, services, current states, history, events, and actions.
-- Reconnects with bounded exponential backoff.
+- **Relational first:** foreign keys, unique constraints, and typed columns protect the core model.
+- **JSON for source fidelity:** source attributes, raw states, JSON payloads, and parser metadata retain original shape.
+- **Typed value slots:** normalized values use text, numeric, boolean, and JSON columns; the matching slot is normally populated.
+- **UTC timestamps:** application timestamps are timezone-aware UTC values.
+- **Current plus history:** current tables make UI/MCP reads fast; history tables preserve time-series detail.
+- **Raw-to-derived lineage:** every MQTT observation points to its original `mqtt_messages` row through `source_message_id`.
+- **Cascade awareness:** source-specific rows use `ON DELETE CASCADE`; deleting a connection can delete its ingested data.
+- **Schema authority:** `src/hamqtt_store/db.py` is the model authority; Alembic revisions create/evolve the database.
 
-#### MQTT worker
+## 4. Implemented schema at a glance
 
-- Connects to configured brokers.
-- Applies subscription rules.
-- Stores each raw message before parsing.
-- Parses scalar and JSON payloads.
-- Updates discovered fields, latest values, and historical observations.
-- Records parser errors and supports configurable parser rules.
+| Group | Tables | Purpose |
+|---|---|---|
+| Configuration | `system_settings`, `ha_connections`, `mqtt_connections`, `ingestion_subscriptions` | Runtime settings and source connections |
+| Shared catalog | `objects` | Stable cross-source identity and display metadata |
+| Home Assistant | `ha_entities`, `ha_state_current`, `ha_state_history` | Entity registry and state data |
+| MQTT | `mqtt_topics`, `mqtt_messages`, `mqtt_payload_fields`, `mqtt_observations`, `mqtt_current_values`, `mqtt_parse_events` | Raw MQTT storage and parsed values |
+| Relationships/search | `object_links`, `embeddings` | Cross-source links and optional semantic search |
 
-#### Maintenance worker
-
-- Applies retention policies.
-- Creates historical aggregates.
-- Regenerates embeddings.
-- Performs health and consistency checks.
-
-## 4. Container architecture
-
-The initial Compose deployment should contain:
+### Relationship map
 
 ```text
-postgres       PostgreSQL with pgvector
-web            Flask/Gunicorn application
-ha-ingestor    Home Assistant synchronization/event worker
-mqtt-ingestor  MQTT subscription/parser worker
+ha_connections ──< ha_entities ──1── ha_state_current
+       │                  └──────<── ha_state_history
+
+mqtt_connections ──< ingestion_subscriptions
+       └───────────< mqtt_topics ──< mqtt_messages ──< mqtt_parse_events
+                              │
+                              └──< mqtt_payload_fields ──1── mqtt_current_values
+                                             └────────────<── mqtt_observations ──> mqtt_messages
+
+objects ◄── referenced by HA entities, MQTT topics, MQTT fields, observations,
+           current values, object_links, and embeddings
+objects ──< object_links >── objects
 ```
 
-The first version should avoid adding Redis or a separate message queue unless measured throughput requires it. PostgreSQL is the durable source of truth. A reverse proxy can be added for TLS and external access.
+Each HA entity, MQTT topic, and MQTT payload field has a one-to-one `objects` row, providing a common identity model for UI, links, and MCP.
 
-All containers should use environment variables or mounted secrets for deployment-specific settings. Source connection settings are managed through the UI and persisted in the database, with secret fields encrypted at rest.
+## 5. Detailed database schema
 
-## 5. Backend software modules
+`PK` = primary key, `FK` = foreign key, `UQ` = unique, `IDX` = explicit index.
 
-```text
-hamqtt_store/
-  web/            Flask routes, templates, static assets
-  api/            JSON schemas and API error handling
-  db/             SQLAlchemy models, sessions, repositories, migrations
-  domain/         Object, history, link, MQTT, and HA business rules
-  integrations/   Home Assistant and MQTT clients/adapters
-  services/       Settings, search, retention, embedding, object services
-  workers/        Long-running ingestion and maintenance entry points
-  security/       Secret encryption, authentication, authorization
-```
+### 5.1 `system_settings`
 
-The ingestion adapters should not directly contain UI logic. They emit or persist domain-level events through services so the same behavior can be tested without a live broker.
+Stores structured application settings such as the MCP configuration.
 
-## 6. Home Assistant integration
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Row identifier |
+| `setting_key` | varchar(150) | UQ | Stable setting name, e.g. `mcp` |
+| `setting_value` | JSON | `{}` | Structured configuration |
+| `is_secret` | boolean | `false` | Secret classification flag |
+| `created_at`, `updated_at` | timestamptz | required | Audit timestamps |
 
-### Startup synchronization
+### 5.2 `ha_connections`
 
-1. Load an enabled HA connection.
-2. Authenticate to the WebSocket API.
-3. Fetch current states and registries supported by the target HA version.
-4. Upsert generic objects and source-specific entity/device/area/service rows.
-5. Populate current state rows.
-6. Subscribe to state and relevant event streams.
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Connection identifier |
+| `name` | varchar(150) | required | Friendly name |
+| `base_url` | varchar(500) | required | Home Assistant URL |
+| `access_token` | text | nullable | Access token; protect operationally |
+| `enabled` | boolean | `true` | Worker enable flag |
+| `verify_tls` | boolean | `true` | TLS verification policy |
+| `last_connected_at` | timestamptz | nullable | Last successful connection |
+| `last_error` | text | nullable | Latest connection error |
+| `created_at`, `updated_at` | timestamptz | required | Audit timestamps |
 
-### Live state processing
+### 5.3 `mqtt_connections`
 
-For each state-change event:
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Broker identifier |
+| `name` | varchar(150) | required | Friendly name |
+| `host` | varchar(255) | required | Broker host |
+| `port` | integer | `1883` | Broker port |
+| `username` | varchar(255) | nullable | Broker username |
+| `password` | text | nullable | Broker password; protect operationally |
+| `tls_enabled` | boolean | `false` | TLS flag |
+| `client_id` | varchar(255) | nullable | MQTT client ID |
+| `enabled` | boolean | `true` | Worker enable flag |
+| `last_connected_at`, `last_error` | timestamptz/text | nullable | Runtime status |
+| `created_at`, `updated_at` | timestamptz | required | Audit timestamps |
 
-1. Store the raw event.
-2. Resolve the entity.
-3. Update the current-state row.
-4. Insert a history row.
-5. Update object activity timestamps.
-6. Optionally update search/indexing metadata.
+### 5.4 `ingestion_subscriptions`
 
-### Actions and events
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Subscription ID |
+| `mqtt_connection_id` | integer | FK → `mqtt_connections.id`, cascade | Broker |
+| `topic_filter` | varchar(500) | required | Filter such as `sensors/#` |
+| `qos` | integer | `0` | Requested QoS |
+| `enabled` | boolean | `true` | Active flag |
 
-Relevant events and service calls are stored separately from state history. The first release should capture available service-call/action-related events without promising to reconstruct every internal automation trace.
+### 5.5 `objects`
 
-## 7. MQTT integration and parsing
+The shared catalog. `(source_type, source_identifier)` is unique.
 
-### Raw message handling
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Catalog ID |
+| `object_type` | varchar(50) | required | `ha_entity`, `mqtt_topic`, `mqtt_value`, etc. |
+| `source_type` | varchar(50) | required | `ha`, `mqtt`, or another namespace |
+| `source_identifier` | varchar(1000) | UQ with source type | Stable source identity |
+| `display_name`, `nickname` | varchar(500) | nullable | Display labels |
+| `description` | text | nullable | User description |
+| `is_active` | boolean | `true` | Active flag |
+| `first_seen_at`, `last_seen_at` | timestamptz | nullable | Activity range |
+| `created_at`, `updated_at` | timestamptz | required | Audit timestamps |
 
-The MQTT worker must write the raw message before attempting parsing. The raw record should include topic, received time, QoS, retain flag, duplicate flag, payload type, payload bytes/text/JSON, size, and a content hash.
-
-If parsing fails, the original message remains available for diagnosis or later reprocessing.
-
-### Payload classification
-
-The parser should attempt:
-
-1. Valid JSON.
-2. Configured boolean forms such as `true`, `false`, `on`, and `off`.
-3. Numeric conversion.
-4. Plain text.
-5. Binary or unknown storage.
-
-Conversion of words such as `ON`, `OFF`, `OPEN`, and `CLOSED` must be configurable because they may be semantic states rather than booleans.
-
-### JSON extraction
-
-For JSON objects, recursively walk scalar leaf fields. Each field receives a stable path, for example:
-
-```text
-temperature
-environment.temperature
-battery.level
-```
-
-Arrays and complex subtrees remain available in the raw JSON. Array-path support can be added where a device format requires it.
-
-For this message:
-
-```json
-{
-  "temperature": 21.7,
-  "humidity": 46.2,
-  "battery": 87,
-  "motion": false
-}
-```
-
-the system creates four observations and four field-level objects, all linked to the same raw message.
-
-### Parser rules and transformations
-
-Automatic parsing is supplemented by rules matching a topic filter and optional field path. Rules may define:
-
-- Friendly name.
-- Unit.
-- Type override.
-- Timestamp path.
-- Device identifier path.
-- Boolean mapping.
-- Multiply/divide/offset/round transformations.
-- Range validation.
-- Field renaming.
-
-The original field value remains stored even after transformation. Parsing may produce a partial-success result: valid fields are stored and invalid fields generate a parse event.
-
-### Time semantics
-
-Each observation stores:
-
-- `observed_at`: source timestamp if valid and configured; otherwise receive time.
-- `received_at`: application receive time.
-
-This distinguishes delayed data from data observed at ingestion time.
-
-## 8. Database architecture
-
-The schema is relational first, with JSONB used for source payloads and extensible attributes. All tables should use UTC timestamps and explicit foreign keys.
-
-### 8.1 Settings and connections
-
-#### `system_settings`
-
-Stores key/value JSON settings, secret classification, and timestamps.
-
-#### `ha_connections`
-
-Stores name, URL, encrypted access token, TLS policy, enabled state, last connection time, and last error.
-
-#### `mqtt_connections`
-
-Stores broker host/port, encrypted credentials, TLS settings, client ID, enabled state, and connection status.
-
-#### `ingestion_subscriptions`
-
-Stores MQTT topic filters, QoS, enabled state, and retained-message policy.
-
-### 8.2 Generic object catalog
-
-#### `objects`
-
-Common catalog record for HA entities, HA devices, HA areas, MQTT topics, MQTT fields, MQTT devices, and custom objects.
-
-Key fields:
-
-```text
-id, object_type, source_type, source_identifier,
-display_name, nickname, description, is_active,
-first_seen_at, last_seen_at, created_at, updated_at
-```
-
-The `(source_type, source_identifier)` pair should normally be unique.
-
-#### `object_aliases`, `object_tags`, `object_metadata`, `object_metadata_history`
-
-Support search aliases, many tags, user-defined attributes, and audit history for metadata changes.
-
-### 8.3 Home Assistant tables
+### 5.6 Home Assistant tables
 
 #### `ha_entities`
 
-Stores `entity_id`, domain, platform, unique ID, device/area references, original name, registry flags, and raw registry JSON.
-
-#### `ha_devices`, `ha_areas`, `ha_services`
-
-Store source-specific registry and service information while linking to generic objects.
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Internal ID |
+| `object_id` | integer | FK → `objects.id`, UQ, cascade | Shared object |
+| `ha_connection_id` | integer | FK → `ha_connections.id`, cascade | Source connection |
+| `entity_id` | varchar(255) | IDX | HA ID, e.g. `sensor.room_temperature` |
+| `domain` | varchar(100) | required | HA domain |
+| `platform` | varchar(255) | nullable | Integration/platform |
+| `device_id`, `area_id` | varchar(255) | nullable | Registry references |
+| `unique_id` | varchar(500) | nullable | Integration unique ID |
+| `original_name` | varchar(500) | nullable | Registry name |
+| `raw_entity` | JSON | `{}` | Original entity payload |
 
 #### `ha_state_current`
 
-One current row per entity with text, numeric, boolean, attributes JSONB, timestamps, context, and raw state JSON.
+One row per entity; `ha_entity_id` is unique.
+
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Current row ID |
+| `ha_entity_id` | integer | FK → `ha_entities.id`, UQ, cascade | Entity |
+| `state_text`, `state_numeric`, `state_boolean` | text/float/boolean | nullable | Typed state slots |
+| `attributes` | JSON | `{}` | Current attributes |
+| `last_changed_at`, `last_updated_at` | timestamptz | nullable | HA timestamps |
+| `raw_state` | JSON | `{}` | Original state payload |
 
 #### `ha_state_history`
 
-Append-oriented history of observations with entity, timestamps, normalized values, attributes, context, event ID, and raw state JSON. Index by entity/time and time. Partition by time if volume requires it.
+Append-oriented history. `(ha_entity_id, observed_at)` is unique; `ha_entity_id` and `observed_at` are indexed.
 
-#### `ha_events` and `ha_actions`
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | History ID |
+| `ha_entity_id` | integer | FK → `ha_entities.id`, IDX, cascade | Entity |
+| `observed_at` | timestamptz | IDX; UQ with entity | Observation time |
+| `state_text`, `state_numeric`, `state_boolean` | text/float/boolean | nullable | Typed state slots |
+| `attributes` | JSON | `{}` | Historical attributes |
+| `raw_state` | JSON | `{}` | Original historical state |
 
-Store relevant raw events and service/action calls. Actions include domain, service, target, service data, context, user, origin, and raw event JSON.
-
-### 8.4 MQTT tables
+### 5.7 MQTT tables
 
 #### `mqtt_topics`
 
-Stores topic identity, parent topic, broker connection, first/last seen timestamps, message counts, and retained-message information.
+`(mqtt_connection_id, topic)` is unique. Each topic has one shared object.
+
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Topic ID |
+| `object_id` | integer | FK → `objects.id`, UQ, cascade | Shared object |
+| `mqtt_connection_id` | integer | FK → `mqtt_connections.id`, cascade | Broker |
+| `topic` | varchar(1000) | IDX | Full topic |
+| `first_seen_at`, `last_seen_at` | timestamptz | defaults | Activity range |
+| `message_count` | integer | `0` | Message counter |
 
 #### `mqtt_messages`
 
-Stores every received message with topic, timestamps, QoS, retain/duplicate flags, payload type, text/JSON/binary representations, size, hash, and raw metadata.
+Raw ingestion record. It is inserted before parsed derived data.
+
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Message ID |
+| `mqtt_connection_id` | integer | FK → `mqtt_connections.id`, cascade | Broker |
+| `mqtt_topic_id` | integer | FK → `mqtt_topics.id`, IDX, cascade | Topic |
+| `received_at` | timestamptz | IDX/default | Application receive time |
+| `qos`, `payload_size` | integer | `0` | QoS and byte length |
+| `retain`, `duplicate` | boolean | `false` | MQTT flags |
+| `payload_type` | varchar(30) | required | JSON/number/boolean/text/binary/etc. |
+| `payload_text` | text | nullable | Text payload |
+| `payload_json` | JSON | nullable | Parsed JSON payload |
+| `payload_binary` | bytea | nullable | Original binary payload |
+| `payload_hash` | varchar(64) | IDX | Content hash |
 
 #### `mqtt_payload_fields`
 
-Tracks discovered paths within topic payloads:
+`(mqtt_topic_id, field_path)` is unique.
 
-```text
-topic, field_path, field_name, data_type,
-sample_value_json, first_seen_at, last_seen_at,
-observation_count, is_active
-```
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Field ID |
+| `mqtt_topic_id` | integer | FK → `mqtt_topics.id`, cascade | Parent topic |
+| `object_id` | integer | FK → `objects.id`, UQ, cascade | Shared field object |
+| `field_path` | varchar(1000) | UQ with topic | `environment.temperature` |
+| `field_name` | varchar(500) | required | Leaf name |
+| `data_type` | varchar(30) | required | Parsed type |
+| `unit` | varchar(50) | nullable | Optional unit |
+| `first_seen_at`, `last_seen_at` | timestamptz | defaults | Activity range |
+| `observation_count` | integer | `0` | Parsed count |
 
 #### `mqtt_observations`
 
-Normalized time-series values linked to topic, field, object, source message, and timestamps. Store one typed value representation where possible: numeric, boolean, text, JSON, or unknown.
+Time-series facts derived from raw messages. `source_message_id` preserves lineage.
+
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Observation ID |
+| `mqtt_topic_id` | integer | FK → `mqtt_topics.id`, IDX, cascade | Topic |
+| `mqtt_payload_field_id` | integer | FK → `mqtt_payload_fields.id`, IDX, cascade | Field |
+| `object_id` | integer | FK → `objects.id`, cascade | Field object |
+| `source_message_id` | integer | FK → `mqtt_messages.id`, cascade | Raw source |
+| `observed_at` | timestamptz | IDX | Source observation time |
+| `received_at` | timestamptz | required | Application time |
+| `value_type` | varchar(30) | required | Parsed type |
+| `value_text`, `value_numeric`, `value_boolean`, `value_json` | text/float/boolean/JSON | nullable | Typed value slots |
+| `unit` | varchar(50) | nullable | Unit |
+| `quality` | varchar(30) | `good` | Quality marker |
+| `raw_field_value` | JSON | nullable | Original extracted field |
 
 #### `mqtt_current_values`
 
-One latest parsed value per field/object for fast UI access.
-
-#### `mqtt_parser_rules`
-
-Topic/field matching rules for names, units, types, timestamps, transformations, and validation.
+One latest value per field; `mqtt_payload_field_id` is unique. It repeats the typed value columns for fast reads.
 
 #### `mqtt_parse_events`
 
-Records success, partial success, invalid JSON, transformation errors, and other parser outcomes.
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Event ID |
+| `mqtt_message_id` | integer | FK → `mqtt_messages.id`, cascade | Raw message |
+| `status` | varchar(40) | required | `success` or `partial_success` currently used |
+| `error_message` | text | nullable | Failure detail |
+| `details` | JSON | `{}` | Diagnostics, including field count |
+| `created_at` | timestamptz | default | Event time |
 
-### 8.5 Mapping tables
+### 5.8 `object_links`
 
-#### `object_links`
+Generic directed relationships. `(from_object_id, to_object_id, link_type)` is unique.
 
-Many-to-many links between any catalog objects. Fields include source/target object, link type, direction, confidence, source, active flag, notes, creator, and timestamps.
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Link ID |
+| `from_object_id`, `to_object_id` | integer | FK → `objects.id`, cascade | Source and target |
+| `link_type` | varchar(50) | UQ tuple | Relationship type |
+| `direction` | varchar(30) | `one_way` | Direction semantics |
+| `confidence` | float | nullable | Match confidence |
+| `source` | varchar(30) | `manual` | Creation source |
+| `is_active` | boolean | `true` | Active flag |
+| `notes` | text | nullable | Explanation |
+| `created_at`, `updated_at` | timestamptz | required | Audit timestamps |
 
-Examples:
+### 5.9 `embeddings`
+
+Optional semantic-search row per object; `object_id` is unique and `embedding` is `vector(1536)`.
+
+| Column | Type | Key/default | Meaning |
+|---|---|---|---|
+| `id` | integer | PK | Embedding ID |
+| `object_id` | integer | FK → `objects.id`, UQ, cascade | Embedded object |
+| `source_text` | text | required | Embedded text |
+| `embedding` | vector(1536) | nullable | pgvector vector |
+| `embedding_model` | varchar(150) | nullable | Model identifier |
+| `content_hash` | varchar(64) | nullable | Rebuild detection |
+| `created_at`, `updated_at` | timestamptz | required | Audit timestamps |
+
+## 6. Ingestion and lineage
+
+For each MQTT message, the worker:
+
+1. Resolves/creates the topic `objects` row.
+2. Resolves/creates `mqtt_topics` for `(mqtt_connection_id, topic)`.
+3. Parses the payload.
+4. Inserts `mqtt_messages` with raw data.
+5. Resolves/creates `mqtt_payload_fields`.
+6. Inserts `mqtt_observations` with `source_message_id`.
+7. Inserts/updates `mqtt_current_values`.
+8. Inserts a `mqtt_parse_events` result.
+9. Commits the transaction.
 
 ```text
-MQTT field -> reports_state_to -> HA entity
-MQTT device <-> same_device <-> HA device
-MQTT topic -> represents -> MQTT device
+mqtt_messages.id = 9001, topic = sensors/living-room
+ ├─ mqtt_payload_fields.id = 7, path = temperature
+ │   ├─ mqtt_observations.source_message_id = 9001
+ │   └─ mqtt_current_values.mqtt_payload_field_id = 7
+ └─ mqtt_payload_fields.id = 8, path = humidity
+     ├─ mqtt_observations.source_message_id = 9001
+     └─ mqtt_current_values.mqtt_payload_field_id = 8
 ```
 
-#### `link_evidence`
+The HA worker maintains one `ha_entities` row, one `ha_state_current` row, and many `ha_state_history` rows per entity. The history uniqueness rule makes repeated synchronization idempotent for the same entity/timestamp pair.
 
-Stores why an automatic link was suggested: matching identifiers, discovery metadata, naming similarity, device data, or manual confirmation.
+## 7. SQL query examples
 
-### 8.6 Embeddings
+Examples target PostgreSQL and are read-only unless stated otherwise.
 
-#### `embeddings`
+### 7.1 Extension and database health
 
-Stores object ID, source text, embedding vector, model, dimensions, content hash, and timestamps. Initially embed catalog objects, aliases, descriptions, and selected summaries rather than every raw message.
+```sql
+SELECT current_database(), version();
 
-## 9. Data mapping examples
+SELECT extname, extversion
+FROM pg_extension
+WHERE extname = 'vector';
+```
 
-### Scalar topic
+### 7.2 Table row estimates
+
+```sql
+SELECT relname AS table_name, n_live_tup AS estimated_rows
+FROM pg_stat_user_tables
+WHERE schemaname = 'public'
+ORDER BY n_live_tup DESC;
+```
+
+### 7.3 Current Home Assistant states
+
+```sql
+SELECT e.entity_id, e.original_name,
+       c.state_text, c.state_numeric, c.state_boolean,
+       c.last_changed_at, c.last_updated_at
+FROM ha_entities AS e
+JOIN ha_state_current AS c ON c.ha_entity_id = e.id
+ORDER BY e.entity_id;
+```
+
+### 7.4 HA history for one entity
+
+```sql
+SELECT h.observed_at, h.state_text, h.state_numeric,
+       h.state_boolean, h.attributes
+FROM ha_state_history AS h
+JOIN ha_entities AS e ON e.id = h.ha_entity_id
+WHERE e.entity_id = 'sensor.living_room_temperature'
+  AND h.observed_at >= now() - interval '24 hours'
+ORDER BY h.observed_at DESC;
+```
+
+### 7.5 Latest MQTT values with names
+
+```sql
+SELECT t.topic, f.field_path, f.field_name,
+       c.value_type, c.value_numeric, c.value_boolean,
+       c.value_text, c.value_json, c.last_observed_at
+FROM mqtt_current_values AS c
+JOIN mqtt_payload_fields AS f ON f.id = c.mqtt_payload_field_id
+JOIN mqtt_topics AS t ON t.id = f.mqtt_topic_id
+ORDER BY t.topic, f.field_path;
+```
+
+### 7.6 Trace a value to its raw message
+
+```sql
+SELECT o.observed_at, t.topic, f.field_path, o.value_type,
+       o.value_numeric, o.value_boolean, o.value_text,
+       o.raw_field_value, m.id AS source_message_id,
+       m.received_at, m.payload_type, m.payload_json, m.payload_text
+FROM mqtt_observations AS o
+JOIN mqtt_payload_fields AS f ON f.id = o.mqtt_payload_field_id
+JOIN mqtt_topics AS t ON t.id = o.mqtt_topic_id
+JOIN mqtt_messages AS m ON m.id = o.source_message_id
+WHERE t.topic = 'sensors/living-room'
+  AND f.field_path = 'temperature'
+ORDER BY o.observed_at DESC
+LIMIT 100;
+```
+
+### 7.7 Parser failures and partial success
+
+```sql
+SELECT pe.created_at, pe.status, pe.error_message, pe.details,
+       m.id AS message_id, t.topic, m.payload_type,
+       m.payload_text, m.payload_json
+FROM mqtt_parse_events AS pe
+JOIN mqtt_messages AS m ON m.id = pe.mqtt_message_id
+JOIN mqtt_topics AS t ON t.id = m.mqtt_topic_id
+WHERE pe.status <> 'success'
+ORDER BY pe.created_at DESC;
+```
+
+### 7.8 Cross-source links
+
+```sql
+SELECT src.source_type AS from_source,
+       src.source_identifier AS from_identifier,
+       l.link_type, l.confidence, l.source AS link_source,
+       dst.source_type AS to_source,
+       dst.source_identifier AS to_identifier, l.notes
+FROM object_links AS l
+JOIN objects AS src ON src.id = l.from_object_id
+JOIN objects AS dst ON dst.id = l.to_object_id
+WHERE l.is_active = true
+ORDER BY l.confidence DESC NULLS LAST, src.source_identifier;
+```
+
+### 7.9 High-volume topics
+
+```sql
+SELECT topic, message_count, first_seen_at, last_seen_at
+FROM mqtt_topics
+ORDER BY message_count DESC
+LIMIT 25;
+```
+
+### 7.10 Retention review candidates
+
+Review only; this does not delete data.
+
+```sql
+SELECT id, mqtt_topic_id, received_at, payload_size, payload_hash
+FROM mqtt_messages
+WHERE received_at < now() - interval '90 days'
+ORDER BY received_at
+LIMIT 1000;
+```
+
+### 7.11 pgvector similarity search
+
+```sql
+SELECT o.id, o.source_type, o.source_identifier, o.display_name,
+       1 - (e.embedding <=> '[0.01,0.02,0.03]'::vector) AS similarity
+FROM embeddings AS e
+JOIN objects AS o ON o.id = e.object_id
+WHERE e.embedding IS NOT NULL
+ORDER BY e.embedding <=> '[0.01,0.02,0.03]'::vector
+LIMIT 10;
+```
+
+## 8. MCP read-only access
+
+`src/hamqtt_store/mcp_server.py` uses the same SQLAlchemy session/database as the web app.
+
+| MCP operation | Primary tables |
+|---|---|
+| `get_system_summary` | `objects`, `ha_entities`, `mqtt_topics`, `mqtt_messages` |
+| `search_objects` | `objects` |
+| `list_home_assistant_entities` | `ha_entities`, `ha_state_current`, `objects` |
+| `get_home_assistant_entity` | `ha_entities`, `ha_state_current` |
+| `get_home_assistant_history` | `ha_entities`, `ha_state_history` |
+| `list_mqtt_topics` | `mqtt_topics`, `mqtt_connections` |
+| `list_mqtt_fields` | `mqtt_topics`, `mqtt_payload_fields` |
+| `get_mqtt_current_value` | `mqtt_current_values` |
+| `list_recent_mqtt_messages` | `mqtt_messages` |
+| `get_object` | `objects` |
+
+The server requires the `mcp` setting to be enabled with `access_level = 'read_only'`. It clamps list limits and redacts keys such as passwords, tokens, secrets, and API keys from JSON/text responses. It never publishes MQTT, calls HA services, or writes to the database.
 
 ```text
-Topic: house/living-room/temperature
-Payload: 21.7
+ChatGPT/Codex → HTTPS or stdio → MCP server → SQLAlchemy → PostgreSQL
 ```
 
-Creates:
+For ChatGPT Personal, the temporary HTTPS boundary is `ngrok http 8001`; configure `https://<current-ngrok-host>/mcp` and stop ngrok after use.
 
-```text
-MQTT topic object: house/living-room/temperature
-MQTT field object: house/living-room/temperature.value
-Observation: numeric 21.7
+## 9. Performance and indexing
+
+Explicit indexes cover `ha_entities.entity_id`, HA history entity/time, MQTT topic, raw message topic/time/hash, and MQTT observation topic/field/time. Unique constraints create additional identity/current-value indexes.
+
+If volume grows, review query plans and consider `(mqtt_topic_id, received_at DESC)`, `(mqtt_payload_field_id, observed_at DESC)`, time partitioning for raw/history tables, and an appropriate pgvector index.
+
+## 10. Security and data lifecycle
+
+- Treat HA tokens, MQTT passwords, and raw payloads as sensitive.
+- Do not expose unauthenticated MCP beyond the required ngrok session.
+- Keep backups encrypted and test restores.
+- Retain catalog/current values while applying explicit policies to high-volume raw/history data.
+- Deleting raw messages currently cascades to observations and parse events.
+- Add authentication, CSRF protection, authorization, and stronger secret-at-rest protection before production exposure.
+
+## 11. Implemented versus planned
+
+### Implemented now
+
+PostgreSQL/pgvector, Alembic, HA connection/entity/current/history tables, MQTT connection/subscription/topic/raw message/field/observation/current/parse-event tables, shared objects, object links, embeddings, MQTT lineage, and read-only MCP.
+
+### Planned or not currently represented
+
+Earlier planning text mentioned aliases, tags, metadata history, HA devices/areas/services/events/actions, MQTT parser rules, link evidence, and retention tables. These are **not** currently defined in `src/hamqtt_store/db.py`; add them only through explicit models and Alembic migrations.
+
+## 12. Schema change checklist
+
+```powershell
+cd "<path-to-installation>"
+python -m pytest -q
+python -m compileall -q src
+python tools/validate_docs.py
+python tools/generate_architecture_docx.py
+git diff --check
 ```
 
-### Multi-value JSON topic
-
-```text
-Topic: sensors/living-room
-Payload: {"temperature":21.7,"humidity":46.2,"motion":false}
-```
-
-Creates three field objects and three observations, each linked to the same raw message. Each field can independently link to a different HA entity.
-
-### Mapping confidence
-
-Exact identifiers and discovery metadata receive higher confidence than name similarity or vector similarity. Automatic matches should be suggestions until explicitly approved unless a future policy says otherwise.
-
-## 10. Search and vector design
-
-Use exact relational queries for IDs, domains, topic filters, dates, values, and metadata. Use PostgreSQL full-text search for names and descriptions. Use pgvector for semantic searches over object summaries and descriptions.
-
-Embedding records must include the model and content hash so changed descriptions or model versions can be re-indexed safely. Hybrid search combines text relevance, structured filters, and vector similarity.
-
-## 11. UI design
-
-### Dashboard
-
-Show HA/MQTT connection health, ingestion rates, last errors, object counts, unresolved mapping suggestions, and database status.
-
-### Home Assistant views
-
-Entities, devices, areas, services, current states, history charts, attributes, actions, and linked MQTT objects.
-
-### MQTT views
-
-The current MQTT UI provides a topic overview and topic detail pages. The overview shows topic IDs, topic names, message counts, last-seen timestamps, and recent raw messages. A topic detail page shows current parsed fields, current values, observation counts, parsed observation history, and raw message history.
-
-Each parsed field can be opened in a field-specific history view. Field history is ordered newest first and includes the typed value, observed/received timestamps, quality, and an expandable copy of the originating raw MQTT message. Observations link to their source messages through `source_message_id`.
-
-Planned MQTT features that are not yet implemented include parser rules and transformations, protocol-specific decoders, charts, retention controls, and linked Home Assistant entity workflows.
-
-### Object detail
-
-Display name, nickname, description, tags, custom attributes, source data, current values, history, links, and activity.
-
-### Settings
-
-Connection configuration, subscriptions, retention, embedding/search settings, users, and export/import.
-
-## 12. History and retention
-
-Current values, object metadata, and mappings are long-lived. Raw messages, HA events, and high-frequency state history require configurable retention. When volume grows, use time partitions and aggregate tables for hourly/daily numeric history.
-
-Retention must be explicit per data category and should run as a maintenance job. Deletion must not remove catalog objects or mapping records unless the user explicitly requests it.
-
-## 13. Security
-
-- Encrypt tokens and passwords at rest.
-- Keep encryption keys outside PostgreSQL.
-- Redact credentials from logs.
-- Never return stored secrets in normal API responses.
-- Use CSRF protection, secure cookies, input validation, and authorization.
-- Require TLS verification by default where practical.
-- Support MQTT topic exclusions and future payload masking for sensitive data.
-
-## 14. Testing strategy
-
-### Unit tests
-
-- Scalar payload classification.
-- JSON flattening and field-path stability.
-- Boolean/numeric conversion.
-- Parser transformations and validation.
-- Link confidence/evidence rules.
-- Secret encryption/decryption.
-
-### Integration tests
-
-- Database migrations and foreign keys.
-- HA synchronization using recorded fixtures.
-- MQTT ingestion using test broker or fixtures.
-- Raw message plus observation transaction behavior.
-- Reconnect and duplicate-message handling.
-- Retention jobs.
-
-### UI/API tests
-
-- Settings validation and secret handling.
-- Object edits and metadata history.
-- Manual link creation and removal.
-- History and search endpoints.
-
-## 15. Deployment and operations
-
-Use Docker Compose with persistent PostgreSQL storage, health checks, restart policies, environment-based deployment configuration, and backup instructions. The database is the durable source of truth; workers should be safe to restart and should report connection/processing status in the database for the UI.
-
-Operational documentation must cover migrations, backups, restores, logs, credentials, retention, and troubleshooting disconnected integrations.
-
-## 16. Implementation order
-
-1. Foundation, Compose, PostgreSQL/pgvector, Flask, migrations.
-2. Settings and encrypted connection management.
-3. Generic object catalog and HA/MQTT source tables.
-4. HA synchronization and history.
-5. MQTT raw ingestion.
-6. MQTT scalar/JSON parser and normalized observations.
-7. UI object browsing and history.
-8. Typed mapping and suggestions.
-9. Search and vector indexing.
-10. Retention, authentication, tests, and production hardening.
-
-## 17. Open decisions
-
-- Home Assistant version range.
-- Read-only versus command-capable first release.
-- Expected data rate and retention.
-- Required MQTT vendor decoders.
-- External versus local embedding model.
-- Login and multi-user requirements.
-- Automatic-link approval policy.
-- Binary-payload retention policy.
+Before a schema change: update `db.py`, add an Alembic migration, update this document and tests, regenerate the `.docx`, and run the complete checks.

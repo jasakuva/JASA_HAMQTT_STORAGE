@@ -25,11 +25,13 @@ with ZipFile(docx) as package:
     document_xml = package.read("word/document.xml").decode("utf-8")
 
 for expected in (
-    "MQTT integration and parsing",
+    "Detailed database schema",
     "mqtt_observations",
-    "mqtt_parser_rules",
+    "mqtt_parse_events",
     "object_links",
     "pgvector",
+    "MCP read-only access",
+    "Trace a value to its raw message",
 ):
     assert expected in architecture.read_text(encoding="utf-8")
     assert expected in document_xml

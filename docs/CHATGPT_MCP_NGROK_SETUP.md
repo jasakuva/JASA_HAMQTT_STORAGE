@@ -21,8 +21,10 @@ The setup has three parts:
 Run the commands from:
 
 ```text
-C:\Users\janne\Documents\VS_HAMQTT_STORE
+%INSTALL_PATH%
 ```
+
+`%INSTALL_PATH%` means the local directory where the HA MQTT Store repository is installed. Replace it with your actual path when using a shell that does not expand this placeholder automatically.
 
 You need:
 
@@ -42,7 +44,7 @@ podman machine start podman-machine-default
 Build the image if the source code has changed:
 
 ```powershell
-cd C:\Users\janne\Documents\VS_HAMQTT_STORE
+cd "<path-to-installation>"
 podman build -t localhost/hamqtt-store:dev .
 ```
 
@@ -243,7 +245,7 @@ Custom MCP/developer controls are not available on every account, plan, workspac
 If neither place contains **Add custom MCP server** or **Create app**, this ChatGPT account cannot currently add a custom MCP server through the visible UI. Use Codex as an alternative:
 
 ```powershell
-cd C:\Users\janne\Documents\VS_HAMQTT_STORE
+cd "<path-to-installation>"
 codex mcp add hamqtt-store -- python -m hamqtt_store.cli mcp
 ```
 
