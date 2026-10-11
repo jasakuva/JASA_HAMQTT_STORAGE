@@ -169,7 +169,19 @@ def create_app():
         with SessionLocal() as session:
             if request.method == "POST":
                 kind = request.form.get("kind")
-                if kind == "mcp":
+                if kind == "retention":
+                    try:
+                        history_days = int(request.form.get("history_days", "365"))
+                    except ValueError:
+                        return "History retention must be a whole number of days", 400
+                    if not 1 <= history_days <= 3650:
+                        return "History retention must be between 1 and 3650 days", 400
+                    setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "retention"))
+                    if not setting:
+                        setting = SystemSetting(setting_key="retention", setting_value={}, is_secret=False)
+                        session.add(setting)
+                    setting.setting_value = {"history_days": history_days}
+                elif kind == "mcp":
                     enabled = bool(request.form.get("mcp_enabled"))
                     access_level = request.form.get("mcp_access_level", "read_only")
                     if access_level not in {"read_only"}:
@@ -248,12 +260,15 @@ def create_app():
                 )
             mcp_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "mcp"))
             mcp_config = mcp_setting.setting_value if mcp_setting else {"enabled": False, "access_level": "read_only"}
+            retention_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "retention"))
+            retention_config = retention_setting.setting_value if retention_setting else {"history_days": 365}
         return render_template(
             "settings.html",
             ha_connection=ha_connection,
             mqtt_connection=mqtt_connection,
             mqtt_subscription=mqtt_subscription,
             mcp_config=mcp_config,
+            retention_config=retention_config,
         )
 
     @app.get("/logs")

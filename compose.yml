@@ -127,6 +127,27 @@ services:
       com.hamqtt.service: "mcp"
     command: ["python", "-m", "hamqtt_store.cli", "mcp"]
 
+  cleanup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: localhost/hamqtt-store:dev
+    container_name: hamqtt-cleanup
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      CLEANUP_HOUR_UTC: ${CLEANUP_HOUR_UTC:-2}
+      CLEANUP_MINUTE_UTC: ${CLEANUP_MINUTE_UTC:-0}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - hamqtt-store
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "cleanup"
+    command: ["python", "-m", "hamqtt_store.cli", "cleanup"]
+
 networks:
   hamqtt-store:
     name: ${POSTGRES_NETWORK:-hamqtt-store-network}

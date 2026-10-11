@@ -6,11 +6,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 def main():
     import sys
-    if len(sys.argv) != 2 or sys.argv[1] not in {"ha", "mqtt", "mcp"}:
-        raise SystemExit("Usage: python -m hamqtt_store.cli [ha|mqtt|mcp]")
+    if len(sys.argv) != 2 or sys.argv[1] not in {"ha", "mqtt", "mcp", "cleanup"}:
+        raise SystemExit("Usage: python -m hamqtt_store.cli [ha|mqtt|mcp|cleanup]")
     if sys.argv[1] == "mcp":
         from .mcp_server import main as run_mcp
         run_mcp()
+    elif sys.argv[1] == "cleanup":
+        from .services.cleanup import run_scheduler
+        run_scheduler()
     else:
         (run_ha if sys.argv[1] == "ha" else run_mqtt)()
 
