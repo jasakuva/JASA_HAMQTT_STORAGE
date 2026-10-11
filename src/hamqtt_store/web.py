@@ -1,10 +1,12 @@
+import csv
+import io
 import json
+from datetime import UTC, datetime, timedelta
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import func, or_, select
 from .config import settings
 from .db import (
-    Base,
     HAConnection,
     ApplicationLog,
     HAEntity,
@@ -29,6 +31,106 @@ def create_app():
     app.config["SECRET_KEY"] = settings.secret_key
     app.jinja_env.filters["pretty_json"] = lambda value: json.dumps(value or {}, indent=2, sort_keys=True, default=str)
 
+    def parse_range():
+        now = datetime.now(UTC)
+        default_from = now - timedelta(hours=24)
+        values = []
+        for name, default in (("from", default_from), ("to", now)):
+            raw = request.args.get(name, "").strip()
+            if not raw:
+                values.append(default)
+                continue
+            try:
+                parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                values.append((parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)).astimezone(UTC))
+            except ValueError:
+                values.append(None)
+        if any(value is None for value in values) or values[0] >= values[1]:
+            return None, None
+        return values
+
+    def selected_ids():
+        raw = request.args.getlist("object_id") or request.args.getlist("object_ids")
+        ids = []
+        for value in raw:
+            for item in value.split(","):
+                try:
+                    object_id = int(item)
+                except ValueError:
+                    continue
+                if object_id not in ids:
+                    ids.append(object_id)
+        return ids
+
+    def series_catalog(session):
+        rows = [dict(row) for row in session.execute(select(
+            Object.id.label("id"), Object.nickname.label("nickname"), Object.display_name.label("display_name"),
+            HAEntity.entity_id.label("identifier"),
+        ).join(HAEntity, HAEntity.object_id == Object.id)).mappings().all()]
+        rows = [{"id": row["id"], "label": row["nickname"] or row["display_name"] or row["identifier"],
+                 "identifier": row["identifier"], "source": "Home Assistant", "unit": None} for row in rows]
+        mqtt_rows = session.execute(select(
+            Object.id.label("id"), Object.nickname.label("nickname"), Object.display_name.label("display_name"),
+            MQTTPayloadField.field_path.label("identifier"), MQTTPayloadField.unit.label("unit"),
+        ).join(MQTTPayloadField, MQTTPayloadField.object_id == Object.id)).mappings().all()
+        rows.extend({"id": row["id"], "label": row["nickname"] or row["display_name"] or row["identifier"],
+                     "identifier": row["identifier"], "source": "MQTT", "unit": row["unit"]} for row in mqtt_rows)
+        rows = list({row["id"]: row for row in rows}.values())
+        return sorted(rows, key=lambda row: (row["source"], row["label"]))
+
+    def history_rows(session, object_ids, start, end, downsample=False):
+        result = []
+        entities = session.execute(select(
+            HAEntity.id.label("entity_id"), HAEntity.entity_id.label("identifier"),
+            Object.nickname.label("nickname"), Object.display_name.label("display_name"),
+        ).join(Object, Object.id == HAEntity.object_id).where(HAEntity.object_id.in_(object_ids))).mappings().all() if object_ids else []
+        fields = session.execute(select(
+            MQTTPayloadField.id.label("field_id"), MQTTPayloadField.field_path.label("identifier"),
+            MQTTPayloadField.unit.label("unit"), Object.nickname.label("nickname"),
+            Object.display_name.label("display_name"),
+        ).join(Object, Object.id == MQTTPayloadField.object_id).where(
+            MQTTPayloadField.object_id.in_(object_ids))).mappings().all() if object_ids else []
+        fields = list({field["field_id"]: field for field in fields}.values())
+        for entity in entities:
+            rows = session.execute(select(
+                HAStateHistory.observed_at, HAStateHistory.state_text,
+                HAStateHistory.state_numeric, HAStateHistory.state_boolean,
+            ).where(
+                HAStateHistory.ha_entity_id == entity["entity_id"], HAStateHistory.observed_at >= start,
+                HAStateHistory.observed_at <= end).order_by(HAStateHistory.observed_at)).mappings().all()
+            for row in rows:
+                value = row["state_numeric"] if row["state_numeric"] is not None else row["state_boolean"] if row["state_boolean"] is not None else row["state_text"]
+                result.append({"timestamp": row["observed_at"].isoformat(), "series": entity["nickname"] or entity["display_name"] or entity["identifier"],
+                               "source": "Home Assistant", "identifier": entity["identifier"], "value": value,
+                               "value_type": "numeric" if row["state_numeric"] is not None else "boolean" if row["state_boolean"] is not None else "text",
+                               "unit": None, "state": row["state_text"]})
+        for field in fields:
+            rows = session.execute(select(
+                MQTTObservation.observed_at, MQTTObservation.value_type,
+                MQTTObservation.value_text, MQTTObservation.value_numeric,
+                MQTTObservation.value_boolean, MQTTObservation.unit,
+            ).where(
+                MQTTObservation.mqtt_payload_field_id == field["field_id"], MQTTObservation.observed_at >= start,
+                MQTTObservation.observed_at <= end).order_by(MQTTObservation.observed_at)).mappings().all()
+            for row in rows:
+                value = row["value_numeric"] if row["value_numeric"] is not None else row["value_boolean"] if row["value_boolean"] is not None else row["value_text"]
+                result.append({"timestamp": row["observed_at"].isoformat(), "series": field["nickname"] or field["display_name"] or field["identifier"],
+                               "source": "MQTT", "identifier": field["identifier"], "value": value,
+                               "value_type": row["value_type"], "unit": row["unit"] or field["unit"], "state": row["value_text"]})
+        result.sort(key=lambda row: row["timestamp"])
+        return downsample_rows(result) if downsample else result
+
+    def downsample_rows(rows, max_points=4000):
+        numeric = [row for row in rows if isinstance(row["value"], (int, float)) and not isinstance(row["value"], bool)]
+        if len(numeric) <= max_points:
+            return rows
+        by_series = {}
+        for row in numeric:
+            by_series.setdefault(row["series"], []).append(row)
+        stride = max(1, (len(numeric) + max_points - 1) // max_points)
+        keep = {id(row): row for series in by_series.values() for row in series[::stride]}
+        return [row for row in rows if id(row) in keep]
+
     @app.get("/")
     def dashboard():
         with SessionLocal() as session:
@@ -49,6 +151,41 @@ def create_app():
             return jsonify(status="ok", database="ok")
         except Exception as exc:
             return jsonify(status="error", database="error", error=str(exc)), 503
+
+    @app.get("/graph")
+    def graph_view():
+        start, end = parse_range()
+        object_ids = selected_ids()
+        with SessionLocal() as session:
+            catalog = series_catalog(session)
+            valid_ids = {item["id"] for item in catalog}
+            error = ("Select a valid time range." if start is None else
+                     "Select between 1 and 4 available series." if not 1 <= len(object_ids) <= 4 or not set(object_ids) <= valid_ids else None)
+            data = history_rows(session, object_ids, start, end, downsample=True) if not error else []
+        return render_template("graph.html", catalog=catalog, selected=object_ids, data=data, start=start, end=end, error=error,
+                               standalone=request.args.get("standalone") == "1")
+
+    @app.get("/export")
+    def export_view():
+        start, end = parse_range()
+        object_ids = selected_ids()
+        with SessionLocal() as session:
+            catalog = series_catalog(session)
+            valid_ids = {item["id"] for item in catalog}
+            error = ("Select a valid time range." if start is None else
+                     "Select between 1 and 10 available series." if not 1 <= len(object_ids) <= 10 or not set(object_ids) <= valid_ids else None)
+            data = history_rows(session, object_ids, start, end) if not error else []
+        if request.args.get("download") == "1" and not error:
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=["timestamp", "series", "source", "identifier", "value", "value_type", "unit", "state"])
+            writer.writeheader()
+            writer.writerows(data)
+            return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=hamqtt-export.csv"})
+        return render_template("export.html", catalog=catalog, selected=object_ids, start=start, end=end, error=error)
+
+    @app.get("/plot/<int:object_id>")
+    def plot_object(object_id):
+        return redirect(url_for("graph_view", object_id=object_id, standalone=1))
 
     @app.get("/objects")
     def objects():

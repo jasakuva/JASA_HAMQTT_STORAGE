@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block topbar_title %}MQTT field history{% endblock %}{% block content %}
 <a class="back-link" href="{{ url_for('mqtt_topic_detail', topic_id=topic.id) }}">← Back to {{ topic.topic }}</a>
-<div class="page-header"><div><h1>{{ field.field_path }}</h1><p>{{ topic.topic }} · {{ field.data_type }} · {{ field.observation_count }} observations</p></div></div>
+<div class="page-header"><div><h1>{{ field.field_path }}</h1><p>{{ topic.topic }} · {{ field.data_type }} · {{ field.observation_count }} observations</p></div><div class="page-actions"><a class="button" target="_blank" rel="noopener" href="{{ url_for('plot_object', object_id=field.object_id) }}">Open graph</a></div></div>
 <section class="detail-card">
   <h3>Field value history</h3>
   <table><tr><th>Value</th><th>Type</th><th>Observed</th><th>Received</th><th>Quality</th><th>Raw MQTT message</th></tr>
