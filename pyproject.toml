@@ -18,6 +18,7 @@ dependencies = [
   "cryptography>=44,<46",
   "gunicorn>=23,<27",
   "mcp>=2,<3",
+  "redis>=5,<7",
 ]
 
 [project.optional-dependencies]

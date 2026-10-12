@@ -19,14 +19,11 @@ fail() {
 
 command -v bash >/dev/null 2>&1 || fail "bash is required"
 
-if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    readonly ENGINE=docker
-    compose() { docker compose "$@"; }
-elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
+if command -v podman-compose >/dev/null 2>&1 && podman-compose version >/dev/null 2>&1; then
     readonly ENGINE=podman
-    compose() { podman compose "$@"; }
+    compose() { podman-compose "$@"; }
 else
-    fail "Docker Compose or Podman Compose is required"
+    fail "podman-compose is required for the project workflow"
 fi
 
 env_value() {

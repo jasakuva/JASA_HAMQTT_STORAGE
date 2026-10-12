@@ -7,6 +7,7 @@ from sqlalchemy import select
 from ..db import SessionLocal, MQTTConnection
 from ..services.ingestion import ingest_mqtt_message
 from ..services.logging import record_log
+from ..services.dashboard_cache import cache_dashboard_message, make_dashboard_message
 
 log = logging.getLogger(__name__)
 
@@ -91,6 +92,7 @@ def run():
                 def on_message(_client, _userdata, message):
                     try:
                         message_id = ingest_mqtt_message(connection_id, message.topic, bytes(message.payload), message.qos, message.retain, message.dup)
+                        cache_dashboard_message(make_dashboard_message(message.topic, message.payload, message.qos, message.retain))
                         log.debug("Stored MQTT message id=%s topic=%s bytes=%s", message_id, message.topic, len(message.payload))
                         record_log("DEBUG", "mqtt_worker", "message_saved", "MQTT message saved", context={"topic": message.topic, "bytes": len(message.payload)}, connection_id=connection_id)
                     except Exception as exc:

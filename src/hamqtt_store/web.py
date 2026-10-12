@@ -8,6 +8,7 @@ from flask import Flask, Response, jsonify, redirect, render_template, request, 
 from sqlalchemy import func, or_, select
 from .auth import get_user, password_matches, reset_authentication_if_requested, set_password, valid_credentials
 from .config import settings
+from .services.dashboard_cache import get_dashboard_messages
 from .db import (
     HAConnection,
     ApplicationLog,
@@ -239,7 +240,11 @@ def create_app():
                 "mqtt_messages": session.scalar(select(func.count(MQTTMessage.id))) or 0,
                 "links": session.scalar(select(func.count(ObjectLink.id))) or 0,
             }
-        return render_template("dashboard.html", counts=counts)
+        return render_template("dashboard.html", counts=counts, latest_mqtt=get_dashboard_messages())
+
+    @app.get("/api/dashboard/latest-mqtt")
+    def latest_mqtt():
+        return jsonify(messages=get_dashboard_messages())
 
     @app.get("/health")
     def health():
