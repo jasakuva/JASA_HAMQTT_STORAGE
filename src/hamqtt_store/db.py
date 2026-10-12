@@ -25,6 +25,14 @@ class SystemSetting(Base, TimestampMixin):
     setting_value: Mapped[dict] = mapped_column(JSON, default=dict)
     is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
 
+class ApplicationUser(Base, TimestampMixin):
+    __tablename__ = "application_users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(150), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(Text)
+    session_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
 class ApplicationLog(Base):
     __tablename__ = "application_logs"
     id: Mapped[int] = mapped_column(primary_key=True)

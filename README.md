@@ -77,6 +77,8 @@ POSTGRES_PASSWORD=change-this-development-password
 
 `.env` contains local configuration and must not be committed. The repository `.gitignore` is configured to exclude it.
 
+For a production or HTTPS deployment, set a unique `SECRET_KEY` and change `SESSION_COOKIE_SECURE=true`. The default session duration is 365 days and can be changed with `SESSION_DAYS`.
+
 ### 3. Start the container engine
 
 On Linux, make sure Docker is running:
@@ -106,6 +108,17 @@ Open the application at:
 ```text
 http://localhost:8000
 ```
+
+On the first visit, create the administrator username and password. The login session is remembered for 365 days by default. You can change the credentials later from **Settings → Authentication**.
+
+If the credentials are forgotten, run this from the project directory and restart the web service:
+
+```bash
+podman-compose run --rm --no-deps web python -m hamqtt_store.cli reset-auth
+podman-compose up -d --no-deps web
+```
+
+The next visit opens the account setup page again. The reset marker is stored in the persistent `hamqtt-app-data` volume.
 
 The migration service normally exits successfully after applying the migrations. The database, web, MQTT, and HA services should remain running. If migration fails, inspect it with `docker compose logs migrate`; application services intentionally remain stopped.
 

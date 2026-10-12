@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block topbar_title %}Sign in{% endblock %}{% block content %}
+<section class="panel" style="max-width:520px;margin:48px auto"><div class="panel-header"><div><h1 class="panel-title">Sign in</h1><p class="panel-subtitle">Enter your HA MQTT Store credentials.</p></div></div>
+{% if error %}<p class="badge warning">{{ error }}</p>{% endif %}
+<form method="post" class="settings-form settings-form-labeled"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ next_url }}"><div class="field"><label for="username">Username</label><input id="username" name="username" required autofocus></div><div class="field"><label for="password">Password</label><input id="password" name="password" type="password" required></div><button>Sign in</button></form></section>
+{% endblock %}

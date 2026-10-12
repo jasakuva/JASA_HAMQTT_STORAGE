@@ -1,10 +1,12 @@
 import csv
 import io
 import json
+import secrets
 from datetime import UTC, datetime, timedelta
 
-from flask import Flask, Response, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, session as flask_session, url_for
 from sqlalchemy import func, or_, select
+from .auth import get_user, password_matches, reset_authentication_if_requested, set_password, valid_credentials
 from .config import settings
 from .db import (
     HAConnection,
@@ -12,6 +14,7 @@ from .db import (
     HAEntity,
     HAStateCurrent,
     HAStateHistory,
+    ApplicationUser,
     IngestionSubscription,
     MQTTConnection,
     MQTTCurrentValue,
@@ -29,7 +32,102 @@ from .db import (
 def create_app():
     app = Flask(__name__, template_folder="../../templates", static_folder="../../static")
     app.config["SECRET_KEY"] = settings.secret_key
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=max(1, settings.session_days))
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = settings.session_cookie_secure
     app.jinja_env.filters["pretty_json"] = lambda value: json.dumps(value or {}, indent=2, sort_keys=True, default=str)
+
+    @app.context_processor
+    def security_context():
+        return {"csrf_token": csrf_token}
+
+    def csrf_token():
+        token = flask_session.get("csrf_token")
+        if not token:
+            token = secrets.token_urlsafe(32)
+            flask_session["csrf_token"] = token
+        return token
+
+    def csrf_valid():
+        return bool(request.form.get("csrf_token")) and secrets.compare_digest(
+            request.form.get("csrf_token", ""), flask_session.get("csrf_token", "")
+        )
+
+    @app.before_request
+    def require_authentication():
+        reset_authentication_if_requested()
+        if request.endpoint in {"health", "setup", "setup_submit", "login", "login_submit", "logout", "static"}:
+            return None
+        with SessionLocal() as db_session:
+            user = get_user(db_session)
+            if user is None:
+                return redirect(url_for("setup"))
+            authenticated = flask_session.get("user_id") == user.id and flask_session.get("session_version") == user.session_version
+        if not authenticated:
+            return redirect(url_for("login", next=request.full_path))
+        if request.method == "POST" and not csrf_valid():
+            return "Invalid or missing CSRF token", 400
+        return None
+
+    @app.get("/setup")
+    def setup():
+        with SessionLocal() as db_session:
+            if get_user(db_session):
+                return redirect(url_for("dashboard"))
+        return render_template("setup.html", error=None)
+
+    @app.post("/setup")
+    def setup_submit():
+        if not csrf_valid():
+            return "Invalid or missing CSRF token", 400
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        confirmation = request.form.get("password_confirmation", "")
+        if not valid_credentials(username, password):
+            return render_template("setup.html", error="Enter a username and a password of at least 6 characters."), 400
+        if password != confirmation:
+            return render_template("setup.html", error="The passwords do not match."), 400
+        with SessionLocal() as db_session:
+            if get_user(db_session):
+                return redirect(url_for("login"))
+            user = ApplicationUser(username=username, password_hash="")
+            set_password(user, password)
+            db_session.add(user)
+            db_session.commit()
+            flask_session.clear()
+            flask_session.permanent = True
+            flask_session["user_id"] = user.id
+            flask_session["session_version"] = user.session_version
+        return redirect(url_for("dashboard"))
+
+    @app.get("/login")
+    def login():
+        return render_template("login.html", error=None, next_url=request.args.get("next", ""))
+
+    @app.post("/login")
+    def login_submit():
+        if not csrf_valid():
+            return "Invalid or missing CSRF token", 400
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        with SessionLocal() as db_session:
+            user = db_session.scalar(select(ApplicationUser).where(ApplicationUser.username == username, ApplicationUser.enabled))
+            if not user or not password_matches(user, password):
+                return render_template("login.html", error="Invalid username or password.", next_url=request.form.get("next", "")), 401
+            user_id = user.id
+            version = user.session_version
+        flask_session.clear()
+        flask_session.permanent = True
+        flask_session["user_id"] = user_id
+        flask_session["session_version"] = version
+        next_url = request.form.get("next", "")
+        return redirect(next_url if next_url.startswith("/") else url_for("dashboard"))
+
+    @app.get("/logout")
+    def logout():
+        flask_session.clear()
+        return redirect(url_for("login"))
 
     def parse_range():
         now = datetime.now(UTC)
@@ -328,6 +426,30 @@ def create_app():
                         setting = SystemSetting(setting_key="mcp", setting_value={}, is_secret=False)
                         session.add(setting)
                     setting.setting_value = {"enabled": enabled, "access_level": access_level}
+                elif kind == "auth":
+                    user = get_user(session)
+                    if not user:
+                        return redirect(url_for("setup"))
+                    current_password = request.form.get("current_password", "")
+                    username = request.form.get("username", "").strip()
+                    new_password = request.form.get("new_password", "")
+                    confirmation = request.form.get("password_confirmation", "")
+                    if not password_matches(user, current_password):
+                        return "Current password is incorrect", 400
+                    if not username:
+                        return "Username cannot be empty", 400
+                    if new_password and not valid_credentials(username, new_password):
+                        return "New password must be at least 6 characters", 400
+                    if new_password != confirmation:
+                        return "The new passwords do not match", 400
+                    user.username = username
+                    if new_password:
+                        set_password(user, new_password)
+                    else:
+                        user.session_version += 1
+                    session.commit()
+                    flask_session.clear()
+                    return redirect(url_for("login"))
                 elif kind == "ha":
                     ha_connections = session.scalars(select(HAConnection).order_by(HAConnection.id)).all()
                     connection = ha_connections[0] if ha_connections else HAConnection()
@@ -399,6 +521,7 @@ def create_app():
             mcp_config = mcp_setting.setting_value if mcp_setting else {"enabled": False, "access_level": "read_only"}
             retention_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "retention"))
             retention_config = retention_setting.setting_value if retention_setting else {"history_days": 365}
+            auth_user = get_user(session)
         return render_template(
             "settings.html",
             ha_connection=ha_connection,
@@ -406,6 +529,7 @@ def create_app():
             mqtt_subscription=mqtt_subscription,
             mcp_config=mcp_config,
             retention_config=retention_config,
+            auth_user=auth_user,
         )
 
     @app.get("/logs")

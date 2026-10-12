@@ -55,11 +55,14 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       SECRET_KEY: ${SECRET_KEY:-change-this-development-secret}
+      APP_DATA_DIR: /app/data
     depends_on:
       migrate:
         condition: service_completed_successfully
     ports:
       - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
     networks:
       - hamqtt-store
     labels:
@@ -156,6 +159,10 @@ networks:
     external: true
 
 volumes:
+  hamqtt-app-data:
+    name: ${APP_DATA_VOLUME:-hamqtt-app-data}
+    # Compose creates this volume automatically. It stores the authentication
+    # reset marker and other persistent application-local data.
   hamqtt-postgres-data:
     name: ${POSTGRES_VOLUME:-hamqtt-postgres-data}
     # Never remove this volume during an application update; it contains the
