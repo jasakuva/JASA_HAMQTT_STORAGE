@@ -2,7 +2,10 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from ..db import (SessionLocal, Object, MQTTTopic, MQTTMessage, MQTTPayloadField,
                   MQTTObservation, MQTTCurrentValue, MQTTParseEvent, utcnow)
-from .mqtt_parser import parse_payload, payload_hash
+from .mqtt_parser import classify_payload, parse_payload, payload_hash
+
+def should_skip_mqtt_parsing(topic: str) -> bool:
+    return topic == "zigbee2mqtt/bridge" or topic.startswith("zigbee2mqtt/bridge/")
 
 def get_or_create_object(session, object_type, source_type, identifier, display_name=None):
     obj = session.scalar(select(Object).where(Object.source_type == source_type, Object.source_identifier == identifier))
@@ -32,7 +35,11 @@ def ingest_mqtt_message(connection_id: int, topic: str, payload: bytes, qos=0, r
             mqtt_topic = MQTTTopic(object_id=topic_obj.id, mqtt_connection_id=connection_id, topic=topic,
                                    first_seen_at=received_at, last_seen_at=received_at)
             session.add(mqtt_topic); session.flush()
-        payload_type, parsed, fields, payload_text = parse_payload(payload)
+        if should_skip_mqtt_parsing(topic):
+            payload_type, parsed, payload_text = classify_payload(payload)
+            fields = []
+        else:
+            payload_type, parsed, fields, payload_text = parse_payload(payload)
         message = MQTTMessage(mqtt_connection_id=connection_id, mqtt_topic_id=mqtt_topic.id,
                               received_at=received_at, qos=qos, retain=retain, duplicate=duplicate,
                               payload_type=payload_type, payload_text=payload_text if payload_type != "json" else None,
