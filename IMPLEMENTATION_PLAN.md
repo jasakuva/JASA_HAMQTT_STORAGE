@@ -1,7 +1,7 @@
 # HA MQTT Store - Implementation Plan
 
 **Status:** Active implementation roadmap
-**Last updated:** 2026-10-10
+**Last updated:** 2026-10-12
 **Repository:** `%INSTALL_PATH%`
 
 `%INSTALL_PATH%` means the local directory where this repository is installed.
@@ -32,6 +32,9 @@ The application must preserve source data while also extracting useful structure
 - `[~]` Generic object catalog and metadata editing; the catalog exists, but the full metadata/linking workflow is incomplete.
 - `[~]` PostgreSQL relational schema with JSON/BLOB-compatible raw data and pgvector support; vector search is not implemented yet.
 - `[x]` Flask web UI, health endpoint, and initial JSON API.
+- `[x]` Main dashboard live MQTT feed and sampled Home Assistant snapshot using a bounded Redis cache and browser polling.
+- `[x]` Historical graph view with Plotly interaction, range selection, and numeric downsampling.
+- `[x]` Historical CSV export for selected Home Assistant entities and MQTT fields.
 - `[x]` Podman Compose deployment for local development/Linux-style containers.
 - `[~]` Health, logging, migration, and test foundations; integration coverage and production operations remain.
 
@@ -159,12 +162,14 @@ static/
 ### Phase 6 - Web UI and object management
 
 - [x] Add dashboard.
+- [x] Add Redis-backed live dashboard tiles with MQTT and Home Assistant polling endpoints.
 - [~] Add HA entities/devices/areas/services views; entity/current/history views exist, broader views remain.
 - [x] Add MQTT topic tree and message views.
 - [x] Add parsed MQTT field/value views.
 - [ ] Add object detail pages.
 - [ ] Add nicknames, descriptions, tags, and custom attributes.
-- [ ] Add history timelines and numeric charts.
+- [x] Add historical graph view with interactive Plotly charts and range controls.
+- [x] Add CSV export for selected historical series.
 - [x] Add raw payload viewer with safe display handling.
 
 ### Phase 7 - Mapping and search

@@ -1,6 +1,6 @@
 # HA MQTT Store Restart Guide
 
-This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 9, 2026.
+This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 12, 2026.
 
 ## 1. What this project is
 
@@ -16,6 +16,9 @@ The current application includes:
 - Normalized MQTT current values and historical observations.
 - MQTT topic overview and topic history pages.
 - Field-specific MQTT value history linked to the originating raw message.
+- Main dashboard counters, workspace status, live MQTT feed, and sampled Home Assistant snapshot.
+- Interactive historical graphs and CSV export for selected HA entities and MQTT fields.
+- Redis-backed dashboard cache documented in [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).
 - Alembic database migrations.
 - Basic parser tests and documentation validation.
 
@@ -26,6 +29,7 @@ The current application includes:
 | `README.md` | Short project overview and basic commands |
 | `IMPLEMENTATION_PLAN.md` | Feature checklist and remaining work |
 | `docs/ARCHITECTURE.md` | Data model and architectural decisions |
+| `docs/DASHBOARD_DATA_FLOW.md` | Dashboard live-data pipeline, graph, export, and troubleshooting reference |
 | `docs/POSTGRESQL_SETUP.md` | PostgreSQL/pgvector setup and data-volume guidance |
 | `compose.yml` | PostgreSQL, migration, web, MQTT, HA, and MCP services |
 | `.env` | Local secrets and connection configuration; never commit it |
@@ -154,7 +158,20 @@ git diff --check
 
 The current parser test suite has three tests. Always run the tests and documentation validator before committing changes.
 
-## 7. Current MQTT UI flow
+## 7. Current dashboard and analysis flow
+
+The main dashboard is a server-rendered Flask page followed by browser polling:
+
+1. PostgreSQL provides the metric-card counts and durable history remains available independently.
+2. Redis provides the initial MQTT preview and the sampled Home Assistant state cache.
+3. `static/app.js` polls `/api/dashboard/latest-mqtt` every 2 seconds and `/api/dashboard/random-ha` every 10 seconds.
+4. The JavaScript replaces only the live feed DOM rows, skips polling when the tab is hidden, and marks a tile offline when its request fails.
+5. The **Graphs** page reads historical PostgreSQL rows and plots up to four selected series with Plotly.
+6. The **Export CSV** page reads historical PostgreSQL rows for up to ten selected series.
+
+The Redis cache is bounded and best-effort. It is not the source of truth and is not used by graphs or CSV export. For the complete sequence, cache keys, payload shapes, refresh intervals, and troubleshooting commands, see [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).
+
+## 8. Current MQTT UI flow
 
 1. Open **MQTT data**.
 2. The upper topic list shows topic ID, topic name, message count, and last seen time.
@@ -166,7 +183,7 @@ The current parser test suite has three tests. Always run the tests and document
 
 Observations are connected to their raw messages through `mqtt_observations.source_message_id`.
 
-## 8. How to continue implementation
+## 9. How to continue implementation
 
 Read these in order:
 

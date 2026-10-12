@@ -1,7 +1,7 @@
 # HA MQTT Store — Architecture and Database Design
 
 **Document status:** Current implementation reference
-**Last reviewed:** 2026-10-10
+**Last reviewed:** 2026-10-12
 **Database:** PostgreSQL 17 with `pgvector`
 **ORM:** SQLAlchemy 2.x
 **Migrations:** Alembic
@@ -31,6 +31,7 @@ Home Assistant ──WebSocket──► HA ingestor ─┐
                                            │
 MQTT broker ─────MQTT────────► MQTT ingestor ─┼──► PostgreSQL 17 + pgvector
                                            │
+                                            ├──► Redis dashboard cache ──► Flask JSON API ──► Browser live tiles
 Browser ─────────HTTP────────► Flask web ───┘
 
 ChatGPT/Codex ◄── read-only MCP ── MCP service ──► same PostgreSQL database
@@ -63,6 +64,8 @@ The ChatGPT URL is the current ngrok HTTPS address followed by `/mcp`.
 - **Raw-to-derived lineage:** every MQTT observation points to its original `mqtt_messages` row through `source_message_id`.
 - **Cascade awareness:** source-specific rows use `ON DELETE CASCADE`; deleting a connection can delete its ingested data.
 - **Schema authority:** `src/hamqtt_store/db.py` is the model authority; Alembic revisions create/evolve the database.
+
+The dashboard live path is intentionally separate from durable history. After a successful source write, the MQTT worker writes a compact six-message list to Redis key `dashboard:mqtt:latest`, and the HA worker writes compact current entities to Redis hash `dashboard:ha:states`. Flask exposes these caches through `/api/dashboard/latest-mqtt` and `/api/dashboard/random-ha`. `static/app.js` polls the MQTT endpoint every two seconds and the HA endpoint every ten seconds, skips requests while the tab is hidden, and renders the returned rows in place. Redis writes and reads are best-effort: failures are logged and return an empty cache or an offline badge, while PostgreSQL ingestion remains the source of truth.
 
 ## 4. Implemented schema at a glance
 
@@ -346,6 +349,12 @@ mqtt_messages.id = 9001, topic = sensors/living-room
 ```
 
 The HA worker maintains one `ha_entities` row, one `ha_state_current` row, and many `ha_state_history` rows per entity. The history uniqueness rule makes repeated synchronization idempotent for the same entity/timestamp pair.
+
+## 6.1 Dashboard, graph, and export reads
+
+The main dashboard route uses PostgreSQL for summary counts and Redis for the initial MQTT preview. The browser then refreshes the live MQTT and sampled HA tiles through the JSON endpoints described above. The dashboard cache is bounded and disposable; it is not used for historical analysis.
+
+The `/graph` route reads `ha_state_history` and `mqtt_observations` for one to four selected catalog objects, sorts the results by timestamp, and downsamples numeric rows above 4,000 points before rendering Plotly traces. The `/export` route reads the same historical sources for one to ten selected objects and, with `download=1`, returns `hamqtt-export.csv` with timestamp, series, source, identifier, value, value type, unit, and state columns. Both routes use the shared `objects` catalog and UTC-normalized time ranges.
 
 ## 7. SQL query examples
 

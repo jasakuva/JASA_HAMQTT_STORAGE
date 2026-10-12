@@ -2,6 +2,14 @@
 
 Release date: 2026-10-10
 
+## Unreleased dashboard and analysis additions
+
+- Added the main dashboard live MQTT feed and sampled Home Assistant snapshot.
+- Added the Redis dashboard cache path with bounded MQTT entries and current HA entity values; PostgreSQL remains the durable source for history.
+- Added interactive Plotly graphs for historical Home Assistant entities and MQTT fields, including time ranges, range controls, zooming, and numeric downsampling.
+- Added CSV export for selected historical series with timestamp, source, identifier, typed value, unit, and state columns.
+- Documented the live-data path, browser polling intervals, cache keys, API endpoints, failure behavior, graph reads, export reads, and troubleshooting workflow in `docs/DASHBOARD_DATA_FLOW.md`.
+
 ## Highlights
 
 Version 0.2.1 is a maintenance release focused on MQTT reliability, clearer Settings behavior, operational diagnostics, and safer upgrades.

@@ -4,7 +4,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Documentation:** More detailed deployment, architecture, database schema, table relationships, field definitions, and practical SQL examples are available in the [project Wiki](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki). Start with the [Database Schema and SQL guide](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki/Database-Schema-and-SQL) for database usage.
 
-> **Current status:** Active development. The MQTT ingestion and history views are usable locally. Authentication, production hardening, advanced MQTT decoders, charts, retention jobs, and several HA/linking workflows are still planned.
+> **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -18,10 +18,14 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - MQTT topic overview with topic IDs, topic names, message counts, and recent messages.
 - MQTT topic history with parsed fields, current values, observations, and raw message history.
 - Field-specific value history linked to each observation's originating raw MQTT message.
+- Main dashboard with PostgreSQL counts, compact workspace status, live MQTT feed, and sampled Home Assistant state snapshot.
+- Redis-backed dashboard cache that keeps the live UI responsive without replacing PostgreSQL history.
+- Interactive Plotly graphs for up to four historical HA entities or MQTT fields.
+- CSV export for up to ten historical HA entities or MQTT fields.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
-Detailed worker diagnostics, ingestion freshness monitoring, and a system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
+Detailed worker heartbeats, ingestion freshness monitoring, and a full system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
 
 For the full implementation status, see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). For restarting or resuming work later, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
 
@@ -183,6 +187,14 @@ docker compose logs web
 
 Each observation is linked to its source message through `mqtt_observations.source_message_id`.
 
+## Dashboard, graphs, and export
+
+The main dashboard combines durable database counters with a small live-data path. MQTT and Home Assistant workers write compact updates to Redis after their PostgreSQL writes. The browser polls the MQTT endpoint every two seconds and a sampled Home Assistant endpoint every ten seconds, updating only the feed tiles. Redis is best-effort and bounded; PostgreSQL remains the source of truth for history, graphs, and exports.
+
+The **Graphs** page reads historical HA state and MQTT observation rows, supports one to four selected series, and uses Plotly zooming, a range slider, and time-range buttons. The **Export CSV** page reads the same historical sources, supports one to ten series, and returns timestamped rows with source, identifier, value, type, unit, and state columns.
+
+See [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) for the complete live-data flow, Redis keys, polling behavior, graph downsampling, export format, and troubleshooting steps.
+
 ## MCP service
 
 The optional MCP service exposes read-only tools and resources for Home Assistant entities, state history, MQTT topics, messages, parsed fields, current values, and the object catalog. It never publishes MQTT messages, calls Home Assistant services, or writes to the database.
@@ -258,6 +270,7 @@ Only run the volume removal command when a complete development reset is intende
 - [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — current implementation status and remaining roadmap.
 - [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md) — how to resume the project after a break.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture and data model.
+- [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) — dashboard live-data pipeline, graphs, CSV export, and troubleshooting.
 - [`docs/POSTGRESQL_SETUP.md`](docs/POSTGRESQL_SETUP.md) — PostgreSQL/pgvector details.
 
 ## License
