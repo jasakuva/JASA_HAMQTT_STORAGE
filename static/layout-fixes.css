@@ -74,6 +74,17 @@
 .graph-panel{min-height:560px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 .page-actions{display:flex;gap:8px;align-items:center}
 .latest-mqtt-panel{grid-column:1 / -1}
+.latest-ha-panel{grid-column:1 / -1}
+.workspace-status-panel{display:grid;gap:10px;grid-column:1 / -1;padding:12px 16px}
+.workspace-status-label{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.workspace-status-label .panel-subtitle{margin-top:2px}
+.workspace-status-data{display:flex;align-items:center;flex-wrap:wrap;gap:8px 24px;padding-top:10px;border-top:1px solid var(--line)}
+.workspace-status-item{display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;color:var(--text);font-size:12px;white-space:nowrap}
+.workspace-status-item>span:first-child{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:700px){.workspace-status-data{align-items:flex-start;gap:8px 16px}.workspace-status-item{max-width:100%}}
+.ha-snapshot{display:grid;gap:0;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:12px}
+.ha-snapshot-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,.35fr) 90px;gap:12px;align-items:center;min-width:0;padding:8px 10px;border-bottom:1px solid var(--line)}
+.ha-snapshot-row:last-child{border-bottom:0}.ha-snapshot-name,.ha-snapshot-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ha-snapshot-name{font-weight:700}.ha-snapshot-value{color:var(--accent);text-align:right}.ha-snapshot-time{color:var(--muted);text-align:right;white-space:nowrap;font-size:11px}
 .mqtt-feed{display:grid;gap:0;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:11px}
 .mqtt-feed-row{display:grid;grid-template-columns:88px minmax(150px, .8fr) minmax(0, 1.6fr);gap:10px;align-items:center;min-width:0;padding:7px 9px;border-bottom:1px solid var(--line);line-height:1.25}
 .mqtt-feed-row:last-child{border-bottom:0}
@@ -82,5 +93,6 @@
 .mqtt-feed-topic{color:var(--accent);font-weight:700}
 .mqtt-feed-message{color:var(--text);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 @media (max-width:700px){.mqtt-feed-row{grid-template-columns:72px minmax(0,1fr);gap:4px 8px}.mqtt-feed-message{grid-column:2}.mqtt-feed-topic{grid-column:2}.mqtt-feed-row time{grid-row:1 / span 2}}
+@media (max-width:560px){.ha-snapshot-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}.ha-snapshot-value{grid-column:1;text-align:left}.ha-snapshot-time{grid-column:2;grid-row:1 / span 2}}
 .standalone-shell .content-shell{width:100%}.standalone-shell main{min-height:100vh;padding:18px;background:var(--bg)}
 @media (max-width:560px){.form-grid{grid-template-columns:1fr}.graph-panel{min-height:430px}}

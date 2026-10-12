@@ -119,6 +119,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       migrate:
         condition: service_completed_successfully

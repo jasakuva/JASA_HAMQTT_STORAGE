@@ -6,6 +6,7 @@ import websocket
 from sqlalchemy import select
 from ..db import SessionLocal, HAConnection, HAEntity, HAStateCurrent, HAStateHistory
 from ..services.ingestion import get_or_create_object
+from ..services.dashboard_cache import cache_dashboard_entity, make_dashboard_entity
 from ..services.logging import record_log
 
 log = logging.getLogger(__name__)
@@ -27,8 +28,10 @@ def run_connection(config):
     ws.send(json.dumps({"id": 1, "type": "get_states"}))
     states = json.loads(ws.recv()).get("result", [])
     with SessionLocal() as session:
-        for state in states: upsert_state(session, config.id, state)
+        cached_entities = [upsert_state(session, config.id, state) for state in states]
         session.commit()
+    for entity in cached_entities:
+        cache_dashboard_entity(entity)
     ws.send(json.dumps({"id": 2, "type": "subscribe_events", "event_type": "state_changed"}))
     if not json.loads(ws.recv()).get("success"): raise RuntimeError("Could not subscribe to state_changed")
     record_log("INFO", "ha_worker", "subscribed", "Subscribed to Home Assistant state changes", connection_id=config.id)
@@ -37,8 +40,9 @@ def run_connection(config):
         event = message.get("event", {}).get("data", {})
         if event.get("new_state"):
             with SessionLocal() as session:
-                upsert_state(session, config.id, event["new_state"])
+                cached_entity = upsert_state(session, config.id, event["new_state"])
                 session.commit()
+            cache_dashboard_entity(cached_entity)
 
 def upsert_state(session, connection_id, state):
     entity_id = state.get("entity_id", "")
@@ -73,6 +77,14 @@ def upsert_state(session, connection_id, state):
             observed_at=updated,
             **{k: values[k] for k in ["state_text", "state_numeric", "state_boolean", "attributes", "raw_state"]},
         ))
+    return make_dashboard_entity(
+        getattr(entity, "entity_id", entity_id),
+        getattr(entity, "original_name", state.get("attributes", {}).get("friendly_name")),
+        values["state_text"],
+        values["state_numeric"],
+        values["state_boolean"],
+        values["last_updated_at"],
+    )
 
 def run():
     record_log("INFO", "ha_worker", "worker_started", "Home Assistant worker started")
