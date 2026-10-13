@@ -96,3 +96,13 @@
 @media (max-width:560px){.ha-snapshot-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}.ha-snapshot-value{grid-column:1;text-align:left}.ha-snapshot-time{grid-column:2;grid-row:1 / span 2}}
 .standalone-shell .content-shell{width:100%}.standalone-shell main{min-height:100vh;padding:18px;background:var(--bg)}
 @media (max-width:560px){.form-grid{grid-template-columns:1fr}.graph-panel{min-height:430px}}
+
+/* Keep the dashboard compact without sacrificing readability. */
+:root{font-size:13px}
+.page-header{margin-bottom:16px}
+.page-header h1{font-size:24px}
+.grid{gap:12px}
+.metric-card{padding:13px 14px}
+.metric-value{font-size:24px}
+.panel{padding:14px}
+.panel-title{font-size:15px}
