@@ -1,66 +1,69 @@
-# HA MQTT Store 0.2.1
+# HA MQTT Store 0.3.0
 
-Release date: 2026-10-10
-
-## Unreleased dashboard and analysis additions
-
-- Added the main dashboard live MQTT feed and sampled Home Assistant snapshot.
-- Added the Redis dashboard cache path with bounded MQTT entries and current HA entity values; PostgreSQL remains the durable source for history.
-- Added interactive Plotly graphs for historical Home Assistant entities and MQTT fields, including time ranges, range controls, zooming, and numeric downsampling.
-- Added CSV export for selected historical series with timestamp, source, identifier, typed value, unit, and state columns.
-- Documented the live-data path, browser polling intervals, cache keys, API endpoints, failure behavior, graph reads, export reads, and troubleshooting workflow in `docs/DASHBOARD_DATA_FLOW.md`.
+Release date: 2026-10-12
 
 ## Highlights
 
-Version 0.2.1 is a maintenance release focused on MQTT reliability, clearer Settings behavior, operational diagnostics, and safer upgrades.
+Version 0.3.0 delivers the complete dashboard live-data and historical-analysis workflow, a more compact dashboard experience, and safer operational tooling for updating and starting installations on Windows and Linux.
 
-## Fixed
+## Dashboard and analysis
 
-- Fixed MQTT Settings selecting an older disabled connection instead of the active enabled connection.
-- Fixed MQTT topic storage when the same shared topic object is used by multiple broker-specific topic rows.
-- Fixed MQTT payload-field storage when the same shared field object is used by multiple topic rows.
-- MQTT messages now continue to be stored correctly after the database constraint fixes are applied.
-- MQTT worker diagnostics now include connection context and actionable failure details without logging credentials or payloads.
+- Added a live MQTT dashboard feed backed by a bounded Redis cache.
+- Added a sampled Home Assistant live snapshot backed by Redis.
+- Added browser polling with MQTT refreshes every 2 seconds and Home Assistant refreshes every 10 seconds.
+- Kept PostgreSQL as the durable source of truth for current data, history, graphs, and exports.
+- Added interactive Plotly graphs for historical Home Assistant entities and MQTT fields.
+- Added graph time ranges, range controls, zooming, panning, and numeric downsampling.
+- Added CSV export for selected historical Home Assistant entities and MQTT fields.
+- Added dashboard live/offline status behavior and documented failure behavior when Redis or a worker is unavailable.
+- Removed the dashboard's duplicate “Configure sources” action; source configuration remains available in Settings.
+- Reduced the default dashboard scale so cards and panels use the workspace more efficiently.
+- Added a custom HA MQTT Store browser-tab favicon.
 
-## Improved
+## Operations and deployment
 
-- Added persistent application logs with readable details on the Logs page.
-- Improved MQTT and Home Assistant connection status diagnostics in Settings.
-- Added ownership labels to Compose services so the update process can distinguish HAMQTT containers from unrelated containers.
-- Added `scripts/update.sh` for automatic consumer-safe updates:
-  - Builds the application image.
-  - Creates missing network and database volume resources.
-  - Waits for PostgreSQL.
-  - Applies pending Alembic migrations automatically.
-  - Recreates only HAMQTT application containers.
-  - Refuses to remove unrelated containers using HAMQTT container names.
-  - Verifies the web health endpoint before reporting success.
-- Compose now treats the existing HAMQTT network and PostgreSQL volume as persistent external resources.
+- Added `start-hamqtt.cmd` for Windows Podman startup.
+- Added `update-hamqtt.cmd` for Windows Podman updates.
+- The Windows scripts wait for PostgreSQL and Redis health, run migrations, preserve named volumes, and start application services without destructive volume cleanup.
+- Maintained `scripts/update.sh` for Linux-style Podman deployments.
+- Documented Docker Compose update compatibility for Linux installations using Docker.
+- Added operational documentation for dashboard data flow, graphs, CSV export, troubleshooting, and restart procedures.
 
-## Database migrations
+## Data safety
 
-This release includes:
-
-- `0003_application_logs`
-- `0004_shared_mqtt_topic_objects`
-- `0005_shared_mqtt_field_objects`
-
-Migrations are applied automatically by `scripts/update.sh`; no manual migration command is required.
+- Redis remains a bounded, best-effort live-dashboard cache rather than the system of record.
+- PostgreSQL history is preserved during application updates.
+- Upgrade instructions explicitly avoid `down -v` and database-volume deletion.
+- Database migrations run before application services are started.
 
 ## Upgrade
 
-From an existing installation:
+From an existing installation on the release branch:
 
 ```bash
-git pull origin master
+cd /opt/jasa-hamqtt-store
+git fetch origin
+git switch graph-and-export
+git pull --ff-only origin graph-and-export
 bash scripts/update.sh
 ```
 
-The PostgreSQL container and `hamqtt-postgres-data` volume are preserved. Do not use `docker compose down -v` or remove the database volume during an upgrade.
+For Docker Compose installations, use the same checked-out release and run the equivalent non-destructive workflow:
+
+```bash
+docker compose build
+docker compose down
+docker compose up -d --no-deps postgres redis
+docker compose run --rm --no-deps migrate
+docker compose up -d --no-deps web mqtt-ingestor ha-ingestor cleanup mcp
+```
+
+Do **not** use `docker compose down -v`, and do not remove `hamqtt-postgres-data` or `hamqtt-app-data`.
 
 ## Validation
 
-- 8 automated tests passing.
-- `git diff --check` passing.
+- 20 automated tests passing.
+- Python compilation passing.
+- Documentation validation passing.
 - Compose configuration rendering successfully.
-- MQTT worker verified connecting and storing new messages after the storage fixes.
+- `git diff --check` passing.

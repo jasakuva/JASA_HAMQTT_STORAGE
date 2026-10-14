@@ -206,13 +206,16 @@ After enabling it in Settings, restart the service. The local Streamable HTTP en
 Use the supplied update script. It builds the new image, creates missing infrastructure, waits for PostgreSQL, applies pending migrations automatically, and recreates only the application containers:
 
 ```bash
-git pull origin master
+git switch graph-and-export
+git pull --ff-only origin graph-and-export
 bash scripts/update.sh
 ```
 
 The script supports Docker Compose and Podman Compose. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
 
-The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` unless you intentionally want to delete the local database.
+The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` or `hamqtt-app-data` unless you intentionally want to delete application data.
+
+For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes. Docker Compose users can follow the equivalent non-destructive command sequence in [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
 
 For a first installation, use the same command:
 
