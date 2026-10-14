@@ -4,7 +4,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Documentation:** More detailed deployment, architecture, database schema, table relationships, field definitions, and practical SQL examples are available in the [project Wiki](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki). Start with the [Database Schema and SQL guide](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki/Database-Schema-and-SQL) for database usage.
 
-> **Current status:** Active development. The MQTT ingestion and history views are usable locally. Authentication, production hardening, advanced MQTT decoders, charts, retention jobs, and several HA/linking workflows are still planned.
+> **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -18,10 +18,14 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - MQTT topic overview with topic IDs, topic names, message counts, and recent messages.
 - MQTT topic history with parsed fields, current values, observations, and raw message history.
 - Field-specific value history linked to each observation's originating raw MQTT message.
+- Main dashboard with PostgreSQL counts, compact workspace status, live MQTT feed, and sampled Home Assistant state snapshot.
+- Redis-backed dashboard cache that keeps the live UI responsive without replacing PostgreSQL history.
+- Interactive Plotly graphs for up to four historical HA entities or MQTT fields.
+- CSV export for up to ten historical HA entities or MQTT fields.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
-Detailed worker diagnostics, ingestion freshness monitoring, and a system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
+Detailed worker heartbeats, ingestion freshness monitoring, and a full system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
 
 For the full implementation status, see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). For restarting or resuming work later, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
 
@@ -77,6 +81,8 @@ POSTGRES_PASSWORD=change-this-development-password
 
 `.env` contains local configuration and must not be committed. The repository `.gitignore` is configured to exclude it.
 
+For a production or HTTPS deployment, set a unique `SECRET_KEY` and change `SESSION_COOKIE_SECURE=true`. The default session duration is 365 days and can be changed with `SESSION_DAYS`.
+
 ### 3. Start the container engine
 
 On Linux, make sure Docker is running:
@@ -106,6 +112,17 @@ Open the application at:
 ```text
 http://localhost:8000
 ```
+
+On the first visit, create the administrator username and password. The login session is remembered for 365 days by default. You can change the credentials later from **Settings → Authentication**.
+
+If the credentials are forgotten, run this from the project directory and restart the web service:
+
+```bash
+podman-compose run --rm --no-deps web python -m hamqtt_store.cli reset-auth
+podman-compose up -d --no-deps web
+```
+
+The next visit opens the account setup page again. The reset marker is stored in the persistent `hamqtt-app-data` volume.
 
 The migration service normally exits successfully after applying the migrations. The database, web, MQTT, and HA services should remain running. If migration fails, inspect it with `docker compose logs migrate`; application services intentionally remain stopped.
 
@@ -170,6 +187,14 @@ docker compose logs web
 
 Each observation is linked to its source message through `mqtt_observations.source_message_id`.
 
+## Dashboard, graphs, and export
+
+The main dashboard combines durable database counters with a small live-data path. MQTT and Home Assistant workers write compact updates to Redis after their PostgreSQL writes. The browser polls the MQTT endpoint every two seconds and a sampled Home Assistant endpoint every ten seconds, updating only the feed tiles. Redis is best-effort and bounded; PostgreSQL remains the source of truth for history, graphs, and exports.
+
+The **Graphs** page reads historical HA state and MQTT observation rows, supports one to four selected series, and uses Plotly zooming, a range slider, and time-range buttons. The **Export CSV** page reads the same historical sources, supports one to ten series, and returns timestamped rows with source, identifier, value, type, unit, and state columns.
+
+See [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) for the complete live-data flow, Redis keys, polling behavior, graph downsampling, export format, and troubleshooting steps.
+
 ## MCP service
 
 The optional MCP service exposes read-only tools and resources for Home Assistant entities, state history, MQTT topics, messages, parsed fields, current values, and the object catalog. It never publishes MQTT messages, calls Home Assistant services, or writes to the database.
@@ -181,13 +206,16 @@ After enabling it in Settings, restart the service. The local Streamable HTTP en
 Use the supplied update script. It builds the new image, creates missing infrastructure, waits for PostgreSQL, applies pending migrations automatically, and recreates only the application containers:
 
 ```bash
-git pull origin master
+git switch graph-and-export
+git pull --ff-only origin graph-and-export
 bash scripts/update.sh
 ```
 
 The script supports Docker Compose and Podman Compose. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
 
-The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` unless you intentionally want to delete the local database.
+The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` or `hamqtt-app-data` unless you intentionally want to delete application data.
+
+For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes. Docker Compose users can follow the equivalent non-destructive command sequence in [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
 
 For a first installation, use the same command:
 
@@ -245,6 +273,7 @@ Only run the volume removal command when a complete development reset is intende
 - [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — current implementation status and remaining roadmap.
 - [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md) — how to resume the project after a break.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture and data model.
+- [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) — dashboard live-data pipeline, graphs, CSV export, and troubleshooting.
 - [`docs/POSTGRESQL_SETUP.md`](docs/POSTGRESQL_SETUP.md) — PostgreSQL/pgvector details.
 
 ## License

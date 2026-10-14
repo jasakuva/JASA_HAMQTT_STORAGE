@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block topbar_title %}Entity details{% endblock %}{% block content %}
 <a class="back-link" href="{{ url_for('ha_view') }}">← Back to Home Assistant entities</a>
-<div class="page-header"><div><h1>{{ object.nickname or object.display_name or entity.entity_id }}</h1><p>{{ entity.entity_id }} · {{ entity.domain }}</p></div></div>
+<div class="page-header"><div><h1>{{ object.nickname or object.display_name or entity.entity_id }}</h1><p>{{ entity.entity_id }} · {{ entity.domain }}</p></div><div class="page-actions"><a class="button" target="_blank" rel="noopener" href="{{ url_for('plot_object', object_id=entity.object_id) }}">Open graph</a></div></div>
 <section class="detail-card">
   <h3>Current state</h3>
   {% if current %}

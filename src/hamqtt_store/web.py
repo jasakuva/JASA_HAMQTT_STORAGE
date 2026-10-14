@@ -1,15 +1,21 @@
+import csv
+import io
 import json
+import secrets
+from datetime import UTC, datetime, timedelta
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, session as flask_session, url_for
 from sqlalchemy import func, or_, select
+from .auth import get_user, password_matches, reset_authentication_if_requested, set_password, valid_credentials
 from .config import settings
+from .services.dashboard_cache import get_dashboard_entities, get_dashboard_messages
 from .db import (
-    Base,
     HAConnection,
     ApplicationLog,
     HAEntity,
     HAStateCurrent,
     HAStateHistory,
+    ApplicationUser,
     IngestionSubscription,
     MQTTConnection,
     MQTTCurrentValue,
@@ -27,7 +33,202 @@ from .db import (
 def create_app():
     app = Flask(__name__, template_folder="../../templates", static_folder="../../static")
     app.config["SECRET_KEY"] = settings.secret_key
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=max(1, settings.session_days))
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = settings.session_cookie_secure
     app.jinja_env.filters["pretty_json"] = lambda value: json.dumps(value or {}, indent=2, sort_keys=True, default=str)
+
+    @app.context_processor
+    def security_context():
+        return {"csrf_token": csrf_token}
+
+    def csrf_token():
+        token = flask_session.get("csrf_token")
+        if not token:
+            token = secrets.token_urlsafe(32)
+            flask_session["csrf_token"] = token
+        return token
+
+    def csrf_valid():
+        return bool(request.form.get("csrf_token")) and secrets.compare_digest(
+            request.form.get("csrf_token", ""), flask_session.get("csrf_token", "")
+        )
+
+    @app.before_request
+    def require_authentication():
+        reset_authentication_if_requested()
+        if request.endpoint in {"health", "setup", "setup_submit", "login", "login_submit", "logout", "static"}:
+            return None
+        with SessionLocal() as db_session:
+            user = get_user(db_session)
+            if user is None:
+                return redirect(url_for("setup"))
+            authenticated = flask_session.get("user_id") == user.id and flask_session.get("session_version") == user.session_version
+        if not authenticated:
+            return redirect(url_for("login", next=request.full_path))
+        if request.method == "POST" and not csrf_valid():
+            return "Invalid or missing CSRF token", 400
+        return None
+
+    @app.get("/setup")
+    def setup():
+        with SessionLocal() as db_session:
+            if get_user(db_session):
+                return redirect(url_for("dashboard"))
+        return render_template("setup.html", error=None)
+
+    @app.post("/setup")
+    def setup_submit():
+        if not csrf_valid():
+            return "Invalid or missing CSRF token", 400
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        confirmation = request.form.get("password_confirmation", "")
+        if not valid_credentials(username, password):
+            return render_template("setup.html", error="Enter a username and a password of at least 6 characters."), 400
+        if password != confirmation:
+            return render_template("setup.html", error="The passwords do not match."), 400
+        with SessionLocal() as db_session:
+            if get_user(db_session):
+                return redirect(url_for("login"))
+            user = ApplicationUser(username=username, password_hash="")
+            set_password(user, password)
+            db_session.add(user)
+            db_session.commit()
+            flask_session.clear()
+            flask_session.permanent = True
+            flask_session["user_id"] = user.id
+            flask_session["session_version"] = user.session_version
+        return redirect(url_for("dashboard"))
+
+    @app.get("/login")
+    def login():
+        return render_template("login.html", error=None, next_url=request.args.get("next", ""))
+
+    @app.post("/login")
+    def login_submit():
+        if not csrf_valid():
+            return "Invalid or missing CSRF token", 400
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        with SessionLocal() as db_session:
+            user = db_session.scalar(select(ApplicationUser).where(ApplicationUser.username == username, ApplicationUser.enabled))
+            if not user or not password_matches(user, password):
+                return render_template("login.html", error="Invalid username or password.", next_url=request.form.get("next", "")), 401
+            user_id = user.id
+            version = user.session_version
+        flask_session.clear()
+        flask_session.permanent = True
+        flask_session["user_id"] = user_id
+        flask_session["session_version"] = version
+        next_url = request.form.get("next", "")
+        return redirect(next_url if next_url.startswith("/") else url_for("dashboard"))
+
+    @app.get("/logout")
+    def logout():
+        flask_session.clear()
+        return redirect(url_for("login"))
+
+    def parse_range():
+        now = datetime.now(UTC)
+        default_from = now - timedelta(hours=24)
+        values = []
+        for name, default in (("from", default_from), ("to", now)):
+            raw = request.args.get(name, "").strip()
+            if not raw:
+                values.append(default)
+                continue
+            try:
+                parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                values.append((parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)).astimezone(UTC))
+            except ValueError:
+                values.append(None)
+        if any(value is None for value in values) or values[0] >= values[1]:
+            return None, None
+        return values
+
+    def selected_ids():
+        raw = request.args.getlist("object_id") or request.args.getlist("object_ids")
+        ids = []
+        for value in raw:
+            for item in value.split(","):
+                try:
+                    object_id = int(item)
+                except ValueError:
+                    continue
+                if object_id not in ids:
+                    ids.append(object_id)
+        return ids
+
+    def series_catalog(session):
+        rows = [dict(row) for row in session.execute(select(
+            Object.id.label("id"), Object.nickname.label("nickname"), Object.display_name.label("display_name"),
+            HAEntity.entity_id.label("identifier"),
+        ).join(HAEntity, HAEntity.object_id == Object.id)).mappings().all()]
+        rows = [{"id": row["id"], "label": row["nickname"] or row["display_name"] or row["identifier"],
+                 "identifier": row["identifier"], "source": "Home Assistant", "unit": None} for row in rows]
+        mqtt_rows = session.execute(select(
+            Object.id.label("id"), Object.nickname.label("nickname"), Object.display_name.label("display_name"),
+            MQTTPayloadField.field_path.label("identifier"), MQTTPayloadField.unit.label("unit"),
+        ).join(MQTTPayloadField, MQTTPayloadField.object_id == Object.id)).mappings().all()
+        rows.extend({"id": row["id"], "label": row["nickname"] or row["display_name"] or row["identifier"],
+                     "identifier": row["identifier"], "source": "MQTT", "unit": row["unit"]} for row in mqtt_rows)
+        rows = list({row["id"]: row for row in rows}.values())
+        return sorted(rows, key=lambda row: (row["source"], row["label"]))
+
+    def history_rows(session, object_ids, start, end, downsample=False):
+        result = []
+        entities = session.execute(select(
+            HAEntity.id.label("entity_id"), HAEntity.entity_id.label("identifier"),
+            Object.nickname.label("nickname"), Object.display_name.label("display_name"),
+        ).join(Object, Object.id == HAEntity.object_id).where(HAEntity.object_id.in_(object_ids))).mappings().all() if object_ids else []
+        fields = session.execute(select(
+            MQTTPayloadField.id.label("field_id"), MQTTPayloadField.field_path.label("identifier"),
+            MQTTPayloadField.unit.label("unit"), Object.nickname.label("nickname"),
+            Object.display_name.label("display_name"),
+        ).join(Object, Object.id == MQTTPayloadField.object_id).where(
+            MQTTPayloadField.object_id.in_(object_ids))).mappings().all() if object_ids else []
+        fields = list({field["field_id"]: field for field in fields}.values())
+        for entity in entities:
+            rows = session.execute(select(
+                HAStateHistory.observed_at, HAStateHistory.state_text,
+                HAStateHistory.state_numeric, HAStateHistory.state_boolean,
+            ).where(
+                HAStateHistory.ha_entity_id == entity["entity_id"], HAStateHistory.observed_at >= start,
+                HAStateHistory.observed_at <= end).order_by(HAStateHistory.observed_at)).mappings().all()
+            for row in rows:
+                value = row["state_numeric"] if row["state_numeric"] is not None else row["state_boolean"] if row["state_boolean"] is not None else row["state_text"]
+                result.append({"timestamp": row["observed_at"].isoformat(), "series": entity["nickname"] or entity["display_name"] or entity["identifier"],
+                               "source": "Home Assistant", "identifier": entity["identifier"], "value": value,
+                               "value_type": "numeric" if row["state_numeric"] is not None else "boolean" if row["state_boolean"] is not None else "text",
+                               "unit": None, "state": row["state_text"]})
+        for field in fields:
+            rows = session.execute(select(
+                MQTTObservation.observed_at, MQTTObservation.value_type,
+                MQTTObservation.value_text, MQTTObservation.value_numeric,
+                MQTTObservation.value_boolean, MQTTObservation.unit,
+            ).where(
+                MQTTObservation.mqtt_payload_field_id == field["field_id"], MQTTObservation.observed_at >= start,
+                MQTTObservation.observed_at <= end).order_by(MQTTObservation.observed_at)).mappings().all()
+            for row in rows:
+                value = row["value_numeric"] if row["value_numeric"] is not None else row["value_boolean"] if row["value_boolean"] is not None else row["value_text"]
+                result.append({"timestamp": row["observed_at"].isoformat(), "series": field["nickname"] or field["display_name"] or field["identifier"],
+                               "source": "MQTT", "identifier": field["identifier"], "value": value,
+                               "value_type": row["value_type"], "unit": row["unit"] or field["unit"], "state": row["value_text"]})
+        result.sort(key=lambda row: row["timestamp"])
+        return downsample_rows(result) if downsample else result
+
+    def downsample_rows(rows, max_points=4000):
+        numeric = [row for row in rows if isinstance(row["value"], (int, float)) and not isinstance(row["value"], bool)]
+        if len(numeric) <= max_points:
+            return rows
+        by_series = {}
+        for row in numeric:
+            by_series.setdefault(row["series"], []).append(row)
+        stride = max(1, (len(numeric) + max_points - 1) // max_points)
+        keep = {id(row): row for series in by_series.values() for row in series[::stride]}
+        return [row for row in rows if id(row) in keep]
 
     @app.get("/")
     def dashboard():
@@ -39,7 +240,15 @@ def create_app():
                 "mqtt_messages": session.scalar(select(func.count(MQTTMessage.id))) or 0,
                 "links": session.scalar(select(func.count(ObjectLink.id))) or 0,
             }
-        return render_template("dashboard.html", counts=counts)
+        return render_template("dashboard.html", counts=counts, latest_mqtt=get_dashboard_messages())
+
+    @app.get("/api/dashboard/latest-mqtt")
+    def latest_mqtt():
+        return jsonify(messages=get_dashboard_messages())
+
+    @app.get("/api/dashboard/random-ha")
+    def random_ha():
+        return jsonify(entities=get_dashboard_entities())
 
     @app.get("/health")
     def health():
@@ -49,6 +258,41 @@ def create_app():
             return jsonify(status="ok", database="ok")
         except Exception as exc:
             return jsonify(status="error", database="error", error=str(exc)), 503
+
+    @app.get("/graph")
+    def graph_view():
+        start, end = parse_range()
+        object_ids = selected_ids()
+        with SessionLocal() as session:
+            catalog = series_catalog(session)
+            valid_ids = {item["id"] for item in catalog}
+            error = ("Select a valid time range." if start is None else
+                     "Select between 1 and 4 available series." if not 1 <= len(object_ids) <= 4 or not set(object_ids) <= valid_ids else None)
+            data = history_rows(session, object_ids, start, end, downsample=True) if not error else []
+        return render_template("graph.html", catalog=catalog, selected=object_ids, data=data, start=start, end=end, error=error,
+                               standalone=request.args.get("standalone") == "1")
+
+    @app.get("/export")
+    def export_view():
+        start, end = parse_range()
+        object_ids = selected_ids()
+        with SessionLocal() as session:
+            catalog = series_catalog(session)
+            valid_ids = {item["id"] for item in catalog}
+            error = ("Select a valid time range." if start is None else
+                     "Select between 1 and 10 available series." if not 1 <= len(object_ids) <= 10 or not set(object_ids) <= valid_ids else None)
+            data = history_rows(session, object_ids, start, end) if not error else []
+        if request.args.get("download") == "1" and not error:
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=["timestamp", "series", "source", "identifier", "value", "value_type", "unit", "state"])
+            writer.writeheader()
+            writer.writerows(data)
+            return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=hamqtt-export.csv"})
+        return render_template("export.html", catalog=catalog, selected=object_ids, start=start, end=end, error=error)
+
+    @app.get("/plot/<int:object_id>")
+    def plot_object(object_id):
+        return redirect(url_for("graph_view", object_id=object_id, standalone=1))
 
     @app.get("/objects")
     def objects():
@@ -191,6 +435,30 @@ def create_app():
                         setting = SystemSetting(setting_key="mcp", setting_value={}, is_secret=False)
                         session.add(setting)
                     setting.setting_value = {"enabled": enabled, "access_level": access_level}
+                elif kind == "auth":
+                    user = get_user(session)
+                    if not user:
+                        return redirect(url_for("setup"))
+                    current_password = request.form.get("current_password", "")
+                    username = request.form.get("username", "").strip()
+                    new_password = request.form.get("new_password", "")
+                    confirmation = request.form.get("password_confirmation", "")
+                    if not password_matches(user, current_password):
+                        return "Current password is incorrect", 400
+                    if not username:
+                        return "Username cannot be empty", 400
+                    if new_password and not valid_credentials(username, new_password):
+                        return "New password must be at least 6 characters", 400
+                    if new_password != confirmation:
+                        return "The new passwords do not match", 400
+                    user.username = username
+                    if new_password:
+                        set_password(user, new_password)
+                    else:
+                        user.session_version += 1
+                    session.commit()
+                    flask_session.clear()
+                    return redirect(url_for("login"))
                 elif kind == "ha":
                     ha_connections = session.scalars(select(HAConnection).order_by(HAConnection.id)).all()
                     connection = ha_connections[0] if ha_connections else HAConnection()
@@ -262,6 +530,7 @@ def create_app():
             mcp_config = mcp_setting.setting_value if mcp_setting else {"enabled": False, "access_level": "read_only"}
             retention_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "retention"))
             retention_config = retention_setting.setting_value if retention_setting else {"history_days": 365}
+            auth_user = get_user(session)
         return render_template(
             "settings.html",
             ha_connection=ha_connection,
@@ -269,6 +538,7 @@ def create_app():
             mqtt_subscription=mqtt_subscription,
             mcp_config=mcp_config,
             retention_config=retention_config,
+            auth_user=auth_user,
         )
 
     @app.get("/logs")

@@ -48,7 +48,7 @@
           <td class="name-cell" title="{{ entity.original_name or '' }}"><span class="table-truncate">{{ entity.original_name or '—' }}</span></td>
           <td>{% if state %}<span class="state-value" title="{{ state.state_text }}">{{ state.state_text }}</span>{% else %}<span class="muted">unknown</span>{% endif %}</td>
           <td class="time-cell muted" title="{{ state.last_changed_at if state else '—' }}"><span class="table-truncate">{% if state %}{{ (state.last_changed_at|string)[:16] }}{% else %}—{% endif %}</span></td>
-          <td class="action-cell"><a class="button secondary" href="{{ url_for('ha_entity_detail', entity_id=entity.id) }}">View state/history</a></td>
+          <td class="action-cell"><a class="button secondary" href="{{ url_for('ha_entity_detail', entity_id=entity.id) }}">View state/history</a> <a class="button secondary" target="_blank" rel="noopener" href="{{ url_for('plot_object', object_id=entity.object_id) }}">Plot</a></td>
         </tr>
       {% else %}
         <tr><td colspan="6"><div class="empty-state">No Home Assistant entities match the search.</div></td></tr>

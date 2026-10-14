@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, LargeBinary, String, Text, UniqueConstraint, create_engine, JSON
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, create_engine, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.types import UserDefinedType
 from .config import settings
@@ -24,6 +24,14 @@ class SystemSetting(Base, TimestampMixin):
     setting_key: Mapped[str] = mapped_column(String(150), unique=True)
     setting_value: Mapped[dict] = mapped_column(JSON, default=dict)
     is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
+
+class ApplicationUser(Base, TimestampMixin):
+    __tablename__ = "application_users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(150), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(Text)
+    session_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 class ApplicationLog(Base):
     __tablename__ = "application_logs"
@@ -87,7 +95,7 @@ class Object(Base, TimestampMixin):
 class HAEntity(Base):
     __tablename__ = "ha_entities"
     id: Mapped[int] = mapped_column(primary_key=True)
-    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"))
+    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"), index=True)
     ha_connection_id: Mapped[int] = mapped_column(ForeignKey("ha_connections.id", ondelete="CASCADE"))
     entity_id: Mapped[str] = mapped_column(String(255), index=True)
     domain: Mapped[str] = mapped_column(String(100))
@@ -158,7 +166,7 @@ class MQTTPayloadField(Base):
     __table_args__ = (UniqueConstraint("mqtt_topic_id", "field_path"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     mqtt_topic_id: Mapped[int] = mapped_column(ForeignKey("mqtt_topics.id", ondelete="CASCADE"))
-    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"))
+    object_id: Mapped[int] = mapped_column(ForeignKey("objects.id", ondelete="CASCADE"), index=True)
     field_path: Mapped[str] = mapped_column(String(1000))
     field_name: Mapped[str] = mapped_column(String(500))
     data_type: Mapped[str] = mapped_column(String(30))
@@ -169,6 +177,7 @@ class MQTTPayloadField(Base):
 
 class MQTTObservation(Base):
     __tablename__ = "mqtt_observations"
+    __table_args__ = (Index("ix_mqtt_observations_field_observed", "mqtt_payload_field_id", "observed_at"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     mqtt_topic_id: Mapped[int] = mapped_column(ForeignKey("mqtt_topics.id", ondelete="CASCADE"), index=True)
     mqtt_payload_field_id: Mapped[int] = mapped_column(ForeignKey("mqtt_payload_fields.id", ondelete="CASCADE"), index=True)

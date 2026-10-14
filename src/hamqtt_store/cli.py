@@ -1,4 +1,6 @@
 import logging
+from pathlib import Path
+from .config import settings
 from .integrations.ha_worker import run as run_ha
 from .integrations.mqtt_worker import run as run_mqtt
 
@@ -6,8 +8,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 def main():
     import sys
-    if len(sys.argv) != 2 or sys.argv[1] not in {"ha", "mqtt", "mcp", "cleanup"}:
-        raise SystemExit("Usage: python -m hamqtt_store.cli [ha|mqtt|mcp|cleanup]")
+    if len(sys.argv) != 2 or sys.argv[1] not in {"ha", "mqtt", "mcp", "cleanup", "reset-auth"}:
+        raise SystemExit("Usage: python -m hamqtt_store.cli [ha|mqtt|mcp|cleanup|reset-auth]")
+    if sys.argv[1] == "reset-auth":
+        marker = Path(settings.app_data_dir) / ".reset-auth"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.touch()
+        print(f"Authentication reset marker created: {marker}")
+        return
     if sys.argv[1] == "mcp":
         from .mcp_server import main as run_mcp
         run_mcp()

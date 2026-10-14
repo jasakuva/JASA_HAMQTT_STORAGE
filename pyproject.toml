@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hamqtt-store"
-version = "0.2.1"
+version = "0.3.0"
 description = "Home Assistant and MQTT data store with PostgreSQL and pgvector"
 requires-python = ">=3.12"
 dependencies = [
@@ -18,6 +18,7 @@ dependencies = [
   "cryptography>=44,<46",
   "gunicorn>=23,<27",
   "mcp>=2,<3",
+  "redis>=5,<7",
 ]
 
 [project.optional-dependencies]

@@ -19,14 +19,11 @@ fail() {
 
 command -v bash >/dev/null 2>&1 || fail "bash is required"
 
-if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    readonly ENGINE=docker
-    compose() { docker compose "$@"; }
-elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
+if command -v podman-compose >/dev/null 2>&1 && podman-compose version >/dev/null 2>&1; then
     readonly ENGINE=podman
-    compose() { podman compose "$@"; }
+    compose() { podman-compose "$@"; }
 else
-    fail "Docker Compose or Podman Compose is required"
+    fail "podman-compose is required for the project workflow"
 fi
 
 env_value() {
@@ -40,9 +37,11 @@ env_value() {
 
 readonly NETWORK_NAME="$(env_value POSTGRES_NETWORK)"
 readonly VOLUME_NAME="$(env_value POSTGRES_VOLUME)"
+readonly APP_DATA_VOLUME_NAME="$(env_value APP_DATA_VOLUME)"
 readonly POSTGRES_CONTAINER="$(env_value POSTGRES_CONTAINER_NAME)"
 readonly NETWORK="${NETWORK_NAME:-hamqtt-store-network}"
 readonly VOLUME="${VOLUME_NAME:-hamqtt-postgres-data}"
+readonly APP_DATA_VOLUME="${APP_DATA_VOLUME_NAME:-hamqtt-app-data}"
 readonly POSTGRES="${POSTGRES_CONTAINER:-hamqtt-postgres}"
 
 container_exists() {
@@ -102,6 +101,14 @@ ensure_volume() {
     "$ENGINE" volume create "$VOLUME" >/dev/null
 }
 
+ensure_app_data_volume() {
+    if "$ENGINE" volume inspect "$APP_DATA_VOLUME" >/dev/null 2>&1; then
+        return
+    fi
+    log "Creating persistent application data volume $APP_DATA_VOLUME"
+    "$ENGINE" volume create "$APP_DATA_VOLUME" >/dev/null
+}
+
 wait_for_postgres() {
     local status
     for _ in $(seq 1 60); do
@@ -132,6 +139,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 log "Using $ENGINE Compose"
 ensure_network
 ensure_volume
+ensure_app_data_volume
 
 check_name_conflict "$POSTGRES" "postgres"
 for container in "${APP_CONTAINERS[@]}"; do

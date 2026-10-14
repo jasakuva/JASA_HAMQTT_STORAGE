@@ -4,3 +4,5 @@ __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+docs/SECURITY_REVIEW.md
+docs/SECURITY_TODO.md
