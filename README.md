@@ -22,6 +22,7 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - Redis-backed dashboard cache that keeps the live UI responsive without replacing PostgreSQL history.
 - Interactive Plotly graphs for up to four historical HA entities or MQTT fields.
 - CSV export for up to ten historical HA entities or MQTT fields.
+- Local web authentication with first-run account setup, hashed passwords, authenticated sessions, logout, and CSRF protection.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
@@ -194,6 +195,12 @@ The main dashboard combines durable database counters with a small live-data pat
 The **Graphs** page reads historical HA state and MQTT observation rows, supports one to four selected series, and uses Plotly zooming, a range slider, and time-range buttons. The **Export CSV** page reads the same historical sources, supports one to ten series, and returns timestamped rows with source, identifier, value, type, unit, and state columns.
 
 See [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) for the complete live-data flow, Redis keys, polling behavior, graph downsampling, export format, and troubleshooting steps.
+
+## Authentication
+
+On a new installation, open the web UI and complete the one-time setup at `/setup` with a username and password of at least six characters. The application stores a password hash, not the plaintext password. After setup, application pages require login at `/login`; use **Sign out** in the top bar to end the session.
+
+State-changing form submissions use CSRF tokens, and changing the account credentials invalidates existing sessions. The unauthenticated `/health` endpoint remains available for container health checks. Review [`docs/SECURITY_TODO.md`](docs/SECURITY_TODO.md) before exposing the service beyond a trusted network; HTTPS, throttling, audit logging, and other production hardening are not supplied by the local Flask deployment alone.
 
 ## MCP service
 

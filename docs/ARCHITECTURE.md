@@ -37,6 +37,12 @@ Browser ─────────HTTP────────► Flask web ─
 ChatGPT/Codex ◄── read-only MCP ── MCP service ──► same PostgreSQL database
 ```
 
+### Web authentication
+
+The Flask web layer provides local application authentication. On first startup, `/setup` creates the single application user with a username and password of at least six characters. Passwords are stored as Werkzeug password hashes in `application_users`; the plaintext password is not persisted. Subsequent protected requests require a session containing the user ID and session version. `/login` establishes the session, `/logout` clears it, and changing credentials increments the session version to invalidate older sessions.
+
+State-changing requests require a session-backed CSRF token. `/health` remains unauthenticated for container health checks, while normal application pages and APIs require authentication. HTTPS termination, login throttling, audit events, and other production hardening remain deployment responsibilities; see [`SECURITY_TODO.md`](SECURITY_TODO.md).
+
 | Container | Responsibility | Port |
 |---|---|---:|
 | `hamqtt-postgres` | PostgreSQL and pgvector | `5432` |

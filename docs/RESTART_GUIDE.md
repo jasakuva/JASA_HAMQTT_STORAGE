@@ -19,6 +19,7 @@ The current application includes:
 - Main dashboard counters, workspace status, live MQTT feed, and sampled Home Assistant snapshot.
 - Interactive historical graphs and CSV export for selected HA entities and MQTT fields.
 - Redis-backed dashboard cache documented in [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).
+- Local web authentication with first-run setup, hashed passwords, sessions, logout, and CSRF-protected forms.
 - Alembic database migrations.
 - Basic parser tests and documentation validation.
 

@@ -6,6 +6,17 @@ Release date: 2026-10-12
 
 Version 0.3.0 delivers the complete dashboard live-data and historical-analysis workflow, a more compact dashboard experience, and safer operational tooling for updating and starting installations on Windows and Linux.
 
+## Authentication and security
+
+- Added local web-application authentication with a first-run setup page at `/setup`.
+- Added username and password sign-in at `/login` and sign-out from the application shell.
+- Passwords are stored as Werkzeug password hashes, never as plaintext.
+- Protected application routes require an authenticated session; `/health`, static assets, setup, login, and logout remain available for their intended bootstrap or operational purposes.
+- Added CSRF tokens for state-changing form submissions.
+- Added session-version invalidation so changing credentials ends existing sessions.
+- Added authentication database migration `0007_application_authentication` and authentication tests.
+- HTTPS termination, login throttling, audit logging, and broader production hardening remain deployment responsibilities and are tracked in `docs/SECURITY_TODO.md`.
+
 ## Dashboard and analysis
 
 - Added a live MQTT dashboard feed backed by a bounded Redis cache.
