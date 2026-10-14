@@ -1,6 +1,6 @@
 # HA MQTT Store 0.3.0
 
-Release date: 2026-10-12
+Release date: 2026-10-14
 
 ## Highlights
 
