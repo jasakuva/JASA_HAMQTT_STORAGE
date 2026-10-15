@@ -411,7 +411,22 @@ def create_app():
         )
 
     @app.route("/settings", methods=["GET", "POST"])
-    def settings_view():
+    @app.route("/settings/<section>", methods=["GET", "POST"])
+    def settings_view(section="authentication"):
+        if request.path == "/settings":
+            if request.method == "POST":
+                section = {
+                    "auth": "authentication",
+                    "ha": "data-sources",
+                    "mqtt": "data-sources",
+                    "mcp": "data-sources",
+                    "retention": "data-sources",
+                    "backup": "backups",
+                }.get(request.form.get("kind"), "authentication")
+            else:
+                return redirect(url_for("settings_view", section="authentication"))
+        if section not in {"authentication", "data-sources", "backups"}:
+            return redirect(url_for("settings_view", section="authentication"))
         with SessionLocal() as session:
             if request.method == "POST":
                 kind = request.form.get("kind")
@@ -528,7 +543,7 @@ def create_app():
                     for duplicate in subscriptions[1:]:
                         duplicate.enabled = False
                 session.commit()
-                return redirect(url_for("settings_view"))
+                return redirect(url_for("settings_view", section=section))
             ha_connection = session.scalar(select(HAConnection).order_by(HAConnection.id))
             mqtt_connection = session.scalar(
                 select(MQTTConnection).order_by(MQTTConnection.enabled.desc(), MQTTConnection.id)
@@ -552,6 +567,7 @@ def create_app():
             auth_user = get_user(session)
         return render_template(
             "settings.html",
+            settings_section=section,
             ha_connection=ha_connection,
             mqtt_connection=mqtt_connection,
             mqtt_subscription=mqtt_subscription,
@@ -568,7 +584,7 @@ def create_app():
         if backup_type not in {"full", "diff"}:
             return "Unsupported backup type", 400
         request_backup(backup_type)
-        return redirect(url_for("settings_view"))
+        return redirect(url_for("settings_view", section="backups"))
 
     @app.get("/logs")
     def logs_view():
@@ -586,7 +602,25 @@ def create_app():
             if search:
                 query = query.where(or_(ApplicationLog.message.ilike(f"%{search}%"), ApplicationLog.event.ilike(f"%{search}%")))
             logs = session.scalars(query).all()
-        return render_template("logs.html", logs=logs, level=level, source=source, search=search)
+        return render_template("logs.html", logs=logs, level=level, source=source, search=search, settings_section=None)
+
+    @app.get("/settings/logs")
+    def settings_logs_view():
+        level = request.args.get("level", "").upper().strip()
+        source = request.args.get("source", "").strip()
+        search = request.args.get("q", "").strip()
+        with SessionLocal() as session:
+            query = select(ApplicationLog).order_by(ApplicationLog.created_at.desc()).limit(500)
+            if level in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+                query = query.where(ApplicationLog.level == level)
+            else:
+                level = ""
+            if source:
+                query = query.where(ApplicationLog.source.ilike(f"%{source}%"))
+            if search:
+                query = query.where(or_(ApplicationLog.message.ilike(f"%{search}%"), ApplicationLog.event.ilike(f"%{search}%")))
+            logs = session.scalars(query).all()
+        return render_template("logs.html", logs=logs, level=level, source=source, search=search, settings_section="logs")
 
     @app.get("/ha")
     def ha_view():

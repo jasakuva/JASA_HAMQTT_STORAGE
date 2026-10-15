@@ -40,3 +40,22 @@ def test_standalone_graph_layout_contract_is_present():
     assert "standalone-graph-panel" in content
     assert "Plotly.Plots.resize('graph')" in content
     assert ".standalone-graph-panel{flex:1 1 auto;min-height:0;height:calc(100vh - 142px)}" in styles
+
+
+def test_settings_subpage_routes_are_registered():
+    app = web.create_app()
+    rules = {rule.rule for rule in app.url_map.iter_rules()}
+
+    assert "/settings" in rules
+    assert "/settings/<section>" in rules
+    assert "/settings/logs" in rules
+
+
+def test_settings_template_contains_requested_sections():
+    with open("templates/settings.html", encoding="utf-8") as template:
+        content = template.read()
+
+    assert "Authentication" in content
+    assert "Data sources" in content
+    assert "settings_logs_view" in content
+    assert "PostgreSQL backups" in content

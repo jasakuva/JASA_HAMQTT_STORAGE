@@ -112,3 +112,6 @@
 .panel{padding:14px}
 .panel-title{font-size:15px}
 .backup-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.settings-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px;padding:4px;border-bottom:1px solid var(--line)}
+.settings-tab{padding:8px 12px;border-radius:7px 7px 0 0;color:var(--muted);font-size:12px;font-weight:700;text-decoration:none}
+.settings-tab:hover,.settings-tab.active{color:var(--accent);background:var(--accent-soft);text-decoration:none}
