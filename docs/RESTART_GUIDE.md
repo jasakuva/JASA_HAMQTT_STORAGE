@@ -62,29 +62,23 @@ Run commands from `%INSTALL_PATH%`, the local repository directory:
 podman machine start podman-machine-default
 ```
 
-On Linux with Docker, use:
-
-```bash
-sudo systemctl enable --now docker
-```
-
-It is safe if the container engine is already running.
+It is safe if the Podman machine is already running.
 
 ### Start the database and application services
 
 Normally use:
 
-```bash
-docker compose up -d
+```powershell
+podman-compose up -d --build
 ```
 
-Compose builds the image, waits for PostgreSQL health, runs migrations, and starts the application services only after migrations succeed.
+`podman-compose` builds the image, waits for PostgreSQL health, runs migrations, and starts the application services only after migrations succeed.
 
 If existing containers with the same names prevent recreation, remove only the containers and recreate them:
 
-```bash
-docker compose down
-docker compose up -d --build
+```powershell
+podman-compose down
+podman-compose up -d --build
 ```
 
 The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removing the PostgreSQL container does **not** delete that volume. Do not run `podman volume rm hamqtt-postgres-data` unless intentionally resetting all local database data.
@@ -92,9 +86,9 @@ The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removi
 ## 4. Verify that the stack is healthy
 
 ```powershell
-docker compose ps -a
+podman-compose ps -a
 curl -sS http://localhost:8000/health
-docker compose exec postgres pg_isready -U hamqtt -d hamqtt_store
+podman-compose exec postgres pg_isready -U hamqtt -d hamqtt_store
 ```
 
 The current lightweight health endpoint verifies web-to-PostgreSQL connectivity only. Detailed worker diagnostics, heartbeat reporting, ingestion-freshness checks, and a system-health dashboard are planned in [the implementation roadmap](../IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).

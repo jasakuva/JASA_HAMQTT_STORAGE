@@ -66,7 +66,7 @@ Install:
 
 - Git
 - Python 3.12 or newer for local development commands
-- Docker Engine with Docker Compose v2, or Podman with a Compose-compatible tool
+- Podman and `podman-compose`
 
 On Windows, make sure the Podman machine is initialized and running. The commands below use PowerShell syntax where applicable.
 
@@ -95,29 +95,24 @@ POSTGRES_PASSWORD=change-this-development-password
 
 For a production or HTTPS deployment, set a unique `SECRET_KEY` and change `SESSION_COOKIE_SECURE=true`. The default session duration is 365 days and can be changed with `SESSION_DAYS`.
 
-### 3. Start the container engine
+### 3. Start Podman
 
-On Linux, make sure Docker is running:
-
-```bash
-sudo systemctl enable --now docker
-```
-
-On Windows with Podman, start the Podman machine:
+On Windows or Linux, start the Podman machine when required:
 
 ```powershell
-podman machine start podman-machine-default
+podman machine start
 ```
 
 If the machine is already running, Podman will report that and no action is needed.
 
-### 4. Start the services
+### 4. Validate and start the services
 
-```bash
-docker compose up -d
+```powershell
+podman-compose config
+podman-compose up -d --build
 ```
 
-Compose builds the application image, starts PostgreSQL, waits for it to become healthy, applies database migrations, and only then starts the web, MQTT, Home Assistant, and MCP services.
+`podman-compose` builds the application image, starts PostgreSQL, waits for it to become healthy, applies database migrations, and only then starts the web, MQTT, Home Assistant, MCP, cleanup, and backup services.
 
 Open the application at:
 
@@ -129,28 +124,28 @@ On the first visit, create the administrator username and password. The login se
 
 If the credentials are forgotten, run this from the project directory and restart the web service:
 
-```bash
+```powershell
 podman-compose run --rm --no-deps web python -m hamqtt_store.cli reset-auth
 podman-compose up -d --no-deps web
 ```
 
 The next visit opens the account setup page again. The reset marker is stored in the persistent `hamqtt-app-data` volume.
 
-The migration service normally exits successfully after applying the migrations. The database, web, MQTT, and HA services should remain running. If migration fails, inspect it with `docker compose logs migrate`; application services intentionally remain stopped.
+The migration service normally exits successfully after applying the migrations. The database, web, MQTT, HA, and backup services should remain running. If migration fails, inspect it with `podman-compose logs migrate`; application services intentionally remain stopped.
 
 ## Verify the installation
 
 Check service status:
 
-```bash
-docker compose ps -a
+```powershell
+podman-compose ps -a
 ```
 
 Check the application and database:
 
-```bash
+```powershell
 curl -sS http://localhost:8000/health
-docker compose exec postgres pg_isready -U hamqtt -d hamqtt_store
+podman-compose exec postgres pg_isready -U hamqtt -d hamqtt_store
 ```
 
 Expected application response:
@@ -181,10 +176,10 @@ Use the web UI's **Settings → Data sources** page to configure:
 
 After configuration, inspect the worker logs if data does not appear:
 
-```bash
-docker compose logs mqtt-ingestor
-docker compose logs ha-ingestor
-docker compose logs web
+```powershell
+podman-compose logs mqtt-ingestor
+podman-compose logs ha-ingestor
+podman-compose logs web
 ```
 
 ## MQTT history workflow
@@ -229,21 +224,29 @@ git checkout v0.3.1
 bash scripts/update.sh
 ```
 
-The script supports Docker Compose and Podman Compose. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
+The script uses the project’s Podman and `podman-compose` workflow. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
 
 The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` or `hamqtt-app-data` unless you intentionally want to delete application data.
 
-For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes. Docker Compose users can follow the equivalent non-destructive command sequence in [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
+For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes.
 
 For a first installation, use the same command:
 
-```bash
+```powershell
 git clone <repository-url> hamqtt-store
 cd hamqtt-store
-cp .env.example .env
+Copy-Item .env.example .env
 # Edit .env and set POSTGRES_PASSWORD and any deployment-specific values.
 bash scripts/update.sh
 ```
+
+## Docker Compose compatibility
+
+Podman with `podman-compose` is the canonical and tested workflow for this
+repository. Docker users can use the same `compose.yml` with Docker Compose,
+but should replace each `podman-compose` command with `docker compose` and
+omit `podman machine start`. Do not mix Podman and Docker commands in the same
+startup or update procedure.
 
 ## Local development
 
@@ -280,8 +283,8 @@ The database uses the named volume `hamqtt-postgres-data`. Removing containers d
 To intentionally reset all local database data:
 
 ```powershell
-docker compose down
-docker volume rm hamqtt-postgres-data
+podman-compose down
+podman volume rm hamqtt-postgres-data
 ```
 
 Only run the volume removal command when a complete development reset is intended.
