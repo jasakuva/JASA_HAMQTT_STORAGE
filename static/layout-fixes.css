@@ -95,6 +95,11 @@
 @media (max-width:700px){.mqtt-feed-row{grid-template-columns:72px minmax(0,1fr);gap:4px 8px}.mqtt-feed-message{grid-column:2}.mqtt-feed-topic{grid-column:2}.mqtt-feed-row time{grid-row:1 / span 2}}
 @media (max-width:560px){.ha-snapshot-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}.ha-snapshot-value{grid-column:1;text-align:left}.ha-snapshot-time{grid-column:2;grid-row:1 / span 2}}
 .standalone-shell .content-shell{width:100%}.standalone-shell main{min-height:100vh;padding:18px;background:var(--bg)}
+.standalone-graph-page{display:flex;flex-direction:column;min-height:calc(100vh - 36px)}
+.standalone-graph-page .page-header{flex:0 0 auto;margin-bottom:10px}
+.standalone-graph-page .page-header p{margin-bottom:0}
+.standalone-graph-panel{flex:1 1 auto;min-height:0;height:calc(100vh - 142px)}
+.standalone-graph-panel>div{height:100%!important}
 @media (max-width:560px){.form-grid{grid-template-columns:1fr}.graph-panel{min-height:430px}}
 
 /* Keep the dashboard compact without sacrificing readability. */
@@ -106,3 +111,4 @@
 .metric-value{font-size:24px}
 .panel{padding:14px}
 .panel-title{font-size:15px}
+.backup-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}

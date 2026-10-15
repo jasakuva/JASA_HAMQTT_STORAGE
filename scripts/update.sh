@@ -149,6 +149,12 @@ done
 log "Building application image"
 compose build
 
+log "Building PostgreSQL backup image"
+podman build --pull=always -f PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
+
+log "Building dedicated backup image"
+podman build --pull=always -f BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
+
 log "Starting PostgreSQL"
 if container_exists "$POSTGRES"; then
     postgres_status="$($ENGINE container inspect --format '{{.State.Status}}' "$POSTGRES")"

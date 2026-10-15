@@ -9,6 +9,7 @@ from sqlalchemy import func, or_, select
 from .auth import get_user, password_matches, reset_authentication_if_requested, set_password, valid_credentials
 from .config import settings
 from .services.dashboard_cache import get_dashboard_entities, get_dashboard_messages
+from .services.backup import backup_repository_size, get_backup_config, normalize_config, request_backup
 from .db import (
     HAConnection,
     ApplicationLog,
@@ -16,6 +17,7 @@ from .db import (
     HAStateCurrent,
     HAStateHistory,
     ApplicationUser,
+    BackupRun,
     IngestionSubscription,
     MQTTConnection,
     MQTTCurrentValue,
@@ -425,6 +427,18 @@ def create_app():
                         setting = SystemSetting(setting_key="retention", setting_value={}, is_secret=False)
                         session.add(setting)
                     setting.setting_value = {"history_days": history_days}
+                elif kind == "backup":
+                    values = request.form.to_dict()
+                    values["enabled"] = bool(request.form.get("backup_enabled"))
+                    setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "backup"))
+                    previous = setting.setting_value if setting else {}
+                    config = normalize_config(values)
+                    if not values.get("encryption_passphrase"):
+                        config["encryption_passphrase"] = (previous or {}).get("encryption_passphrase", "")
+                    if not setting:
+                        setting = SystemSetting(setting_key="backup", setting_value={}, is_secret=True)
+                        session.add(setting)
+                    setting.setting_value = config
                 elif kind == "mcp":
                     enabled = bool(request.form.get("mcp_enabled"))
                     access_level = request.form.get("mcp_access_level", "read_only")
@@ -530,6 +544,11 @@ def create_app():
             mcp_config = mcp_setting.setting_value if mcp_setting else {"enabled": False, "access_level": "read_only"}
             retention_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "retention"))
             retention_config = retention_setting.setting_value if retention_setting else {"history_days": 365}
+            backup_config = get_backup_config(session)
+            backup_runs = session.scalars(
+                select(BackupRun).order_by(BackupRun.started_at.desc()).limit(20)
+            ).all()
+            backup_size = backup_repository_size(backup_config)
             auth_user = get_user(session)
         return render_template(
             "settings.html",
@@ -538,8 +557,18 @@ def create_app():
             mqtt_subscription=mqtt_subscription,
             mcp_config=mcp_config,
             retention_config=retention_config,
+            backup_config=backup_config,
+            backup_runs=backup_runs,
+            backup_size=backup_size,
             auth_user=auth_user,
         )
+
+    @app.post("/settings/backup/run/<backup_type>")
+    def run_backup_now(backup_type):
+        if backup_type not in {"full", "diff"}:
+            return "Unsupported backup type", 400
+        request_backup(backup_type)
+        return redirect(url_for("settings_view"))
 
     @app.get("/logs")
     def logs_view():

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, create_engine, JSON
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, create_engine, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.types import UserDefinedType
 from .config import settings
@@ -24,6 +24,18 @@ class SystemSetting(Base, TimestampMixin):
     setting_key: Mapped[str] = mapped_column(String(150), unique=True)
     setting_value: Mapped[dict] = mapped_column(JSON, default=dict)
     is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
+
+class BackupRun(Base):
+    __tablename__ = "backup_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    backup_type: Mapped[str] = mapped_column(String(20), index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    label: Mapped[str | None] = mapped_column(String(255))
+    size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    triggered_by: Mapped[str] = mapped_column(String(30), default="schedule")
 
 class ApplicationUser(Base, TimestampMixin):
     __tablename__ = "application_users"
