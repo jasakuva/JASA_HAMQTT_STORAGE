@@ -16,8 +16,27 @@ The default schedule is:
 - differential backup every 24 hours;
 - retain 4 full backup sets and 14 differential backups.
 
-These values can be changed in **Settings → PostgreSQL backups**. A manual run
+These values can be changed in **Settings → Backups**. A manual run
 is queued for the backup service rather than executed by the web request.
+
+The Backups page also shows the repository size, recent backup runs, status, completion time, and recorded error details. Use **Run full backup now** or **Run differential now** for an on-demand request.
+
+## PostgreSQL 17 and pgBackRest validation
+
+The backup image and PostgreSQL image are validated together for PostgreSQL 17.
+The backup worker uses pgBackRest to read the configured stanza and repository;
+it does not use the unsupported `--output=json` option. Validate the installation
+before relying on scheduled backups:
+
+```powershell
+podman exec hamqtt-postgres pg_isready -U hamqtt -d hamqtt_store
+podman exec hamqtt-postgres psql -U hamqtt -d hamqtt_store -c "SHOW archive_mode;"
+podman exec hamqtt-backup pgbackrest --stanza=hamqtt check
+podman exec hamqtt-backup pgbackrest --stanza=hamqtt info
+```
+
+The exact container command may vary when a custom Compose project name is used;
+use `podman-compose ps -a` to identify the active backup container.
 
 ## Startup and migration
 

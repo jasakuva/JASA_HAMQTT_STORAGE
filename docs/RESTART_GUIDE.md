@@ -1,6 +1,6 @@
 # HA MQTT Store Restart Guide
 
-This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 12, 2026.
+This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 15, 2026 and release 0.3.1.
 
 ## 1. What this project is
 
@@ -20,6 +20,8 @@ The current application includes:
 - Interactive historical graphs and CSV export for selected HA entities and MQTT fields.
 - Redis-backed dashboard cache documented in [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).
 - Local web authentication with first-run setup, hashed passwords, sessions, logout, and CSRF-protected forms.
+- Focused Settings subpages for authentication, data sources, logs, and backups.
+- PostgreSQL 17-compatible pgBackRest backup service with full/differential scheduling and recorded backup errors.
 - Alembic database migrations.
 - Basic parser tests and documentation validation.
 
@@ -122,7 +124,7 @@ http://localhost:8000
 
 The workers intentionally remain idle until enabled Home Assistant and MQTT connections/subscriptions exist in the application database.
 
-Configure them in the web UI under **Settings**. If the UI appears empty, first check:
+Configure them in the web UI under **Settings → Data sources**. If the UI appears empty, first check:
 
 ```powershell
 podman logs hamqtt-mqtt-ingestor
@@ -130,7 +132,9 @@ podman logs hamqtt-ha-ingestor
 podman logs hamqtt-web
 ```
 
-MCP is configured under **Settings → AI / MCP service** and is disabled by default. It currently supports only read-only access. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`; restart `hamqtt-mcp` after changing the setting.
+MCP is configured under **Settings → Data sources → AI / MCP service** and is disabled by default. It currently supports only read-only access. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`; restart `hamqtt-mcp` after changing the setting.
+
+Backups are configured under **Settings → Backups**. Review [`BACKUPS.md`](BACKUPS.md) for repository setup, pgBackRest checks, manual backup runs, and restore safety. Do not remove the PostgreSQL or backup repository volumes during a routine update.
 
 For the current manual diagnostic workflow, compare container state, worker logs, broker connection timestamps, and recent MQTT rows:
 
@@ -157,7 +161,7 @@ python tools/validate_docs.py
 git diff --check
 ```
 
-The current parser test suite has three tests. Always run the tests and documentation validator before committing changes.
+Always run the full test suite and documentation validator before committing changes.
 
 ## 7. Current dashboard and analysis flow
 
@@ -202,7 +206,7 @@ Likely next tasks include:
 - Add MQTT protocol-specific decoders.
 - Add numeric charts and retention jobs.
 - Add HA/MQTT linking workflows.
-- Add authentication, CSRF protection, and authorization.
+- Improve authorization boundaries, secure cookies, HTTPS deployment, throttling, and secret management.
 - Improve production backup, monitoring, and integration-test documentation.
 
 When adding a feature, update both `IMPLEMENTATION_PLAN.md` and this guide if the startup process, important files, or current behavior changes.

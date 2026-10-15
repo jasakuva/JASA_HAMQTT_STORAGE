@@ -1,10 +1,18 @@
 # HA MQTT Store
 
+![Release](https://img.shields.io/github/v/release/jasakuva/JASA_HAMQTT_STORAGE?display_name=tag&sort=semver)
+![Tests](https://img.shields.io/badge/tests-28%20passing-2ea44f)
+![Python](https://img.shields.io/badge/python-3.12%2B-3776ab)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791)
+![Podman](https://img.shields.io/badge/containers-Podman-892ca0)
+
 HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQTT data into PostgreSQL with pgvector support. It preserves raw source messages while also parsing useful scalar and nested JSON values into historical observations.
 
 > **Documentation:** More detailed deployment, architecture, database schema, table relationships, field definitions, and practical SQL examples are available in the [project Wiki](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki). Start with the [Database Schema and SQL guide](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki/Database-Schema-and-SQL) for database usage.
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
+
+> **Current release:** **0.3.1** adds focused Settings subpages and completes the PostgreSQL 17-compatible pgBackRest backup-service workflow. See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) and the [0.3.1 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.1).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -23,6 +31,8 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - Interactive Plotly graphs for up to four historical HA entities or MQTT fields.
 - CSV export for up to ten historical HA entities or MQTT fields.
 - Local web authentication with first-run account setup, hashed passwords, authenticated sessions, logout, and CSRF protection.
+- Settings subpages for Authentication, Data sources, Logs, and Backups.
+- PostgreSQL 17-compatible pgBackRest full and differential backup service with backup history and error reporting.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
@@ -42,6 +52,7 @@ The local stack contains these services:
 | MQTT worker | `hamqtt-mqtt-ingestor` | Connects to configured MQTT brokers |
 | HA worker | `hamqtt-ha-ingestor` | Connects to configured Home Assistant instances |
 | MCP | `hamqtt-mcp` | Read-only AI access to stored HA/MQTT data |
+| Backup | `hamqtt-backup` | pgBackRest PostgreSQL backup worker |
 
 The PostgreSQL data is stored in the named Podman volume `hamqtt-postgres-data`.
 
@@ -156,13 +167,13 @@ Expected services:
 - `hamqtt-ha-ingestor` — running
 - `hamqtt-migrate` — exited with status 0 after migration
 
-The `hamqtt-mcp` container is also available. Configure it under **Settings → AI / MCP service**; MCP is disabled by default and currently supports only read-only access.
+The `hamqtt-mcp` container is also available. Configure it under **Settings → Data sources → AI / MCP service**; MCP is disabled by default and currently supports only read-only access.
 
 ## Configure Home Assistant and MQTT
 
 The workers intentionally remain idle until enabled connections and subscriptions have been configured in the application database.
 
-Use the web UI's **Settings** page to configure:
+Use the web UI's **Settings → Data sources** page to configure:
 
 - Home Assistant URL and access token.
 - MQTT broker host, port, credentials, and TLS settings.
@@ -213,8 +224,8 @@ After enabling it in Settings, restart the service. The local Streamable HTTP en
 Use the supplied update script. It builds the new image, creates missing infrastructure, waits for PostgreSQL, applies pending migrations automatically, and recreates only the application containers:
 
 ```bash
-git switch graph-and-export
-git pull --ff-only origin graph-and-export
+git fetch origin
+git checkout v0.3.1
 bash scripts/update.sh
 ```
 
@@ -282,6 +293,8 @@ Only run the volume removal command when a complete development reset is intende
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture and data model.
 - [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) — dashboard live-data pipeline, graphs, CSV export, and troubleshooting.
 - [`docs/POSTGRESQL_SETUP.md`](docs/POSTGRESQL_SETUP.md) — PostgreSQL/pgvector details.
+- [`docs/BACKUPS.md`](docs/BACKUPS.md) — pgBackRest backup configuration, verification, and restore safety.
+- [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) — current security review and release limitations.
 
 ## License
 
