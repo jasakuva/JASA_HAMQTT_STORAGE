@@ -445,6 +445,7 @@ def create_app():
                 elif kind == "backup":
                     values = request.form.to_dict()
                     values["enabled"] = bool(request.form.get("backup_enabled"))
+                    values["portable_dump_daily"] = bool(request.form.get("portable_dump_daily"))
                     setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "backup"))
                     previous = setting.setting_value if setting else {}
                     config = normalize_config(values)
@@ -581,10 +582,10 @@ def create_app():
 
     @app.post("/settings/backup/run/<backup_type>")
     def run_backup_now(backup_type):
-        if backup_type not in {"full", "diff"}:
+        if backup_type not in {"full", "diff", "dump"}:
             return "Unsupported backup type", 400
-        request_backup(backup_type)
-        return redirect(url_for("settings_view", section="backups"))
+        run = request_backup(backup_type)
+        return redirect(url_for("settings_view", section="backups", queued=run.id, backup_type=backup_type))
 
     @app.get("/logs")
     def logs_view():

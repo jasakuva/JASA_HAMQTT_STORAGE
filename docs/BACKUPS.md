@@ -10,16 +10,27 @@ default is `./backups`. This repository is separate from the
 `hamqtt-postgres-data` volume and should be included in the host's normal
 backup strategy.
 
-The default schedule is:
+The backup settings use two independent plans:
 
-- full backup every 7 days;
-- differential backup every 24 hours;
-- retain 4 full backup sets and 14 differential backups.
+### Schedule plan
+
+- **Low:** full backup every 7 days and differential backup every 24 hours.
+- **Medium:** full backup every day and differential backup every 6 hours.
+- **High:** full backup every day and differential backup every hour.
+
+### Retention plan
+
+- **Low:** retain 2 pgBackRest full backup sets and 2 portable dumps.
+- **Medium:** retain 5 pgBackRest full backup sets and 5 portable dumps.
+- **High:** retain 14 pgBackRest full backup sets and 14 portable dumps.
+
+The **Create portable dump daily** option is independent of both plans. Manual
+portable dumps are always available; enabling the option queues one dump per day.
 
 These values can be changed in **Settings → Backups**. A manual run
 is queued for the backup service rather than executed by the web request.
 
-The Backups page also shows the repository size, recent backup runs, status, completion time, and recorded error details. Use **Run full backup now** or **Run differential now** for an on-demand request.
+The Backups page also shows the repository size, recent backup runs, status, completion time, and recorded error details. Use **Run full backup now**, **Run differential now**, or **Create portable dump now** for an on-demand request.
 
 ## PostgreSQL 17 and pgBackRest validation
 

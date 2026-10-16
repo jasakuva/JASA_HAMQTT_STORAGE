@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+from jinja2 import Environment, FileSystemLoader
+
 from hamqtt_store import web
 
 
@@ -39,6 +41,7 @@ def test_standalone_graph_layout_contract_is_present():
     assert "standalone-graph-page" in content
     assert "standalone-graph-panel" in content
     assert "Plotly.Plots.resize('graph')" in content
+    assert ".standalone-shell{grid-template-columns:minmax(0,1fr)}" in styles
     assert ".standalone-graph-panel{flex:1 1 auto;min-height:0;height:calc(100vh - 142px)}" in styles
 
 
@@ -59,3 +62,9 @@ def test_settings_template_contains_requested_sections():
     assert "Data sources" in content
     assert "settings_logs_view" in content
     assert "PostgreSQL backups" in content
+
+
+def test_settings_template_compiles():
+    environment = Environment(loader=FileSystemLoader("templates"))
+
+    environment.get_template("settings.html")

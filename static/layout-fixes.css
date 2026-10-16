@@ -37,6 +37,40 @@
 .settings-form:not(.settings-form-labeled) select{height:36px;min-height:36px;padding:7px 10px}
 .settings-form:not(.settings-form-labeled) button{padding:7px 11px}
 
+/* Backup settings use compact controls and a horizontal action bar. */
+.backup-panel .backup-settings-form{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.backup-panel .backup-settings-form .field-check{display:flex;align-items:flex-start;gap:8px}
+.backup-panel .backup-settings-form .field-check>label{flex:1 1 auto}
+.backup-panel .backup-settings-form .checkbox-control{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex:0 0 36px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+.backup-panel .backup-settings-form input[type="checkbox"]{width:17px!important;height:17px!important;min-height:17px!important;max-height:17px!important;margin:0;accent-color:var(--accent)}
+.backup-panel .backup-settings-form>button{margin-top:2px}
+.backup-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.backup-actions form{margin:0}
+.backup-actions button{padding:8px 12px;white-space:nowrap}
+.backup-notice{margin:12px 0 0;padding:10px 12px;border:1px solid #a7f3d0;border-radius:8px;color:#065f46;background:#ecfdf5;font-size:12px;font-weight:600}
+.backup-history{margin-top:16px;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.backup-history-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.backup-history-header h3{margin:0;font-size:13px}
+.backup-history-header span{color:var(--muted);font-size:11px}
+.backup-history-table{width:100%;border-collapse:collapse;font-size:11px}
+.backup-history-table th,.backup-history-table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.backup-history-table th{color:var(--muted);background:var(--soft);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.backup-history-table tr:last-child td{border-bottom:0}
+.backup-history-table .error{max-width:340px;color:#b91c1c;overflow-wrap:anywhere}
+.backup-status{display:inline-flex;padding:3px 7px;border-radius:999px;background:var(--soft);font-size:10px;font-weight:700;text-transform:capitalize}
+.backup-status.completed{color:#047857;background:#d1fae5}.backup-status.failed{color:#b91c1c;background:#fee2e2}.backup-status.requested,.backup-status.queued,.backup-status.running{color:#92400e;background:#fef3c7}
+.backup-empty{padding:14px;color:var(--muted);font-size:12px}
+
+@media (max-width:900px){
+  .backup-panel .backup-settings-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:560px){
+  .backup-panel .backup-settings-form{grid-template-columns:1fr}
+  .backup-actions{align-items:stretch;flex-direction:column}
+  .backup-actions button{width:100%}
+}
+
 @media (max-width:900px){
   .settings-form-labeled{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mqtt-settings-form .field-port,.mqtt-settings-form .topic-filter-field{max-width:none}
@@ -94,7 +128,7 @@
 .mqtt-feed-message{color:var(--text);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 @media (max-width:700px){.mqtt-feed-row{grid-template-columns:72px minmax(0,1fr);gap:4px 8px}.mqtt-feed-message{grid-column:2}.mqtt-feed-topic{grid-column:2}.mqtt-feed-row time{grid-row:1 / span 2}}
 @media (max-width:560px){.ha-snapshot-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}.ha-snapshot-value{grid-column:1;text-align:left}.ha-snapshot-time{grid-column:2;grid-row:1 / span 2}}
-.standalone-shell .content-shell{width:100%}.standalone-shell main{min-height:100vh;padding:18px;background:var(--bg)}
+.standalone-shell{grid-template-columns:minmax(0,1fr)}.standalone-shell .content-shell{width:100%}.standalone-shell main{min-height:100vh;padding:18px;background:var(--bg)}
 .standalone-graph-page{display:flex;flex-direction:column;min-height:calc(100vh - 36px)}
 .standalone-graph-page .page-header{flex:0 0 auto;margin-bottom:10px}
 .standalone-graph-page .page-header p{margin-bottom:0}
