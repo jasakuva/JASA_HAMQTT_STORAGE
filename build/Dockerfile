@@ -1,5 +1,14 @@
 FROM docker.io/library/python:3.13-slim
 
+ARG IMAGE_VERSION=dev
+ARG IMAGE_REVISION=unknown
+
+LABEL org.opencontainers.image.title="HAMQTT Store" \
+      org.opencontainers.image.description="Home Assistant and MQTT data store application services" \
+      org.opencontainers.image.source="https://github.com/jasakuva/JASA_HAMQTT_STORAGE" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.revision="${IMAGE_REVISION}"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src
