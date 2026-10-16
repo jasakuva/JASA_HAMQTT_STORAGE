@@ -9,6 +9,8 @@ from sqlalchemy import func, or_, select
 from .auth import get_user, password_matches, reset_authentication_if_requested, set_password, valid_credentials
 from .config import settings
 from .services.dashboard_cache import get_dashboard_entities, get_dashboard_messages
+from .services.backup import backup_repository_size, get_backup_config, normalize_config, request_backup
+from .services.ingestion import should_skip_mqtt_parsing
 from .db import (
     HAConnection,
     ApplicationLog,
@@ -16,6 +18,7 @@ from .db import (
     HAStateCurrent,
     HAStateHistory,
     ApplicationUser,
+    BackupRun,
     IngestionSubscription,
     MQTTConnection,
     MQTTCurrentValue,
@@ -171,9 +174,12 @@ def create_app():
         mqtt_rows = session.execute(select(
             Object.id.label("id"), Object.nickname.label("nickname"), Object.display_name.label("display_name"),
             MQTTPayloadField.field_path.label("identifier"), MQTTPayloadField.unit.label("unit"),
-        ).join(MQTTPayloadField, MQTTPayloadField.object_id == Object.id)).mappings().all()
+            MQTTTopic.topic.label("topic"),
+        ).join(MQTTPayloadField, MQTTPayloadField.object_id == Object.id)
+         .join(MQTTTopic, MQTTTopic.id == MQTTPayloadField.mqtt_topic_id)).mappings().all()
         rows.extend({"id": row["id"], "label": row["nickname"] or row["display_name"] or row["identifier"],
-                     "identifier": row["identifier"], "source": "MQTT", "unit": row["unit"]} for row in mqtt_rows)
+                     "identifier": row["identifier"], "source": "MQTT", "unit": row["unit"]}
+                    for row in mqtt_rows if not should_skip_mqtt_parsing(row["topic"]))
         rows = list({row["id"]: row for row in rows}.values())
         return sorted(rows, key=lambda row: (row["source"], row["label"]))
 
@@ -409,7 +415,22 @@ def create_app():
         )
 
     @app.route("/settings", methods=["GET", "POST"])
-    def settings_view():
+    @app.route("/settings/<section>", methods=["GET", "POST"])
+    def settings_view(section="authentication"):
+        if request.path == "/settings":
+            if request.method == "POST":
+                section = {
+                    "auth": "authentication",
+                    "ha": "data-sources",
+                    "mqtt": "data-sources",
+                    "mcp": "data-sources",
+                    "retention": "data-sources",
+                    "backup": "backups",
+                }.get(request.form.get("kind"), "authentication")
+            else:
+                return redirect(url_for("settings_view", section="authentication"))
+        if section not in {"authentication", "data-sources", "backups"}:
+            return redirect(url_for("settings_view", section="authentication"))
         with SessionLocal() as session:
             if request.method == "POST":
                 kind = request.form.get("kind")
@@ -425,6 +446,19 @@ def create_app():
                         setting = SystemSetting(setting_key="retention", setting_value={}, is_secret=False)
                         session.add(setting)
                     setting.setting_value = {"history_days": history_days}
+                elif kind == "backup":
+                    values = request.form.to_dict()
+                    values["enabled"] = bool(request.form.get("backup_enabled"))
+                    values["portable_dump_daily"] = bool(request.form.get("portable_dump_daily"))
+                    setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "backup"))
+                    previous = setting.setting_value if setting else {}
+                    config = normalize_config(values)
+                    if not values.get("encryption_passphrase"):
+                        config["encryption_passphrase"] = (previous or {}).get("encryption_passphrase", "")
+                    if not setting:
+                        setting = SystemSetting(setting_key="backup", setting_value={}, is_secret=True)
+                        session.add(setting)
+                    setting.setting_value = config
                 elif kind == "mcp":
                     enabled = bool(request.form.get("mcp_enabled"))
                     access_level = request.form.get("mcp_access_level", "read_only")
@@ -514,7 +548,7 @@ def create_app():
                     for duplicate in subscriptions[1:]:
                         duplicate.enabled = False
                 session.commit()
-                return redirect(url_for("settings_view"))
+                return redirect(url_for("settings_view", section=section))
             ha_connection = session.scalar(select(HAConnection).order_by(HAConnection.id))
             mqtt_connection = session.scalar(
                 select(MQTTConnection).order_by(MQTTConnection.enabled.desc(), MQTTConnection.id)
@@ -530,16 +564,32 @@ def create_app():
             mcp_config = mcp_setting.setting_value if mcp_setting else {"enabled": False, "access_level": "read_only"}
             retention_setting = session.scalar(select(SystemSetting).where(SystemSetting.setting_key == "retention"))
             retention_config = retention_setting.setting_value if retention_setting else {"history_days": 365}
+            backup_config = get_backup_config(session)
+            backup_runs = session.scalars(
+                select(BackupRun).order_by(BackupRun.started_at.desc()).limit(20)
+            ).all()
+            backup_size = backup_repository_size(backup_config)
             auth_user = get_user(session)
         return render_template(
             "settings.html",
+            settings_section=section,
             ha_connection=ha_connection,
             mqtt_connection=mqtt_connection,
             mqtt_subscription=mqtt_subscription,
             mcp_config=mcp_config,
             retention_config=retention_config,
+            backup_config=backup_config,
+            backup_runs=backup_runs,
+            backup_size=backup_size,
             auth_user=auth_user,
         )
+
+    @app.post("/settings/backup/run/<backup_type>")
+    def run_backup_now(backup_type):
+        if backup_type not in {"full", "diff", "dump"}:
+            return "Unsupported backup type", 400
+        run = request_backup(backup_type)
+        return redirect(url_for("settings_view", section="backups", queued=run.id, backup_type=backup_type))
 
     @app.get("/logs")
     def logs_view():
@@ -557,7 +607,25 @@ def create_app():
             if search:
                 query = query.where(or_(ApplicationLog.message.ilike(f"%{search}%"), ApplicationLog.event.ilike(f"%{search}%")))
             logs = session.scalars(query).all()
-        return render_template("logs.html", logs=logs, level=level, source=source, search=search)
+        return render_template("logs.html", logs=logs, level=level, source=source, search=search, settings_section=None)
+
+    @app.get("/settings/logs")
+    def settings_logs_view():
+        level = request.args.get("level", "").upper().strip()
+        source = request.args.get("source", "").strip()
+        search = request.args.get("q", "").strip()
+        with SessionLocal() as session:
+            query = select(ApplicationLog).order_by(ApplicationLog.created_at.desc()).limit(500)
+            if level in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+                query = query.where(ApplicationLog.level == level)
+            else:
+                level = ""
+            if source:
+                query = query.where(ApplicationLog.source.ilike(f"%{source}%"))
+            if search:
+                query = query.where(or_(ApplicationLog.message.ilike(f"%{search}%"), ApplicationLog.event.ilike(f"%{search}%")))
+            logs = session.scalars(query).all()
+        return render_template("logs.html", logs=logs, level=level, source=source, search=search, settings_section="logs")
 
     @app.get("/ha")
     def ha_view():

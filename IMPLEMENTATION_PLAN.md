@@ -1,7 +1,7 @@
 # HA MQTT Store - Implementation Plan
 
 **Status:** Active implementation roadmap
-**Last updated:** 2026-10-12
+**Last updated:** 2026-10-15
 **Repository:** `%INSTALL_PATH%`
 
 `%INSTALL_PATH%` means the local directory where this repository is installed.
@@ -188,8 +188,10 @@ static/
 - [ ] Add configurable retention jobs.
 - [ ] Add time-based partitioning if volume requires it.
 - [ ] Add aggregate history tables for long-term charts.
-- [ ] Add database backup and restore documentation.
-- [ ] Add authentication, CSRF protection, secure cookies, and authorization.
+- `[x]` Add PostgreSQL 17-compatible pgBackRest backup and restore documentation.
+- `[x]` Add local authentication, CSRF protection, authenticated sessions, and credential invalidation.
+- `[x]` Add focused Settings subpages for authentication, data sources, logs, and backups.
+- `[~]` Production authorization, secure-cookie policy, HTTPS termination, throttling, and external secret management remain deployment hardening work.
 - [ ] Add integration tests using disposable services.
 - [ ] Add reconnect, malformed payload, duplicate message, and migration tests.
 - [ ] Add production Compose profile and reverse-proxy guidance.

@@ -15,7 +15,10 @@ services:
       com.hamqtt.service: "redis"
 
   postgres:
-    image: ${POSTGRES_IMAGE:-pgvector/pgvector:0.8.7-pg17-bookworm}
+    build:
+      context: .
+      dockerfile: PostgresBackupDockerfile
+    image: localhost/hamqtt-postgres-pgbackrest:dev
     container_name: ${POSTGRES_CONTAINER_NAME:-hamqtt-postgres}
     restart: unless-stopped
     environment:
@@ -23,12 +26,23 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-hamqtt}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - unix_socket_directories=/var/run/postgresql
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=pgbackrest --stanza=hamqtt archive-push %p
     ports:
       # Bind to all host interfaces so Linux host tools and trusted LAN
       # clients can connect; restrict this with POSTGRES_BIND_IP if needed.
       - "${POSTGRES_BIND_IP:-0.0.0.0}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - ${POSTGRES_VOLUME:-hamqtt-postgres-data}:/var/lib/postgresql/data
+      - hamqtt-postgres-socket:/var/run/postgresql
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest
+      - ./pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
       - ./db/init:/docker-entrypoint-initdb.d:ro
     networks:
       - hamqtt-store
@@ -173,6 +187,30 @@ services:
       com.hamqtt.service: "cleanup"
     command: ["python", "-m", "hamqtt_store.cli", "cleanup"]
 
+  backup:
+    build:
+      context: .
+      dockerfile: BackupDockerfile
+    image: localhost/hamqtt-backup-pgbackrest:dev
+    container_name: hamqtt-backup
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    network_mode: "service:postgres"
+    volumes:
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest
+      - ${POSTGRES_VOLUME:-hamqtt-postgres-data}:/var/lib/postgresql/data:ro
+      - hamqtt-postgres-socket:/var/run/postgresql
+      - ./pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "backup"
+    command: ["python", "-m", "hamqtt_store.cli", "backup"]
+
 networks:
   hamqtt-store:
     name: ${POSTGRES_NETWORK:-hamqtt-store-network}
@@ -181,6 +219,8 @@ networks:
     external: true
 
 volumes:
+  hamqtt-postgres-socket:
+    name: hamqtt-postgres-socket
   hamqtt-app-data:
     name: ${APP_DATA_VOLUME:-hamqtt-app-data}
     # Compose creates this volume automatically. It stores the authentication

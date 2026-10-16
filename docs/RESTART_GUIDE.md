@@ -1,6 +1,6 @@
 # HA MQTT Store Restart Guide
 
-This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 12, 2026.
+This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 16, 2026 and release 0.3.2.
 
 ## 1. What this project is
 
@@ -17,9 +17,11 @@ The current application includes:
 - MQTT topic overview and topic history pages.
 - Field-specific MQTT value history linked to the originating raw message.
 - Main dashboard counters, workspace status, live MQTT feed, and sampled Home Assistant snapshot.
-- Interactive historical graphs and CSV export for selected HA entities and MQTT fields.
+- Interactive historical graphs and CSV export for selected HA entities and MQTT fields, with Zigbee2MQTT bridge/system topics omitted from their shared selector catalog.
 - Redis-backed dashboard cache documented in [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).
 - Local web authentication with first-run setup, hashed passwords, sessions, logout, and CSRF-protected forms.
+- Focused Settings subpages for authentication, data sources, logs, and backups.
+- PostgreSQL 17-compatible pgBackRest backup service with full/differential schedule profiles, retention profiles, portable custom-format dumps, and recorded backup errors.
 - Alembic database migrations.
 - Basic parser tests and documentation validation.
 
@@ -60,29 +62,23 @@ Run commands from `%INSTALL_PATH%`, the local repository directory:
 podman machine start podman-machine-default
 ```
 
-On Linux with Docker, use:
-
-```bash
-sudo systemctl enable --now docker
-```
-
-It is safe if the container engine is already running.
+It is safe if the Podman machine is already running.
 
 ### Start the database and application services
 
 Normally use:
 
-```bash
-docker compose up -d
+```powershell
+podman-compose up -d --build
 ```
 
-Compose builds the image, waits for PostgreSQL health, runs migrations, and starts the application services only after migrations succeed.
+`podman-compose` builds the image, waits for PostgreSQL health, runs migrations, and starts the application services only after migrations succeed.
 
 If existing containers with the same names prevent recreation, remove only the containers and recreate them:
 
-```bash
-docker compose down
-docker compose up -d --build
+```powershell
+podman-compose down
+podman-compose up -d --build
 ```
 
 The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removing the PostgreSQL container does **not** delete that volume. Do not run `podman volume rm hamqtt-postgres-data` unless intentionally resetting all local database data.
@@ -90,9 +86,9 @@ The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removi
 ## 4. Verify that the stack is healthy
 
 ```powershell
-docker compose ps -a
+podman-compose ps -a
 curl -sS http://localhost:8000/health
-docker compose exec postgres pg_isready -U hamqtt -d hamqtt_store
+podman-compose exec postgres pg_isready -U hamqtt -d hamqtt_store
 ```
 
 The current lightweight health endpoint verifies web-to-PostgreSQL connectivity only. Detailed worker diagnostics, heartbeat reporting, ingestion-freshness checks, and a system-health dashboard are planned in [the implementation roadmap](../IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
@@ -122,7 +118,7 @@ http://localhost:8000
 
 The workers intentionally remain idle until enabled Home Assistant and MQTT connections/subscriptions exist in the application database.
 
-Configure them in the web UI under **Settings**. If the UI appears empty, first check:
+Configure them in the web UI under **Settings → Data sources**. If the UI appears empty, first check:
 
 ```powershell
 podman logs hamqtt-mqtt-ingestor
@@ -130,7 +126,9 @@ podman logs hamqtt-ha-ingestor
 podman logs hamqtt-web
 ```
 
-MCP is configured under **Settings → AI / MCP service** and is disabled by default. It currently supports only read-only access. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`; restart `hamqtt-mcp` after changing the setting.
+MCP is configured under **Settings → Data sources → AI / MCP service** and is disabled by default. It currently supports only read-only access. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`; restart `hamqtt-mcp` after changing the setting.
+
+Backups are configured under **Settings → Backups**. Review [`BACKUPS.md`](BACKUPS.md) for repository setup, pgBackRest checks, manual backup runs, and restore safety. Do not remove the PostgreSQL or backup repository volumes during a routine update.
 
 For the current manual diagnostic workflow, compare container state, worker logs, broker connection timestamps, and recent MQTT rows:
 
@@ -157,7 +155,7 @@ python tools/validate_docs.py
 git diff --check
 ```
 
-The current parser test suite has three tests. Always run the tests and documentation validator before committing changes.
+Always run the full test suite and documentation validator before committing changes.
 
 ## 7. Current dashboard and analysis flow
 
@@ -167,7 +165,7 @@ The main dashboard is a server-rendered Flask page followed by browser polling:
 2. Redis provides the initial MQTT preview and the sampled Home Assistant state cache.
 3. `static/app.js` polls `/api/dashboard/latest-mqtt` every 2 seconds and `/api/dashboard/random-ha` every 10 seconds.
 4. The JavaScript replaces only the live feed DOM rows, skips polling when the tab is hidden, and marks a tile offline when its request fails.
-5. The **Graphs** page reads historical PostgreSQL rows and plots up to four selected series with Plotly.
+5. The **Graphs** page reads historical PostgreSQL rows and plots up to four selected series with Plotly and `1h`, `6h`, `1d`, and `all` range controls.
 6. The **Export CSV** page reads historical PostgreSQL rows for up to ten selected series.
 
 The Redis cache is bounded and best-effort. It is not the source of truth and is not used by graphs or CSV export. For the complete sequence, cache keys, payload shapes, refresh intervals, and troubleshooting commands, see [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).
@@ -202,7 +200,7 @@ Likely next tasks include:
 - Add MQTT protocol-specific decoders.
 - Add numeric charts and retention jobs.
 - Add HA/MQTT linking workflows.
-- Add authentication, CSRF protection, and authorization.
+- Improve authorization boundaries, secure cookies, HTTPS deployment, throttling, and secret management.
 - Improve production backup, monitoring, and integration-test documentation.
 
 When adding a feature, update both `IMPLEMENTATION_PLAN.md` and this guide if the startup process, important files, or current behavior changes.

@@ -15,6 +15,8 @@ if errorlevel 1 (
 )
 
 echo [1/4] Starting PostgreSQL and Redis...
+podman build -f PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
+if errorlevel 1 goto :failed
 podman-compose up -d --no-deps postgres redis
 if errorlevel 1 goto :failed
 
@@ -29,9 +31,13 @@ echo [3/4] Checking database migrations...
 podman-compose run --rm --no-deps migrate
 if errorlevel 1 goto :failed
 
+echo [4/5] Building the dedicated backup image...
+podman build -f BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
+if errorlevel 1 goto :failed
+
 rem Avoid the podman-compose nested depends_on startup bug.
-echo [4/4] Starting application services...
-podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup
+echo [5/5] Starting application services...
+podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup
 if errorlevel 1 goto :failed
 
 echo.

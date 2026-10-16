@@ -14,7 +14,9 @@ The image contains PostgreSQL 17 and pgvector 0.8.7. The tag is pinned so that a
 
 - `.env.example`: configuration template.
 - `.env`: local development configuration; do not commit it.
-- `compose.yml`: PostgreSQL, migration, web, MQTT, Home Assistant, and MCP services.
+- `compose.yml`: PostgreSQL, migration, web, MQTT, Home Assistant, MCP, cleanup, and backup services.
+- `PostgresBackupDockerfile`: PostgreSQL 17-compatible pgBackRest backup image.
+- `pgbackrest.conf`: stanza and repository configuration used by the backup service.
 - `db/init/001-enable-extensions.sql`: enables the `vector` extension during first database initialization.
 
 ## Start with Podman directly
@@ -56,6 +58,24 @@ docker compose up -d
 ```
 
 The same `compose.yml` can be used with a compatible Podman Compose provider if required by the host environment.
+
+## WAL archiving and pgBackRest
+
+The PostgreSQL service is configured for WAL archiving to the dedicated
+pgBackRest backup service. After the database is healthy and migrations have
+completed, validate the stanza before enabling scheduled backups:
+
+```powershell
+podman-compose ps -a
+podman exec hamqtt-postgres psql -U hamqtt -d hamqtt_store -c "SHOW archive_mode;"
+podman exec hamqtt-backup pgbackrest --stanza=hamqtt check
+podman exec hamqtt-backup pgbackrest --stanza=hamqtt info
+```
+
+The web UI exposes these controls under **Settings → Backups**. The backup
+worker records success or detailed failure information in the application
+database. Keep both `hamqtt-postgres-data` and the configured backup repository
+when updating the application.
 
 ## Verify
 

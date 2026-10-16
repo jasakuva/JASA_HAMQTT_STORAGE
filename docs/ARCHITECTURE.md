@@ -536,7 +536,7 @@ If volume grows, review query plans and consider `(mqtt_topic_id, received_at DE
 - Keep backups encrypted and test restores.
 - Retain catalog/current values while applying explicit policies to high-volume raw/history data.
 - Deleting raw messages currently cascades to observations and parse events.
-- Add authentication, CSRF protection, authorization, and stronger secret-at-rest protection before production exposure.
+- Local authentication, session invalidation, and CSRF protection are implemented. Fine-grained authorization, secure secret-at-rest handling, HTTPS deployment, and other production hardening remain required before untrusted exposure.
 
 ## 11. Implemented versus planned
 

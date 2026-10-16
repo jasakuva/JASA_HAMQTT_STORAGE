@@ -82,14 +82,17 @@ The browser uses `cache: no-store` for both JSON requests. This prevents an inte
 The **Graphs** page is historical analysis, not a Redis live view.
 
 - The catalog combines Home Assistant entities and MQTT payload fields from the shared `objects` catalog.
+- MQTT fields whose topic is `zigbee2mqtt/bridge` or one of its descendants are omitted from the shared Graph/Export selector catalog. Normal Zigbee2MQTT device topics remain selectable, and filtering the catalog does not delete stored raw messages or observations.
 - The user selects a UTC-compatible time range and one to four series.
 - HA values come from `ha_state_history`.
 - MQTT values come from `mqtt_observations`.
 - Values are sorted by timestamp and numeric rows are downsampled when the result exceeds 4,000 numeric points.
-- The rendered page creates Plotly line-and-marker traces with zoom, pan, scroll zoom, a range slider, and 1-hour, 6-hour, and 1-day range buttons.
+- The rendered page creates Plotly line-and-marker traces with zoom, pan, scroll zoom, a range slider, and stable HTML buttons for `1h`, `6h`, `1d`, and `all` ranges.
 - Non-numeric observations remain available to history views and export but are not plotted as numeric graph points.
 
 The optional `standalone=1` query parameter opens the graph without the normal application shell; `/plot/<object_id>` redirects to this standalone graph form for one object.
+
+If an older bookmarked URL still contains the object ID of a filtered bridge field, reopen `/graph` without the stale query parameter and select the desired series again.
 
 ## CSV export
 
@@ -106,6 +109,8 @@ timestamp,series,source,identifier,value,value_type,unit,state
 ```
 
 Exports read PostgreSQL history directly. They are not limited to the six MQTT messages or five sampled HA entities shown by the dashboard.
+
+The Export selector uses the same Zigbee2MQTT bridge-topic filtering as Graphs. Existing bridge-topic data remains in PostgreSQL and is not removed by this presentation-layer filter.
 
 ## Troubleshooting live data
 

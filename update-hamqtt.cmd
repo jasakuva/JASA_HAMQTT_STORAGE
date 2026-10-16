@@ -19,29 +19,37 @@ echo [1/6] Building application image...
 podman-compose build --pull
 if errorlevel 1 goto :failed
 
+echo [2/7] Building PostgreSQL backup image...
+podman build --pull=always -f PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
+if errorlevel 1 goto :failed
+
+echo [3/7] Building the dedicated backup image...
+podman build --pull=always -f BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
+if errorlevel 1 goto :failed
+
 rem Never use -v here: preserve existing PostgreSQL and application volumes.
-echo [2/6] Removing old containers (preserving named volumes)...
+echo [4/7] Removing old containers (preserving named volumes)...
 podman-compose down
 if errorlevel 1 goto :failed
 
 rem --no-deps prevents Podman from constructing the nested startup dependency graph.
-echo [3/6] Starting PostgreSQL and Redis...
+echo [5/7] Starting PostgreSQL and Redis...
 podman-compose up -d --no-deps postgres redis
 if errorlevel 1 goto :failed
 
- echo [4/6] Waiting for services to become healthy...
+ echo [6/7] Waiting for services to become healthy...
 call :wait_healthy hamqtt-postgres 90
 if errorlevel 1 goto :failed
 call :wait_healthy hamqtt-redis 60
 if errorlevel 1 goto :failed
 
 rem Alembic upgrade head is safe to run repeatedly: it applies only pending migrations.
-echo [5/6] Running database migrations...
+echo [7/7] Running database migrations...
 podman-compose run --rm --no-deps migrate
 if errorlevel 1 goto :failed
 
- echo [6/6] Starting application services...
-podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup
+ echo [8/8] Starting application services...
+podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup
 if errorlevel 1 goto :failed
 
  echo.
