@@ -1,10 +1,18 @@
 # HA MQTT Store
 
+![Release](https://img.shields.io/github/v/release/jasakuva/JASA_HAMQTT_STORAGE?display_name=tag&sort=semver)
+![Tests](https://img.shields.io/badge/tests-33%20passing-2ea44f)
+![Python](https://img.shields.io/badge/python-3.12%2B-3776ab)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791)
+![Podman](https://img.shields.io/badge/containers-Podman-892ca0)
+
 HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQTT data into PostgreSQL with pgvector support. It preserves raw source messages while also parsing useful scalar and nested JSON values into historical observations.
 
 > **Documentation:** More detailed deployment, architecture, database schema, table relationships, field definitions, and practical SQL examples are available in the [project Wiki](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki). Start with the [Database Schema and SQL guide](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki/Database-Schema-and-SQL) for database usage.
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
+
+> **Current release:** **0.3.2** improves PostgreSQL backup scheduling and portable dumps, replaces unreliable Plotly range controls with stable HTML controls, and removes Zigbee2MQTT bridge/system topics from Graph and Export selectors without deleting stored data. See the [0.3.2 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.2) and the [0.3.2 Wiki page](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/wiki/Release-0.3.2).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -20,9 +28,12 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - Field-specific value history linked to each observation's originating raw MQTT message.
 - Main dashboard with PostgreSQL counts, compact workspace status, live MQTT feed, and sampled Home Assistant state snapshot.
 - Redis-backed dashboard cache that keeps the live UI responsive without replacing PostgreSQL history.
-- Interactive Plotly graphs for up to four historical HA entities or MQTT fields.
+- Interactive Plotly graphs for up to four historical HA entities or MQTT fields, with stable `1h`, `6h`, `1d`, and `all` range controls.
 - CSV export for up to ten historical HA entities or MQTT fields.
+- Shared Graph/Export catalog filtering that hides Zigbee2MQTT `bridge` system topics while retaining their stored MQTT data.
 - Local web authentication with first-run account setup, hashed passwords, authenticated sessions, logout, and CSRF protection.
+- Settings subpages for Authentication, Data sources, Logs, and Backups.
+- PostgreSQL 17-compatible pgBackRest full and differential backup service with schedule/retention profiles, portable custom-format dumps, backup history, and error reporting.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
@@ -192,7 +203,7 @@ Each observation is linked to its source message through `mqtt_observations.sour
 
 The main dashboard combines durable database counters with a small live-data path. MQTT and Home Assistant workers write compact updates to Redis after their PostgreSQL writes. The browser polls the MQTT endpoint every two seconds and a sampled Home Assistant endpoint every ten seconds, updating only the feed tiles. Redis is best-effort and bounded; PostgreSQL remains the source of truth for history, graphs, and exports.
 
-The **Graphs** page reads historical HA state and MQTT observation rows, supports one to four selected series, and uses Plotly zooming, a range slider, and time-range buttons. The **Export CSV** page reads the same historical sources, supports one to ten series, and returns timestamped rows with source, identifier, value, type, unit, and state columns.
+The **Graphs** page reads historical HA state and MQTT observation rows, supports one to four selected series, and uses Plotly zooming, a range slider, and stable HTML buttons for `1h`, `6h`, `1d`, and `all`. The **Export CSV** page reads the same historical sources, supports one to ten series, and returns timestamped rows with source, identifier, value, type, unit, and state columns. Both selectors hide `zigbee2mqtt/bridge` and descendant system topics; this filtering does not delete previously stored MQTT messages or observations.
 
 See [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) for the complete live-data flow, Redis keys, polling behavior, graph downsampling, export format, and troubleshooting steps.
 
@@ -213,16 +224,16 @@ After enabling it in Settings, restart the service. The local Streamable HTTP en
 Use the supplied update script. It builds the new image, creates missing infrastructure, waits for PostgreSQL, applies pending migrations automatically, and recreates only the application containers:
 
 ```bash
-git switch graph-and-export
-git pull --ff-only origin graph-and-export
+git fetch origin
+git checkout v0.3.2
 bash scripts/update.sh
 ```
 
-The script supports Docker Compose and Podman Compose. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
+The script uses the project's Podman and `podman-compose` workflow. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
 
 The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` or `hamqtt-app-data` unless you intentionally want to delete application data.
 
-For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes. Docker Compose users can follow the equivalent non-destructive command sequence in [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
+For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes.
 
 For a first installation, use the same command:
 
@@ -266,14 +277,7 @@ git diff --check
 
 The database uses the named volume `hamqtt-postgres-data`. Removing containers does not remove database data.
 
-To intentionally reset all local database data:
-
-```powershell
-docker compose down
-docker volume rm hamqtt-postgres-data
-```
-
-Only run the volume removal command when a complete development reset is intended.
+Never use `down -v` or remove `hamqtt-postgres-data` or `hamqtt-app-data` during startup, upgrade, rebuild, or recovery. Volume deletion is an explicit destructive reset operation and is not part of normal maintenance.
 
 ## Documentation
 
