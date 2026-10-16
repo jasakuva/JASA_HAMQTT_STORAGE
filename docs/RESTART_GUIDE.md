@@ -1,6 +1,6 @@
 # HA MQTT Store Restart Guide
 
-This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 15, 2026 and release 0.3.1.
+This guide is for returning to the project after a break or starting development on another machine. It describes the current repository state as of October 16, 2026 and release 0.3.2.
 
 ## 1. What this project is
 
@@ -17,11 +17,11 @@ The current application includes:
 - MQTT topic overview and topic history pages.
 - Field-specific MQTT value history linked to the originating raw message.
 - Main dashboard counters, workspace status, live MQTT feed, and sampled Home Assistant snapshot.
-- Interactive historical graphs and CSV export for selected HA entities and MQTT fields.
+- Interactive historical graphs and CSV export for selected HA entities and MQTT fields, with Zigbee2MQTT bridge/system topics omitted from their shared selector catalog.
 - Redis-backed dashboard cache documented in [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).
 - Local web authentication with first-run setup, hashed passwords, sessions, logout, and CSRF-protected forms.
 - Focused Settings subpages for authentication, data sources, logs, and backups.
-- PostgreSQL 17-compatible pgBackRest backup service with full/differential scheduling and recorded backup errors.
+- PostgreSQL 17-compatible pgBackRest backup service with full/differential schedule profiles, retention profiles, portable custom-format dumps, and recorded backup errors.
 - Alembic database migrations.
 - Basic parser tests and documentation validation.
 
@@ -165,7 +165,7 @@ The main dashboard is a server-rendered Flask page followed by browser polling:
 2. Redis provides the initial MQTT preview and the sampled Home Assistant state cache.
 3. `static/app.js` polls `/api/dashboard/latest-mqtt` every 2 seconds and `/api/dashboard/random-ha` every 10 seconds.
 4. The JavaScript replaces only the live feed DOM rows, skips polling when the tab is hidden, and marks a tile offline when its request fails.
-5. The **Graphs** page reads historical PostgreSQL rows and plots up to four selected series with Plotly.
+5. The **Graphs** page reads historical PostgreSQL rows and plots up to four selected series with Plotly and `1h`, `6h`, `1d`, and `all` range controls.
 6. The **Export CSV** page reads historical PostgreSQL rows for up to ten selected series.
 
 The Redis cache is bounded and best-effort. It is not the source of truth and is not used by graphs or CSV export. For the complete sequence, cache keys, payload shapes, refresh intervals, and troubleshooting commands, see [`DASHBOARD_DATA_FLOW.md`](DASHBOARD_DATA_FLOW.md).

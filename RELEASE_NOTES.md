@@ -1,3 +1,55 @@
+# HA MQTT Store 0.3.2
+
+Release date: 2026-10-16
+
+## Highlights
+
+Version 0.3.2 improves backup portability and control, makes graph range selection reliable, and keeps Zigbee2MQTT bridge/system data out of the Graph and Export selectors while preserving stored history.
+
+## Graph and export usability
+
+- Replaced Plotly's embedded SVG range-selector controls with stable HTML buttons for `1h`, `6h`, `1d`, and `all`.
+- Kept Plotly zooming, panning, scroll zoom, and the range slider available.
+- Filtered `zigbee2mqtt/bridge` and all descendant topics from the shared Graph/Export catalog.
+- Kept normal Zigbee2MQTT device topics selectable.
+- Applied filtering only to the selector catalog; existing raw MQTT messages and observations are not deleted.
+- Added regression coverage for graph range controls and bridge-topic filtering.
+
+If a bookmarked graph URL contains an object ID that is now filtered, open `/graph` without the stale query parameter and select the desired series again.
+
+## PostgreSQL backups
+
+- Added independent low, medium, and high schedule profiles for full and differential backups.
+- Added independent low, medium, and high retention profiles.
+- Added manual PostgreSQL portable dumps in custom format with compression and no owner metadata.
+- Added an optional daily portable-dump schedule.
+- Added portable-dump retention alongside pgBackRest retention.
+- Improved the Backups settings layout and action controls.
+- Ensured the backup image includes the PostgreSQL 17 client used by `pg_dump`.
+
+## Validation
+
+- 33 automated tests passing.
+- Python compilation passing.
+- Documentation validation passing.
+- Compose configuration rendering successfully.
+- `git diff --check` passing.
+- Recreated the web container and confirmed `GET /health` returned healthy.
+
+## Upgrade
+
+From an existing installation:
+
+```bash
+git fetch origin
+git checkout v0.3.2
+bash scripts/update.sh
+```
+
+The update workflow uses Podman and `podman-compose`, runs migrations before application services, and preserves the PostgreSQL and application data volumes. Do **not** use `down -v`, and do not remove `hamqtt-postgres-data`, `hamqtt-app-data`, or the configured backup repository during a routine upgrade.
+
+---
+
 # HA MQTT Store 0.3.1
 
 Release date: 2026-10-15
