@@ -74,6 +74,7 @@ start-hamqtt.cmd
 stop-hamqtt.cmd
 update-hamqtt.cmd
 rebuild-hamqtt.cmd
+hamqtt.sh
 build/
   Dockerfile
   BackupDockerfile

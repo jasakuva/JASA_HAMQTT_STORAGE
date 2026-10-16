@@ -64,9 +64,10 @@ podman-compose run --rm --no-deps migrate
 podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup recovery
 ```
 
-The existing `start-hamqtt.cmd`, `update-hamqtt.cmd`, and
-`scripts/update.sh` commands include `backup` and `recovery` automatically. They
-preserve the PostgreSQL and application volumes.
+The Windows `start-hamqtt.cmd` and `update-hamqtt.cmd` scripts and the Unix
+`hamqtt.sh` launcher include `backup` and `recovery` automatically. The legacy
+`scripts/update.sh` path delegates to `hamqtt.sh update`. All preserve the
+PostgreSQL and application volumes.
 
 ## Restore workflow
 

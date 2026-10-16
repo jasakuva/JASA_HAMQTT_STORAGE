@@ -40,6 +40,7 @@ The current application includes:
 | `config/` | Alembic and dependency helper configuration |
 | `start-hamqtt.cmd`, `stop-hamqtt.cmd` | Safe Windows start and stop entry points |
 | `update-hamqtt.cmd`, `rebuild-hamqtt.cmd` | Safe Windows update and full rebuild entry points |
+| `hamqtt.sh` | Linux/macOS Podman-or-Docker start, stop, update, rebuild, status, and logs launcher |
 | `src/hamqtt_store/db.py` | SQLAlchemy models and database engine |
 | `src/hamqtt_store/web.py` | Flask routes and page data loading |
 | `src/hamqtt_store/services/ingestion.py` | MQTT message ingestion and observation creation |
@@ -76,7 +77,7 @@ Normally use:
 start-hamqtt.cmd
 ```
 
-The start script explicitly builds the images, waits for PostgreSQL and Redis health, runs migrations, and starts the application services only after migrations succeed.
+The start script uses the existing local images without building, waits for PostgreSQL and Redis health, runs migrations, and starts the application services only after migrations succeed. For a first installation or changed source, run `update-hamqtt.cmd` first to build the required images.
 
 If existing containers with the same names prevent recreation, remove only the containers and recreate them:
 

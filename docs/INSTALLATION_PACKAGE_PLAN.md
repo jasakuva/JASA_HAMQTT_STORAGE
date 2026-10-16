@@ -129,7 +129,9 @@ Normal commands must preserve PostgreSQL and application-data volumes. Destructi
 
 The update command should pull the new deployment files and application image, start dependencies, run migrations before replacing application services, recreate the services, and verify the web health endpoint. If migration or health verification fails, stop safely without deleting persistent data.
 
-The existing `scripts/update.sh` can later be refactored so development and published installations share safe upgrade logic.
+The root `hamqtt.sh` launcher now provides shared source-checkout management for
+Podman and Docker. A future published installation can reuse its engine-selection
+and safe-volume behavior while replacing local builds with published image pulls.
 
 ## Backup and uninstall
 

@@ -14,41 +14,46 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [1/7] Building the application image...
-podman build -f build/Dockerfile -t localhost/hamqtt-store:dev .
-if errorlevel 1 goto :failed
+echo [1/5] Checking required local images...
+call :require_image localhost/hamqtt-store:dev
+if errorlevel 1 goto :missing_images
+call :require_image localhost/hamqtt-postgres-pgbackrest:dev
+if errorlevel 1 goto :missing_images
+call :require_image localhost/hamqtt-backup-pgbackrest:dev
+if errorlevel 1 goto :missing_images
 
-echo [2/7] Building the PostgreSQL image...
-podman build -f build/PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
-if errorlevel 1 goto :failed
-
-echo [3/7] Starting PostgreSQL and Redis...
+echo [2/5] Starting PostgreSQL and Redis...
 podman-compose up -d --no-deps postgres redis
 if errorlevel 1 goto :failed
 
-echo [4/7] Waiting for PostgreSQL and Redis...
+echo [3/5] Waiting for PostgreSQL and Redis...
 call :wait_healthy hamqtt-postgres 90
 if errorlevel 1 goto :failed
 call :wait_healthy hamqtt-redis 60
 if errorlevel 1 goto :failed
 
 rem Safe on every start: Alembic applies only migrations that are missing.
-echo [5/7] Checking database migrations...
+echo [4/5] Checking database migrations...
 podman-compose run --rm --no-deps migrate
 if errorlevel 1 goto :failed
 
-echo [6/7] Building the dedicated backup image...
-podman build -f build/BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
-if errorlevel 1 goto :failed
-
 rem Avoid the podman-compose nested depends_on startup bug.
-echo [7/7] Starting application services...
+echo [5/5] Starting application services...
 podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup recovery
 if errorlevel 1 goto :failed
 
 echo.
 echo SUCCESS: HAMQTT Store startup finished.
 podman ps --filter label=com.hamqtt.product=hamqtt-store
+exit /b 0
+
+:require_image
+podman image exists "%~1" >nul 2>&1
+if errorlevel 1 (
+    echo   Missing: %~1
+    exit /b 1
+)
+echo   Found: %~1
 exit /b 0
 
 :wait_healthy
@@ -70,4 +75,10 @@ exit /b 1
 echo.
 echo ERROR: Startup stopped. Check output above.
 echo No containers or volumes were deliberately removed.
+exit /b 1
+
+:missing_images
+echo.
+echo ERROR: One or more required HAMQTT images are missing.
+echo Run update-hamqtt.cmd first to build the required images.
 exit /b 1
