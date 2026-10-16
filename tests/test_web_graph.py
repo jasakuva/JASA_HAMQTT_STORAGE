@@ -41,8 +41,24 @@ def test_standalone_graph_layout_contract_is_present():
     assert "standalone-graph-page" in content
     assert "standalone-graph-panel" in content
     assert "Plotly.Plots.resize('graph')" in content
+    assert "graph-range-button" in content
+    assert "Plotly.relayout('graph'" in content
+    assert "data-range=\"1h\"" in content
+    assert "data-range=\"6h\"" in content
+    assert "data-range=\"1d\"" in content
+    assert "data-range=\"all\"" in content
     assert ".standalone-shell{grid-template-columns:minmax(0,1fr)}" in styles
     assert ".standalone-graph-panel{flex:1 1 auto;min-height:0;height:calc(100vh - 142px)}" in styles
+
+
+def test_graph_catalog_filters_zigbee2mqtt_bridge_topics():
+    with open("src/hamqtt_store/web.py", encoding="utf-8") as source:
+        content = source.read()
+
+    assert 'MQTTTopic.topic.label("topic")' in content
+    assert 'if not should_skip_mqtt_parsing(row["topic"])' in content
+    assert web.should_skip_mqtt_parsing("zigbee2mqtt/bridge/definitions")
+    assert not web.should_skip_mqtt_parsing("zigbee2mqtt/living_room_sensor")
 
 
 def test_settings_subpage_routes_are_registered():

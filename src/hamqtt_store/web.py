@@ -10,6 +10,7 @@ from .auth import get_user, password_matches, reset_authentication_if_requested,
 from .config import settings
 from .services.dashboard_cache import get_dashboard_entities, get_dashboard_messages
 from .services.backup import backup_repository_size, get_backup_config, normalize_config, request_backup
+from .services.ingestion import should_skip_mqtt_parsing
 from .db import (
     HAConnection,
     ApplicationLog,
@@ -173,9 +174,12 @@ def create_app():
         mqtt_rows = session.execute(select(
             Object.id.label("id"), Object.nickname.label("nickname"), Object.display_name.label("display_name"),
             MQTTPayloadField.field_path.label("identifier"), MQTTPayloadField.unit.label("unit"),
-        ).join(MQTTPayloadField, MQTTPayloadField.object_id == Object.id)).mappings().all()
+            MQTTTopic.topic.label("topic"),
+        ).join(MQTTPayloadField, MQTTPayloadField.object_id == Object.id)
+         .join(MQTTTopic, MQTTTopic.id == MQTTPayloadField.mqtt_topic_id)).mappings().all()
         rows.extend({"id": row["id"], "label": row["nickname"] or row["display_name"] or row["identifier"],
-                     "identifier": row["identifier"], "source": "MQTT", "unit": row["unit"]} for row in mqtt_rows)
+                     "identifier": row["identifier"], "source": "MQTT", "unit": row["unit"]}
+                    for row in mqtt_rows if not should_skip_mqtt_parsing(row["topic"]))
         rows = list({row["id"]: row for row in rows}.values())
         return sorted(rows, key=lambda row: (row["source"], row["label"]))
 
