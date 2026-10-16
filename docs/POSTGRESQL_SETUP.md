@@ -15,7 +15,7 @@ The image contains PostgreSQL 17 and pgvector 0.8.7. The tag is pinned so that a
 - `.env.example`: configuration template.
 - `.env`: local development configuration; do not commit it.
 - `compose.yml`: PostgreSQL, migration, web, MQTT, Home Assistant, MCP, cleanup, and backup services.
-- `PostgresBackupDockerfile`: PostgreSQL 17-compatible pgBackRest backup image.
+- `build/PostgresBackupDockerfile`: PostgreSQL 17-compatible pgBackRest backup image.
 - `pgbackrest.conf`: stanza and repository configuration used by the backup service.
 - `db/init/001-enable-extensions.sql`: enables the `vector` extension during first database initialization.
 

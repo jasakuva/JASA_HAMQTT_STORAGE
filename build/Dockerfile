@@ -6,11 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml ./
+COPY config/python/requirements.txt ./requirements.txt
 COPY src ./src
 COPY templates ./templates
 COPY static ./static
-COPY alembic.ini ./
+COPY config/alembic.ini ./alembic.ini
 COPY migrations ./migrations
 
 RUN pip install --no-cache-dir --upgrade pip && \

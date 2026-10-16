@@ -1,7 +1,14 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from hamqtt_store.services.backup import _dump_command, _pgbackrest_command, due_backup, normalize_config
+from hamqtt_store.services.backup import (
+    _dump_command,
+    _pgbackrest_command,
+    due_backup,
+    list_portable_dumps,
+    normalize_config,
+    portable_dump_file,
+)
 
 
 def test_backup_config_uses_independent_default_profiles():
@@ -64,3 +71,39 @@ def test_dump_schedule_uses_daily_interval():
     config = normalize_config({"portable_dump_daily": True})
 
     assert due_backup({**config, "differential_interval_hours": 24}, "dump", now, latest)
+
+
+def test_portable_dump_listing_is_filtered_and_newest_first(tmp_path, monkeypatch):
+    monkeypatch.setenv("BACKUP_REPOSITORY_PATH", str(tmp_path))
+    dump_directory = tmp_path / "dumps"
+    dump_directory.mkdir()
+    older = dump_directory / "hamqtt-store-older.dump"
+    newer = dump_directory / "hamqtt-store-newer.dump"
+    older.write_bytes(b"old")
+    newer.write_bytes(b"newer")
+    (dump_directory / "notes.txt").write_text("not a dump", encoding="utf-8")
+    older.touch()
+    newer.touch()
+    import os
+    os.utime(older, (1_700_000_000, 1_700_000_000))
+    os.utime(newer, (1_800_000_000, 1_800_000_000))
+
+    files = list_portable_dumps(normalize_config({}))
+
+    assert [item["name"] for item in files] == [newer.name, older.name]
+    assert files[0]["size_bytes"] == 5
+
+
+def test_portable_dump_file_rejects_invalid_paths(tmp_path, monkeypatch):
+    monkeypatch.setenv("BACKUP_REPOSITORY_PATH", str(tmp_path))
+    dump_directory = tmp_path / "dumps"
+    dump_directory.mkdir()
+    valid = dump_directory / "hamqtt-store-valid.dump"
+    valid.write_bytes(b"backup")
+    (tmp_path / "secret.dump").write_bytes(b"secret")
+    config = normalize_config({})
+
+    assert portable_dump_file(config, valid.name) == valid.resolve()
+    assert portable_dump_file(config, "../secret.dump") is None
+    assert portable_dump_file(config, "not-a-dump.txt") is None
+    assert portable_dump_file(config, "missing.dump") is None

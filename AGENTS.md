@@ -33,7 +33,7 @@ Typical commands are:
 Set-Location "C:\Users\janne\Documents\VS_HAMQTT_STORE"
 podman machine start
 podman-compose config
-podman-compose up -d --build
+start-hamqtt.cmd
 podman-compose ps -a
 podman-compose logs --tail 100 web
 ```

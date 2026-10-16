@@ -30,12 +30,16 @@ The current application includes:
 | Path | Purpose |
 |---|---|
 | `README.md` | Short project overview and basic commands |
-| `IMPLEMENTATION_PLAN.md` | Feature checklist and remaining work |
+| `docs/IMPLEMENTATION_PLAN.md` | Feature checklist and remaining work |
 | `docs/ARCHITECTURE.md` | Data model and architectural decisions |
 | `docs/DASHBOARD_DATA_FLOW.md` | Dashboard live-data pipeline, graph, export, and troubleshooting reference |
 | `docs/POSTGRESQL_SETUP.md` | PostgreSQL/pgvector setup and data-volume guidance |
 | `compose.yml` | PostgreSQL, migration, web, MQTT, HA, and MCP services |
 | `.env` | Local secrets and connection configuration; never commit it |
+| `build/` | Container image definitions |
+| `config/` | Alembic and dependency helper configuration |
+| `start-hamqtt.cmd`, `stop-hamqtt.cmd` | Safe Windows start and stop entry points |
+| `update-hamqtt.cmd`, `rebuild-hamqtt.cmd` | Safe Windows update and full rebuild entry points |
 | `src/hamqtt_store/db.py` | SQLAlchemy models and database engine |
 | `src/hamqtt_store/web.py` | Flask routes and page data loading |
 | `src/hamqtt_store/services/ingestion.py` | MQTT message ingestion and observation creation |
@@ -69,16 +73,16 @@ It is safe if the Podman machine is already running.
 Normally use:
 
 ```powershell
-podman-compose up -d --build
+start-hamqtt.cmd
 ```
 
-`podman-compose` builds the image, waits for PostgreSQL health, runs migrations, and starts the application services only after migrations succeed.
+The start script explicitly builds the images, waits for PostgreSQL and Redis health, runs migrations, and starts the application services only after migrations succeed.
 
 If existing containers with the same names prevent recreation, remove only the containers and recreate them:
 
 ```powershell
 podman-compose down
-podman-compose up -d --build
+rebuild-hamqtt.cmd
 ```
 
 The PostgreSQL data is stored in the named volume `hamqtt-postgres-data`. Removing the PostgreSQL container does **not** delete that volume. Do not run `podman volume rm hamqtt-postgres-data` unless intentionally resetting all local database data.
@@ -91,7 +95,7 @@ curl -sS http://localhost:8000/health
 podman-compose exec postgres pg_isready -U hamqtt -d hamqtt_store
 ```
 
-The current lightweight health endpoint verifies web-to-PostgreSQL connectivity only. Detailed worker diagnostics, heartbeat reporting, ingestion-freshness checks, and a system-health dashboard are planned in [the implementation roadmap](../IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
+The current lightweight health endpoint verifies web-to-PostgreSQL connectivity only. Detailed worker diagnostics, heartbeat reporting, ingestion-freshness checks, and a system-health dashboard are planned in [the implementation roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
 
 Expected application response:
 
@@ -188,7 +192,7 @@ Read these in order:
 
 1. This file, `docs/RESTART_GUIDE.md`.
 2. `README.md` for the short operational overview.
-3. `IMPLEMENTATION_PLAN.md` for completed and remaining feature checkboxes.
+3. `docs/IMPLEMENTATION_PLAN.md` for completed and remaining feature checkboxes.
 4. `docs/ARCHITECTURE.md` for the intended data model and design decisions.
 5. The relevant route/template/service files listed in the important-files table above.
 
@@ -203,7 +207,7 @@ Likely next tasks include:
 - Improve authorization boundaries, secure cookies, HTTPS deployment, throttling, and secret management.
 - Improve production backup, monitoring, and integration-test documentation.
 
-When adding a feature, update both `IMPLEMENTATION_PLAN.md` and this guide if the startup process, important files, or current behavior changes.
+When adding a feature, update both `docs/IMPLEMENTATION_PLAN.md` and this guide if the startup process, important files, or current behavior changes.
 
 ## 9. Commit workflow
 

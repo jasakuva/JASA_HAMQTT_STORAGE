@@ -15,9 +15,6 @@ services:
       com.hamqtt.service: "redis"
 
   postgres:
-    build:
-      context: .
-      dockerfile: PostgresBackupDockerfile
     image: localhost/hamqtt-postgres-pgbackrest:dev
     container_name: ${POSTGRES_CONTAINER_NAME:-hamqtt-postgres}
     restart: unless-stopped
@@ -57,9 +54,6 @@ services:
       com.hamqtt.service: "postgres"
 
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-migrate
     environment:
@@ -75,9 +69,6 @@ services:
       com.hamqtt.service: "migrate"
 
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-web
     restart: unless-stopped
@@ -86,6 +77,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:-change-this-development-secret}
       APP_DATA_DIR: /app/data
       REDIS_URL: redis://redis:6379/0
+      BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
+      RECOVERY_MAX_UPLOAD_MB: ${RECOVERY_MAX_UPLOAD_MB:-1024}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -95,6 +88,7 @@ services:
       - "${APP_PORT:-8000}:8000"
     volumes:
       - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest:ro
     networks:
       - hamqtt-store
     labels:
@@ -103,15 +97,13 @@ services:
     command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "hamqtt_store.wsgi:app"]
 
   mqtt-ingestor:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-mqtt-ingestor
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       REDIS_URL: redis://redis:6379/0
+      APP_DATA_DIR: /app/data
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -119,41 +111,41 @@ services:
         condition: service_healthy
     networks:
       - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
     labels:
       com.hamqtt.product: "hamqtt-store"
       com.hamqtt.service: "mqtt-ingestor"
     command: ["python", "-m", "hamqtt_store.cli", "mqtt"]
 
   ha-ingestor:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-ha-ingestor
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       REDIS_URL: redis://redis:6379/0
+      APP_DATA_DIR: /app/data
     depends_on:
       migrate:
         condition: service_completed_successfully
     networks:
       - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
     labels:
       com.hamqtt.product: "hamqtt-store"
       com.hamqtt.service: "ha-ingestor"
     command: ["python", "-m", "hamqtt_store.cli", "ha"]
 
   mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-mcp
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       MCP_TRANSPORT: streamable-http
+      APP_DATA_DIR: /app/data
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -161,15 +153,14 @@ services:
       - "${MCP_PORT:-8001}:8000"
     networks:
       - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
     labels:
       com.hamqtt.product: "hamqtt-store"
       com.hamqtt.service: "mcp"
     command: ["python", "-m", "hamqtt_store.cli", "mcp"]
 
   cleanup:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: localhost/hamqtt-store:dev
     container_name: hamqtt-cleanup
     restart: unless-stopped
@@ -177,31 +168,33 @@ services:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       CLEANUP_HOUR_UTC: ${CLEANUP_HOUR_UTC:-2}
       CLEANUP_MINUTE_UTC: ${CLEANUP_MINUTE_UTC:-0}
+      APP_DATA_DIR: /app/data
     depends_on:
       migrate:
         condition: service_completed_successfully
     networks:
       - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
     labels:
       com.hamqtt.product: "hamqtt-store"
       com.hamqtt.service: "cleanup"
     command: ["python", "-m", "hamqtt_store.cli", "cleanup"]
 
   backup:
-    build:
-      context: .
-      dockerfile: BackupDockerfile
     image: localhost/hamqtt-backup-pgbackrest:dev
     container_name: hamqtt-backup
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
+      APP_DATA_DIR: /app/data
     depends_on:
       migrate:
         condition: service_completed_successfully
     network_mode: "service:postgres"
     volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
       - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest
       - ${POSTGRES_VOLUME:-hamqtt-postgres-data}:/var/lib/postgresql/data:ro
       - hamqtt-postgres-socket:/var/run/postgresql
@@ -210,6 +203,29 @@ services:
       com.hamqtt.product: "hamqtt-store"
       com.hamqtt.service: "backup"
     command: ["python", "-m", "hamqtt_store.cli", "backup"]
+
+  recovery:
+    image: localhost/hamqtt-backup-pgbackrest:dev
+    container_name: hamqtt-recovery
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      POSTGRES_USER: ${POSTGRES_USER:-hamqtt}
+      APP_DATA_DIR: /app/data
+      BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
+      RECOVERY_MAX_UPLOAD_MB: ${RECOVERY_MAX_UPLOAD_MB:-1024}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "recovery"
+    command: ["python", "-m", "hamqtt_store.cli", "recovery"]
 
 networks:
   hamqtt-store:

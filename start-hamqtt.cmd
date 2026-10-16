@@ -5,7 +5,7 @@ cd /d "%~dp0"
 echo.
 echo ============================================
 echo   HAMQTT Store - Podman Start
- echo ============================================
+echo ============================================
 echo.
 
 where podman-compose >nul 2>&1
@@ -14,30 +14,36 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [1/4] Starting PostgreSQL and Redis...
-podman build -f PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
+echo [1/7] Building the application image...
+podman build -f build/Dockerfile -t localhost/hamqtt-store:dev .
 if errorlevel 1 goto :failed
+
+echo [2/7] Building the PostgreSQL image...
+podman build -f build/PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
+if errorlevel 1 goto :failed
+
+echo [3/7] Starting PostgreSQL and Redis...
 podman-compose up -d --no-deps postgres redis
 if errorlevel 1 goto :failed
 
-echo [2/4] Waiting for PostgreSQL and Redis...
+echo [4/7] Waiting for PostgreSQL and Redis...
 call :wait_healthy hamqtt-postgres 90
 if errorlevel 1 goto :failed
 call :wait_healthy hamqtt-redis 60
 if errorlevel 1 goto :failed
 
 rem Safe on every start: Alembic applies only migrations that are missing.
-echo [3/4] Checking database migrations...
+echo [5/7] Checking database migrations...
 podman-compose run --rm --no-deps migrate
 if errorlevel 1 goto :failed
 
-echo [4/5] Building the dedicated backup image...
-podman build -f BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
+echo [6/7] Building the dedicated backup image...
+podman build -f build/BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
 if errorlevel 1 goto :failed
 
 rem Avoid the podman-compose nested depends_on startup bug.
-echo [5/5] Starting application services...
-podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup
+echo [7/7] Starting application services...
+podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup recovery
 if errorlevel 1 goto :failed
 
 echo.

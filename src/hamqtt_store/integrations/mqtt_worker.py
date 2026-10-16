@@ -8,6 +8,7 @@ from ..db import SessionLocal, MQTTConnection
 from ..services.ingestion import ingest_mqtt_message
 from ..services.logging import record_log
 from ..services.dashboard_cache import cache_dashboard_message, make_dashboard_message
+from ..services.recovery import wait_while_maintenance
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ def run():
     """
     record_log("INFO", "mqtt_worker", "worker_started", "MQTT worker started")
     while True:
+        wait_while_maintenance()
         with SessionLocal() as session:
             connections = session.scalars(select(MQTTConnection).where(MQTTConnection.enabled)).all()
             configs = [(c.id, c.host, c.port, c.username, c.password, c.client_id,
@@ -91,6 +93,7 @@ def run():
 
                 def on_message(_client, _userdata, message):
                     try:
+                        wait_while_maintenance()
                         message_id = ingest_mqtt_message(connection_id, message.topic, bytes(message.payload), message.qos, message.retain, message.dup)
                         cache_dashboard_message(make_dashboard_message(message.topic, message.payload, message.qos, message.retain))
                         log.debug("Stored MQTT message id=%s topic=%s bytes=%s", message_id, message.topic, len(message.payload))

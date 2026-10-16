@@ -8,8 +8,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 def main():
     import sys
-    if len(sys.argv) < 2 or sys.argv[1] not in {"ha", "mqtt", "mcp", "cleanup", "backup", "reset-auth"}:
-        raise SystemExit("Usage: python -m hamqtt_store.cli [ha|mqtt|mcp|cleanup|backup [full|diff|dump]|reset-auth]")
+    if len(sys.argv) < 2 or sys.argv[1] not in {"ha", "mqtt", "mcp", "cleanup", "backup", "recovery", "reset-auth"}:
+        raise SystemExit("Usage: python -m hamqtt_store.cli [ha|mqtt|mcp|cleanup|backup [full|diff|dump]|recovery|reset-auth]")
     if sys.argv[1] == "reset-auth":
         marker = Path(settings.app_data_dir) / ".reset-auth"
         marker.parent.mkdir(parents=True, exist_ok=True)
@@ -30,6 +30,9 @@ def main():
             run_backup(sys.argv[2])
         else:
             run_scheduler()
+    elif sys.argv[1] == "recovery":
+        from .services.recovery import run_scheduler
+        run_scheduler()
     else:
         (run_ha if sys.argv[1] == "ha" else run_mqtt)()
 

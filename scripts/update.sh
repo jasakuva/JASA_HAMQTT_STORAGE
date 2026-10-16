@@ -4,8 +4,8 @@ set -Eeuo pipefail
 # Consumer-safe HAMQTT update/bootstrap command.
 # Usage: bash scripts/update.sh
 
-readonly APP_SERVICES=(web mqtt-ingestor ha-ingestor mcp)
-readonly APP_CONTAINERS=(hamqtt-web hamqtt-mqtt-ingestor hamqtt-ha-ingestor hamqtt-mcp)
+readonly APP_SERVICES=(web mqtt-ingestor ha-ingestor mcp cleanup backup recovery)
+readonly APP_CONTAINERS=(hamqtt-web hamqtt-mqtt-ingestor hamqtt-ha-ingestor hamqtt-mcp hamqtt-cleanup hamqtt-backup hamqtt-recovery)
 readonly PRODUCT_LABEL="com.hamqtt.product=hamqtt-store"
 
 log() {
@@ -147,13 +147,13 @@ for container in "${APP_CONTAINERS[@]}"; do
 done
 
 log "Building application image"
-compose build
+podman build --pull=always -f build/Dockerfile -t localhost/hamqtt-store:dev .
 
 log "Building PostgreSQL backup image"
-podman build --pull=always -f PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
+podman build --pull=always -f build/PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
 
 log "Building dedicated backup image"
-podman build --pull=always -f BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
+podman build --pull=always -f build/BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
 
 log "Starting PostgreSQL"
 if container_exists "$POSTGRES"; then

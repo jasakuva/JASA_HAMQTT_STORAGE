@@ -12,7 +12,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
-> **Current release:** **0.3.2** improves PostgreSQL backup scheduling and portable dumps, replaces unreliable Plotly range controls with stable HTML controls, and removes Zigbee2MQTT bridge/system topics from Graph and Export selectors without deleting stored data. See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) and the [0.3.2 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.2).
+> **Current release:** **0.3.2** improves PostgreSQL backup scheduling and portable dumps, replaces unreliable Plotly range controls with stable HTML controls, and removes Zigbee2MQTT bridge/system topics from Graph and Export selectors without deleting stored data. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.2 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.2).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -37,9 +37,9 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
-Detailed worker heartbeats, ingestion freshness monitoring, and a full system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
+Detailed worker heartbeats, ingestion freshness monitoring, and a full system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](docs/IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
 
-For the full implementation status, see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). For restarting or resuming work later, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
+For the full implementation status, see [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md). For restarting or resuming work later, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
 
 ## Architecture
 
@@ -110,7 +110,7 @@ If the machine is already running, Podman will report that and no action is need
 
 ```powershell
 podman-compose config
-podman-compose up -d --build
+start-hamqtt.cmd
 ```
 
 `podman-compose` builds the application image, starts PostgreSQL, waits for it to become healthy, applies database migrations, and only then starts the web, MQTT, Home Assistant, MCP, cleanup, and backup services.
@@ -229,7 +229,12 @@ The script uses the project’s Podman and `podman-compose` workflow. It keeps t
 
 The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` or `hamqtt-app-data` unless you intentionally want to delete application data.
 
-For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes.
+For Windows Podman users:
+
+- `start-hamqtt.cmd` starts the stack.
+- `stop-hamqtt.cmd` stops containers without removing them or their volumes.
+- `update-hamqtt.cmd` builds and updates the stack while preserving named volumes.
+- `rebuild-hamqtt.cmd` performs a no-cache rebuild and controlled recreation while preserving named volumes.
 
 For a first installation, use the same command:
 
@@ -266,7 +271,7 @@ python -m pytest -q
 Run migrations against the configured database:
 
 ```powershell
-python -m alembic upgrade head
+python -m alembic -c config/alembic.ini upgrade head
 ```
 
 Other useful checks:
@@ -292,7 +297,8 @@ Only run the volume removal command when a complete development reset is intende
 
 ## Documentation
 
-- [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — current implementation status and remaining roadmap.
+- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — current implementation status and remaining roadmap.
+- [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) — release history.
 - [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md) — how to resume the project after a break.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture and data model.
 - [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) — dashboard live-data pipeline, graphs, CSV export, and troubleshooting.

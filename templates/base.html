@@ -23,7 +23,7 @@
       <a class="nav-link {{ 'active' if endpoint == 'export_view' else '' }}" href="{{ url_for('export_view') }}"><span class="nav-icon">⇩</span>Export CSV</a>
       <div class="nav-label">System</div>
       <a class="nav-link {{ 'active' if endpoint in ['logs_view', 'settings_logs_view'] else '' }}" href="{{ url_for('settings_logs_view') }}"><span class="nav-icon">▤</span>Logs</a>
-      <a class="nav-link {{ 'active' if endpoint == 'settings_view' else '' }}" href="{{ url_for('settings_view', section='authentication') }}"><span class="nav-icon">⚙</span>Settings</a>
+      <a class="nav-link {{ 'active' if endpoint in ['settings_view', 'backup_files_view', 'download_backup_file'] else '' }}" href="{{ url_for('settings_view', section='authentication') }}"><span class="nav-icon">⚙</span>Settings</a>
       <div class="sidebar-footer">PostgreSQL · pgvector<br><span id="sidebar-clock">—</span></div>
     </aside>
     {% endif %}

@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
- echo.
+echo.
 echo ============================================
 echo   HAMQTT Store - Podman Update
 echo ============================================
@@ -15,44 +15,44 @@ if errorlevel 1 (
 )
 
 rem Build while existing containers still run, so a build failure does not stop them.
-echo [1/6] Building application image...
-podman-compose build --pull
+echo [1/8] Building the application image...
+podman build --pull=always -f build/Dockerfile -t localhost/hamqtt-store:dev .
 if errorlevel 1 goto :failed
 
-echo [2/7] Building PostgreSQL backup image...
-podman build --pull=always -f PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
+echo [2/8] Building the PostgreSQL image...
+podman build --pull=always -f build/PostgresBackupDockerfile -t localhost/hamqtt-postgres-pgbackrest:dev .
 if errorlevel 1 goto :failed
 
-echo [3/7] Building the dedicated backup image...
-podman build --pull=always -f BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
+echo [3/8] Building the backup and recovery image...
+podman build --pull=always -f build/BackupDockerfile -t localhost/hamqtt-backup-pgbackrest:dev .
 if errorlevel 1 goto :failed
 
 rem Never use -v here: preserve existing PostgreSQL and application volumes.
-echo [4/7] Removing old containers (preserving named volumes)...
+echo [4/8] Removing old containers (preserving named volumes)...
 podman-compose down
 if errorlevel 1 goto :failed
 
 rem --no-deps prevents Podman from constructing the nested startup dependency graph.
-echo [5/7] Starting PostgreSQL and Redis...
+echo [5/8] Starting PostgreSQL and Redis...
 podman-compose up -d --no-deps postgres redis
 if errorlevel 1 goto :failed
 
- echo [6/7] Waiting for services to become healthy...
+echo [6/8] Waiting for services to become healthy...
 call :wait_healthy hamqtt-postgres 90
 if errorlevel 1 goto :failed
 call :wait_healthy hamqtt-redis 60
 if errorlevel 1 goto :failed
 
 rem Alembic upgrade head is safe to run repeatedly: it applies only pending migrations.
-echo [7/7] Running database migrations...
+echo [7/8] Running database migrations...
 podman-compose run --rm --no-deps migrate
 if errorlevel 1 goto :failed
 
- echo [8/8] Starting application services...
-podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup
+echo [8/8] Starting application services...
+podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup recovery
 if errorlevel 1 goto :failed
 
- echo.
+echo.
 echo SUCCESS: HAMQTT Store update finished.
 podman ps --filter label=com.hamqtt.product=hamqtt-store
 exit /b 0

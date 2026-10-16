@@ -1,18 +1,19 @@
 """Scheduled PostgreSQL backups using pgBackRest."""
 
-import logging
 import hashlib
+import logging
 import os
 import re
 import subprocess
 import time
-from urllib.parse import urlsplit, urlunsplit
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 from sqlalchemy import select
 
 from ..db import BackupRun, SessionLocal, SystemSetting, utcnow
+from .recovery import wait_while_maintenance
 
 log = logging.getLogger(__name__)
 
@@ -75,6 +76,44 @@ def dump_path(config: dict) -> Path:
     return repository_path(config).parent / "dumps"
 
 
+def list_portable_dumps(config: dict) -> list[dict]:
+    """Return downloadable portable dumps without exposing repository internals."""
+    directory = dump_path(config)
+    if not directory.is_dir():
+        return []
+    dumps = []
+    for path in directory.iterdir():
+        if path.is_symlink() or not path.is_file() or path.suffix.lower() != ".dump":
+            continue
+        stat = path.stat()
+        dumps.append(
+            {
+                "name": path.name,
+                "size_bytes": stat.st_size,
+                "modified_at": datetime.fromtimestamp(stat.st_mtime, UTC),
+            }
+        )
+    return sorted(dumps, key=lambda item: item["modified_at"], reverse=True)
+
+
+def portable_dump_file(config: dict, filename: str) -> Path | None:
+    """Resolve one direct-child .dump file, rejecting traversal and symlinks."""
+    if not filename or filename != Path(filename).name or Path(filename).suffix.lower() != ".dump":
+        return None
+    directory = dump_path(config)
+    candidate = directory / filename
+    try:
+        if candidate.is_symlink() or not candidate.is_file():
+            return None
+        resolved_directory = directory.resolve(strict=True)
+        resolved_candidate = candidate.resolve(strict=True)
+    except (OSError, RuntimeError):
+        return None
+    if resolved_candidate.parent != resolved_directory:
+        return None
+    return resolved_candidate
+
+
 def _latest_completed(session, backup_type: str):
     return session.scalar(
         select(BackupRun)
@@ -118,6 +157,7 @@ def _ensure_stanza() -> None:
         raise RuntimeError(f"pgBackRest 2.58 or newer is required for PostgreSQL 17; found {version.strip()}")
     result = subprocess.run(
         ["pgbackrest", "--stanza=hamqtt", "stanza-create"],
+        check=False,
         capture_output=True,
         text=True,
     )
@@ -194,6 +234,7 @@ def request_backup(backup_type: str) -> BackupRun:
 def run_scheduler() -> None:
     while True:
         try:
+            wait_while_maintenance()
             with SessionLocal() as session:
                 config = get_backup_config(session)
                 now = datetime.now(UTC)

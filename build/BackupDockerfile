@@ -33,9 +33,10 @@ RUN install -d /usr/share/postgresql-common/pgdg \
 
 COPY --from=pgbackrest /build/pgbackrest/build/src/pgbackrest-amd64 /usr/local/bin/pgbackrest
 
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml ./
+COPY config/python/requirements.txt ./requirements.txt
 COPY src ./src
-COPY alembic.ini ./
+COPY config/alembic.ini ./alembic.ini
 COPY migrations ./migrations
 
 RUN pip install --no-cache-dir --upgrade pip \
