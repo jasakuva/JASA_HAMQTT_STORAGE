@@ -34,6 +34,8 @@ SCHEDULE_PROFILES = {
 }
 RETENTION_PROFILES = {"low": 2, "medium": 5, "high": 14}
 SUPPORTED_PROVIDERS = {"local"}
+FAILED_BACKUP_RETRY_DELAY = timedelta(minutes=15)
+ACTIVE_BACKUP_STATUSES = {"queued", "running"}
 
 
 def get_backup_config(session) -> dict:
@@ -122,12 +124,42 @@ def _latest_completed(session, backup_type: str):
     )
 
 
-def due_backup(config: dict, backup_type: str, now: datetime, latest: BackupRun | None) -> bool:
-    if latest is None:
-        return True
-    reference = latest.completed_at or latest.started_at
-    interval = timedelta(days=config["full_interval_days"] if backup_type == "full" else config["differential_interval_hours"] / 24)
-    return now >= reference + interval
+def _latest_attempt(session, backup_type: str):
+    return session.scalar(
+        select(BackupRun)
+        .where(BackupRun.backup_type == backup_type)
+        .order_by(BackupRun.started_at.desc())
+    )
+
+
+def _active_backup(session):
+    return session.scalar(
+        select(BackupRun)
+        .where(BackupRun.status.in_(ACTIVE_BACKUP_STATUSES))
+        .order_by(BackupRun.started_at.asc())
+    )
+
+
+def due_backup(
+    config: dict,
+    backup_type: str,
+    now: datetime,
+    latest: BackupRun | None,
+    latest_attempt: BackupRun | None = None,
+) -> bool:
+    if latest is not None:
+        reference = latest.completed_at or latest.started_at
+        interval = timedelta(days=config["full_interval_days"] if backup_type == "full" else config["differential_interval_hours"] / 24)
+        if now < reference + interval:
+            return False
+    if latest_attempt is not None:
+        if latest_attempt.status in ACTIVE_BACKUP_STATUSES | {"requested"}:
+            return False
+        if latest_attempt.status == "failed":
+            reference = latest_attempt.completed_at or latest_attempt.started_at
+            if now < reference + FAILED_BACKUP_RETRY_DELAY:
+                return False
+    return True
 
 
 def _pgbackrest_command(config: dict, backup_type: str) -> list[str]:
@@ -150,6 +182,15 @@ def _cleanup_dumps(config: dict) -> None:
         path.unlink(missing_ok=True)
 
 
+def _command_detail(result: subprocess.CompletedProcess, fallback: str) -> str:
+    output = []
+    for value in (result.stdout, result.stderr):
+        value = (value or "").strip()
+        if value and value not in output:
+            output.append(value)
+    return "\n".join(output) or fallback
+
+
 def _ensure_stanza() -> None:
     version = subprocess.run(["pgbackrest", "version"], check=True, capture_output=True, text=True).stdout
     match = re.search(r"(\d+)\.(\d+)", version)
@@ -162,7 +203,7 @@ def _ensure_stanza() -> None:
         text=True,
     )
     if result.returncode not in {0, 25}:
-        detail = (result.stderr or result.stdout or "pgBackRest stanza-create failed").strip()
+        detail = _command_detail(result, "pgBackRest stanza-create failed")
         raise RuntimeError(f"pgBackRest stanza-create failed with exit status {result.returncode}: {detail}")
 
 
@@ -195,7 +236,7 @@ def run_backup(backup_type: str, triggered_by: str = "manual", run_id: int | Non
             _ensure_stanza()
             result = subprocess.run(_pgbackrest_command(config, backup_type), check=False, capture_output=True, text=True)
         if result.returncode != 0:
-            detail = (result.stderr or result.stdout or "pgBackRest backup failed").strip()
+            detail = _command_detail(result, "pgBackRest backup failed")
             tool = "pg_dump" if backup_type == "dump" else "pgBackRest"
             raise RuntimeError(f"{tool} backup failed with exit status {result.returncode}: {detail}")
         label = output.name if backup_type == "dump" else None
@@ -231,6 +272,33 @@ def request_backup(backup_type: str) -> BackupRun:
         return run
 
 
+def _run_scheduled_backup(session, config: dict, now: datetime) -> bool:
+    if _active_backup(session):
+        return False
+    latest_full = _latest_completed(session, "full")
+    latest_diff = _latest_completed(session, "diff")
+    latest_dump = _latest_completed(session, "dump")
+    latest_full_attempt = _latest_attempt(session, "full")
+    latest_diff_attempt = _latest_attempt(session, "diff")
+    latest_dump_attempt = _latest_attempt(session, "dump")
+    if due_backup(config, "full", now, latest_full, latest_full_attempt):
+        run_backup("full", triggered_by="schedule")
+        return True
+    if due_backup(config, "diff", now, latest_diff, latest_diff_attempt):
+        run_backup("diff", triggered_by="schedule")
+        return True
+    if config["portable_dump_daily"] and due_backup(
+        {**config, "differential_interval_hours": 24},
+        "dump",
+        now,
+        latest_dump,
+        latest_dump_attempt,
+    ):
+        run_backup("dump", triggered_by="schedule")
+        return True
+    return False
+
+
 def run_scheduler() -> None:
     while True:
         try:
@@ -238,7 +306,7 @@ def run_scheduler() -> None:
             with SessionLocal() as session:
                 config = get_backup_config(session)
                 now = datetime.now(UTC)
-                if config["enabled"] and config["provider"] == "local":
+                if config["enabled"] and config["provider"] == "local" and not _active_backup(session):
                     requested = session.scalar(
                         select(BackupRun)
                         .where(BackupRun.status == "requested")
@@ -249,15 +317,7 @@ def run_scheduler() -> None:
                         session.commit()
                         run_backup(requested.backup_type, triggered_by=requested.triggered_by, run_id=requested.id)
                         continue
-                    latest_full = _latest_completed(session, "full")
-                    latest_diff = _latest_completed(session, "diff")
-                    latest_dump = _latest_completed(session, "dump")
-                    if due_backup(config, "full", now, latest_full):
-                        run_backup("full")
-                    elif due_backup(config, "diff", now, latest_diff):
-                        run_backup("diff")
-                    elif config["portable_dump_daily"] and due_backup({**config, "differential_interval_hours": 24}, "dump", now, latest_dump):
-                        run_backup("dump", triggered_by="schedule")
+                    _run_scheduled_backup(session, config, now)
         except Exception:
             log.exception("Backup scheduler iteration failed")
         time.sleep(60)

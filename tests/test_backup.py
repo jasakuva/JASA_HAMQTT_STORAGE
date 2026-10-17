@@ -1,9 +1,14 @@
+import subprocess
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from hamqtt_store.services import backup
 from hamqtt_store.services.backup import (
+    FAILED_BACKUP_RETRY_DELAY,
+    _command_detail,
     _dump_command,
     _pgbackrest_command,
+    _run_scheduled_backup,
     due_backup,
     list_portable_dumps,
     normalize_config,
@@ -43,6 +48,59 @@ def test_due_backup_uses_completion_time():
     config = normalize_config({"differential_interval_hours": 24})
 
     assert due_backup(config, "diff", now, latest)
+
+
+def test_due_backup_delays_retry_after_failure():
+    now = datetime(2026, 10, 17, 19, 40, tzinfo=UTC)
+    failed = SimpleNamespace(
+        status="failed",
+        started_at=now - timedelta(minutes=2),
+        completed_at=now - timedelta(minutes=1),
+    )
+    config = normalize_config({})
+
+    assert not due_backup(config, "diff", now, None, failed)
+    assert due_backup(config, "diff", now + FAILED_BACKUP_RETRY_DELAY, None, failed)
+
+
+def test_due_backup_does_not_overlap_active_request():
+    now = datetime(2026, 10, 17, 19, 40, tzinfo=UTC)
+    active = SimpleNamespace(status="running", started_at=now, completed_at=None)
+
+    assert not due_backup(normalize_config({}), "full", now, None, active)
+
+
+def test_command_detail_preserves_stdout_and_stderr():
+    result = subprocess.CompletedProcess(
+        ["pgbackrest"],
+        82,
+        stdout="ERROR: WAL segment was not archived\n",
+        stderr="libpq.so.5: no version information available\n",
+    )
+
+    assert _command_detail(result, "fallback") == (
+        "ERROR: WAL segment was not archived\n"
+        "libpq.so.5: no version information available"
+    )
+
+
+def test_scheduled_backup_is_labeled_and_does_not_overlap(monkeypatch):
+    calls = []
+    monkeypatch.setattr(backup, "_active_backup", lambda session: None)
+    monkeypatch.setattr(backup, "_latest_completed", lambda session, backup_type: None)
+    monkeypatch.setattr(backup, "_latest_attempt", lambda session, backup_type: None)
+    monkeypatch.setattr(
+        backup,
+        "run_backup",
+        lambda backup_type, triggered_by: calls.append((backup_type, triggered_by)),
+    )
+
+    assert _run_scheduled_backup(object(), normalize_config({}), datetime.now(UTC))
+    assert calls == [("full", "schedule")]
+
+    monkeypatch.setattr(backup, "_active_backup", lambda session: object())
+    assert not _run_scheduled_backup(object(), normalize_config({}), datetime.now(UTC))
+    assert calls == [("full", "schedule")]
 
 
 def test_pgbackrest_backup_command_does_not_use_unsupported_json_output():
