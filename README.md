@@ -1,7 +1,7 @@
 # HA MQTT Store
 
 ![Release](https://img.shields.io/github/v/release/jasakuva/JASA_HAMQTT_STORAGE?display_name=tag&sort=semver)
-![Tests](https://img.shields.io/badge/tests-33%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-53%20passing-2ea44f)
 ![Python](https://img.shields.io/badge/python-3.12%2B-3776ab)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791)
 ![Podman](https://img.shields.io/badge/containers-Podman-892ca0)
@@ -12,7 +12,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
-> **Current release:** **0.3.2** improves PostgreSQL backup scheduling and portable dumps, replaces unreliable Plotly range controls with stable HTML controls, and removes Zigbee2MQTT bridge/system topics from Graph and Export selectors without deleting stored data. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.2 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.2).
+> **Current release:** **0.3.3** adds secure browser-driven database recovery, unified container launchers, published GHCR images, and a self-contained Linux Docker installer that downloads from `master` and uses `latest` by default. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.3 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.3).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -34,6 +34,8 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - Local web authentication with first-run account setup, hashed passwords, authenticated sessions, logout, and CSRF protection.
 - Settings subpages for Authentication, Data sources, Logs, and Backups.
 - PostgreSQL 17-compatible pgBackRest full and differential backup service with schedule/retention profiles, portable custom-format dumps, backup history, and error reporting.
+- Authenticated portable-dump upload, validation, recovery, rollback, and maintenance mode through a dedicated recovery service.
+- Published GHCR images and a self-contained first-install script for Linux Docker hosts.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
@@ -56,6 +58,40 @@ The local stack contains these services:
 | Backup | `hamqtt-backup` | pgBackRest PostgreSQL backup worker |
 
 The PostgreSQL data is stored in the named Podman volume `hamqtt-postgres-data`.
+
+## Simple Linux installation with published images
+
+For a new Linux host with Docker Engine and Docker Compose v2, download the
+self-contained installer directly from `master`. With `wget`:
+
+```bash
+wget -O install-hamqtt.sh \
+  https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
+chmod +x install-hamqtt.sh
+./install-hamqtt.sh
+```
+
+Or with `curl`:
+
+```bash
+curl -fsSLo install-hamqtt.sh \
+  https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
+chmod +x install-hamqtt.sh
+./install-hamqtt.sh
+```
+
+The installer defaults to the `latest` published image tag and creates
+`./jasa_hamqtt_storage`. To install a fixed release instead, run:
+
+```bash
+./install-hamqtt.sh --version 0.3.3
+```
+
+Only the installer file is required. It generates the Compose configuration,
+secrets, pgBackRest configuration, and PostgreSQL initialization SQL; creates
+the persistent resources; pulls the images; runs migrations; and starts the
+complete stack. See [`deploy/README.md`](deploy/README.md) for requirements,
+installed files, management commands, and data-safety guidance.
 
 ## Installation with Podman
 
@@ -246,7 +282,7 @@ and verifies web health:
 
 ```bash
 git fetch origin
-git checkout v0.3.2
+git checkout v0.3.3
 ./hamqtt.sh update
 ```
 

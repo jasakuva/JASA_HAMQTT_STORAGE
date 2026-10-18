@@ -20,6 +20,17 @@ images.
 
 From the directory that should contain the new installation:
 
+With `wget`:
+
+```bash
+wget -O install-hamqtt.sh \
+  https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
+chmod +x install-hamqtt.sh
+./install-hamqtt.sh
+```
+
+Or with `curl`:
+
 ```bash
 curl -fsSLo install-hamqtt.sh \
   https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
@@ -42,11 +53,13 @@ For example, running the installer from `/opt` creates:
 Either form is accepted:
 
 ```bash
-./install-hamqtt.sh --version 0.3.3-rc2
-./install-hamqtt.sh 0.3.3-rc2
+./install-hamqtt.sh --version 0.3.3
+./install-hamqtt.sh 0.3.3
 ```
 
-The default version is `latest`.
+The default version is `latest`, so running the installer without an argument
+pulls the current stable images published by the latest non-prerelease GitHub
+release.
 
 ## Installed files
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# A first installation follows the newest stable published images unless the
+# user explicitly supplies a version tag with --version or as an argument.
 readonly DEFAULT_VERSION="latest"
 readonly INSTALL_DIRECTORY_NAME="jasa_hamqtt_storage"
 readonly PROJECT_NAME="hamqtt-store"

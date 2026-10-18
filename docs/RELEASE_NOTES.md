@@ -1,3 +1,123 @@
+# HA MQTT Store 0.3.3
+
+Release date: 2026-10-18
+
+## Highlights
+
+Version 0.3.3 adds secure database recovery, safer cross-platform container
+management, published GitHub Container Registry images, and a self-contained
+Linux Docker installer. A new user can download one script from `master` and
+install the complete stack without cloning or building the source repository.
+
+## Single-file Linux installer
+
+- Added the self-contained `deploy/install.sh` first-install script.
+- Downloads are supported with either `wget` or `curl` directly from `master`.
+- Uses the stable `latest` image tag by default and accepts a fixed tag through
+  `--version VERSION` or a positional version argument.
+- Creates `./jasa_hamqtt_storage` and generates Compose, `.env`, pgBackRest, and
+  PostgreSQL initialization files without requiring adjacent repository assets.
+- Generates protected database and application secrets and sets `.env` mode to
+  `0600`.
+- Creates persistent volumes and the external network, pulls published images,
+  validates pgBackRest, runs migrations, starts services, and verifies health.
+- Refuses an existing installation directory or conflicting container names and
+  never deletes persistent volumes during installation or failure handling.
+- Runs the backup service as UID/GID `999:999` so the shared pgBackRest
+  repository retains compatible ownership.
+
+Install the latest stable release:
+
+```bash
+wget -O install-hamqtt.sh \
+  https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
+chmod +x install-hamqtt.sh
+./install-hamqtt.sh
+```
+
+Install exactly version 0.3.3:
+
+```bash
+./install-hamqtt.sh --version 0.3.3
+```
+
+## Published container images
+
+- Added GitHub Actions publishing for `hamqtt-store`,
+  `hamqtt-postgres-pgbackrest`, and `hamqtt-backup-pgbackrest` on `linux/amd64`.
+- The release publishes both the `0.3.3` and `latest` image tags.
+- Added OCI image version, revision, source, title, and description metadata.
+- Added `compose.github.yml` and `update-from-github.sh` for existing Linux
+  Docker installations that pull published images instead of building locally.
+
+## Database backup and recovery
+
+- Added authenticated browser upload, listing, download, validation, and
+  recovery for PostgreSQL custom-format portable dumps.
+- Added a dedicated recovery coordinator instead of exposing the container
+  engine socket to the web application.
+- Added SHA-256 tracking and PostgreSQL 17 `pg_restore --list` validation before
+  a dump can be selected for recovery.
+- Added administrator-password and exact confirmation-phrase checks before a
+  destructive restore.
+- Added maintenance mode that pauses web database access, MCP, ingestion,
+  cleanup, and backups during recovery.
+- Added a verified pre-restore rollback dump and automatic rollback when restore
+  or migration fails.
+- Persisted recovery job state outside the database being replaced so status and
+  diagnostics survive recovery of an older dump.
+
+## Container management and repository layout
+
+- Added the unified `hamqtt.sh` launcher for Podman or Docker on Unix-like hosts,
+  with start, stop, update, rebuild, status, logs, engine selection, and dry-run
+  support.
+- Kept Podman with `podman-compose` as the canonical source-checkout workflow.
+- Added safer Windows start, stop, update, and rebuild scripts.
+- Reorganized build and configuration assets into clearer `build/`, `config/`,
+  `deploy/`, `docs/`, and `tools/` locations and removed generated artifacts.
+- Improved backup scheduling and diagnostics so scheduler failures are visible
+  and backup timing remains stable.
+
+## Validation
+
+- 53 automated Python tests passed.
+- Python compilation passed.
+- Documentation validation passed.
+- Root and standalone deployment Compose configuration rendered successfully.
+- Installer regression coverage verifies the default `latest` tag, explicit
+  version selection, generated files, permissions, pgBackRest ownership, and
+  rejection of invalid or existing installations.
+- `git diff --check` passed.
+
+## Upgrade
+
+For an existing source-checkout installation:
+
+```bash
+git fetch origin
+git checkout v0.3.3
+./hamqtt.sh update
+```
+
+The update workflow runs migrations before application services and preserves
+`hamqtt-postgres-data`, `hamqtt-app-data`, and the configured backup repository.
+Never use `down -v` during a routine update.
+
+## Known limitations
+
+- Published images currently target `linux/amd64`.
+- The single-file installer requires Linux, Docker Engine, Docker Compose v2,
+  and `sudo` for non-root users when assigning backup-directory ownership.
+- The installer is for a new installation and intentionally refuses to overwrite
+  `./jasa_hamqtt_storage`; use the documented update workflow for an existing
+  deployment.
+- HTTPS termination, login throttling, audit logging, external secret
+  management, fine-grained authorization, and authenticated MCP transport remain
+  deployment or future hardening work.
+
+---
+
 # HA MQTT Store 0.3.2
 
 Release date: 2026-10-16
