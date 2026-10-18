@@ -184,6 +184,7 @@ services:
   backup:
     image: localhost/hamqtt-backup-pgbackrest:dev
     container_name: hamqtt-backup
+    user: "999:999"
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}

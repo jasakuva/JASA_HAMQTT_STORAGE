@@ -1,6 +1,7 @@
 # HAMQTT Store One-Command Installation Package Plan
 
-**Status:** Planning only. No installer implementation is included in this document.
+**Status:** Initial Linux Docker installer implemented in `deploy/`. Windows and
+the broader runtime-management wrapper remain planned.
 
 ## Goal
 
@@ -113,11 +114,16 @@ Support non-interactive options such as:
 .\install.ps1 -InstallPath "C:\ProgramData\hamqtt-store" -AppPort 8000 -PostgresPort 5432 -EnableMcp:$false
 ```
 
-## Linux/macOS installer
+## Linux installer
 
-Future file: `deploy/install.sh`.
-
-Prefer Podman with Compose, then support Docker with Compose. Fail clearly if neither engine is available. Detect the engine, ask for configuration, create the installation directory, generate `.env`, restrict its permissions, pull images, start dependencies, run migrations, start services, verify health, and print management commands.
+Implemented as the self-contained, single-download `deploy/install.sh` for
+Docker Engine with Docker Compose v2. It
+creates `./jasa_hamqtt_storage`, generates `.env`, restricts its permissions,
+generates the deployment files, creates the pgBackRest repository with UID/GID
+`999:999`, pulls images, starts
+dependencies, validates pgBackRest, runs migrations, starts services, verifies
+health, and prints management commands. `latest` is the default image tag and a
+different tag can be supplied with `--version` or as a positional argument.
 
 ## Runtime management commands
 
