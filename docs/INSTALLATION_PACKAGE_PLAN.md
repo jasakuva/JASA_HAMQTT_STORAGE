@@ -1,6 +1,7 @@
 # HAMQTT Store One-Command Installation Package Plan
 
-**Status:** Planning only. No installer implementation is included in this document.
+**Status:** Initial Linux Docker installer implemented in `deploy/`. Windows and
+the broader runtime-management wrapper remain planned.
 
 ## Goal
 
@@ -113,11 +114,16 @@ Support non-interactive options such as:
 .\install.ps1 -InstallPath "C:\ProgramData\hamqtt-store" -AppPort 8000 -PostgresPort 5432 -EnableMcp:$false
 ```
 
-## Linux/macOS installer
+## Linux installer
 
-Future file: `deploy/install.sh`.
-
-Prefer Podman with Compose, then support Docker with Compose. Fail clearly if neither engine is available. Detect the engine, ask for configuration, create the installation directory, generate `.env`, restrict its permissions, pull images, start dependencies, run migrations, start services, verify health, and print management commands.
+Implemented as the self-contained, single-download `deploy/install.sh` for
+Docker Engine with Docker Compose v2. It
+creates `./jasa_hamqtt_storage`, generates `.env`, restricts its permissions,
+generates the deployment files, creates the pgBackRest repository with UID/GID
+`999:999`, pulls images, starts
+dependencies, validates pgBackRest, runs migrations, starts services, verifies
+health, and prints management commands. `latest` is the default image tag and a
+different tag can be supplied with `--version` or as a positional argument.
 
 ## Runtime management commands
 
@@ -129,7 +135,9 @@ Normal commands must preserve PostgreSQL and application-data volumes. Destructi
 
 The update command should pull the new deployment files and application image, start dependencies, run migrations before replacing application services, recreate the services, and verify the web health endpoint. If migration or health verification fails, stop safely without deleting persistent data.
 
-The existing `scripts/update.sh` can later be refactored so development and published installations share safe upgrade logic.
+The root `hamqtt.sh` launcher now provides shared source-checkout management for
+Podman and Docker. A future published installation can reuse its engine-selection
+and safe-volume behavior while replacing local builds with published image pulls.
 
 ## Backup and uninstall
 

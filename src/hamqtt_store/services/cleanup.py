@@ -14,6 +14,7 @@ from ..db import (
     SessionLocal,
     SystemSetting,
 )
+from .recovery import wait_while_maintenance
 
 log = logging.getLogger(__name__)
 
@@ -103,6 +104,7 @@ def run_scheduler() -> None:
         log.info("Next retention cleanup scheduled for %s", next_run.isoformat())
         time.sleep(delay)
         try:
+            wait_while_maintenance()
             run_cleanup()
         except Exception:
             log.exception("Retention cleanup failed")

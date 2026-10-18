@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block topbar_title %}Backup files and recovery{% endblock %}{% block content %}
+<div class="page-header"><div><h1>Backup files and recovery</h1><p>Download, upload, validate, and recover portable PostgreSQL dump files.</p></div></div>
+<nav class="settings-tabs" aria-label="Settings sections">
+  <a class="settings-tab" href="{{ url_for('settings_view', section='authentication') }}">Authentication</a>
+  <a class="settings-tab" href="{{ url_for('settings_view', section='data-sources') }}">Data sources</a>
+  <a class="settings-tab" href="{{ url_for('settings_logs_view') }}">Logs</a>
+  <a class="settings-tab" href="{{ url_for('settings_view', section='backups') }}">Backups</a>
+  <a class="settings-tab active" href="{{ url_for('backup_files_view') }}">Backup files and recovery</a>
+</nav>
+<section class="panel">
+  <h2 class="panel-title">Portable database dumps</h2>
+  <p class="panel-subtitle">Files are created with PostgreSQL custom format. Select the dump you want by using its download button.</p>
+  {% if backup_files %}
+  <div class="table-wrap"><table class="backup-files-table"><thead><tr><th>File</th><th>Created / modified (UTC)</th><th>Size</th><th>Action</th></tr></thead><tbody>
+    {% for file in backup_files %}<tr><td><strong>{{ file.name }}</strong></td><td>{{ file.modified_at.strftime('%Y-%m-%d %H:%M:%S') }}</td><td>{{ file.size_bytes|filesizeformat }}</td><td><a class="button secondary" href="{{ url_for('download_backup_file', filename=file.name) }}">Download</a></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<p class="backup-empty">No portable dump files are available. Open <a href="{{ url_for('settings_view', section='backups') }}">Backups</a> and choose <strong>Create portable dump now</strong>.</p>{% endif %}
+</section>
+<section class="panel recovery-guidance">
+  <h2 class="panel-title">Upload a portable dump</h2>
+  {% if recovery_error %}<p class="badge warning">{{ recovery_error }}</p>{% endif %}
+  {% if recovery_message %}<p class="badge success">{{ recovery_message }}</p>{% endif %}
+  <p>Uploads are stored under an opaque generated ID and validated by the isolated recovery coordinator with <code>pg_restore --list</code>. Maximum size: {{ recovery_max_upload_bytes|filesizeformat }}.</p>
+  <form method="post" action="{{ url_for('upload_backup_file') }}" enctype="multipart/form-data" class="settings-form recovery-upload-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label for="backup-file">PostgreSQL custom-format dump</label><input id="backup-file" type="file" name="backup_file" accept=".dump,application/octet-stream" required></div>
+    <button>Upload and validate</button>
+  </form>
+</section>
+<section class="panel recovery-guidance">
+  <h2 class="panel-title">Recovery jobs</h2>
+  <p>Recovery replaces the active database. Before replacement, the coordinator creates and validates a fresh rollback dump. It then restores the selected dump, applies Alembic migrations, and automatically attempts rollback if either step fails.</p>
+  {% if recovery_jobs %}<div class="table-wrap"><table class="backup-files-table"><thead><tr><th>Upload</th><th>Size / hash</th><th>Status</th><th>Requested by</th><th>Recovery</th></tr></thead><tbody>
+  {% for job in recovery_jobs %}<tr><td><strong>{{ job.original_name }}</strong><br><code>{{ job.id[:8] }}</code></td><td>{{ job.size_bytes|filesizeformat }}<br><code title="{{ job.sha256 }}">{{ job.sha256[:16] }}…</code></td><td><span class="backup-status {{ job.state }}">{{ job.state|replace('_', ' ') }}</span>{% if job.error %}<div class="recovery-error">{{ job.error }}</div>{% endif %}</td><td>{{ job.uploader_name }}<br>{{ job.created_at }}</td><td>{% if job.state == 'validated' %}<form method="post" action="{{ url_for('recover_backup_file', job_id=job.id) }}" class="recovery-confirm-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Current password<input type="password" name="current_password" required></label><label>Type <code>{{ confirmation_phrase }}</code><input name="confirmation" autocomplete="off" required></label><button class="danger">Replace database</button></form>{% else %}—{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="backup-empty">No recovery uploads have been staged.</p>{% endif %}
+  <p>For offline recovery or emergencies, follow <code>docs/BACKUP_RECOVERY.md</code>. Never remove the PostgreSQL or application-data volumes.</p>
+</section>
+{% endblock %}

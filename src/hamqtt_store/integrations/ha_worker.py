@@ -8,6 +8,7 @@ from ..db import SessionLocal, HAConnection, HAEntity, HAStateCurrent, HAStateHi
 from ..services.ingestion import get_or_create_object
 from ..services.dashboard_cache import cache_dashboard_entity, make_dashboard_entity
 from ..services.logging import record_log
+from ..services.recovery import wait_while_maintenance
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ def run_connection(config):
         message = json.loads(ws.recv())
         event = message.get("event", {}).get("data", {})
         if event.get("new_state"):
+            wait_while_maintenance()
             with SessionLocal() as session:
                 cached_entity = upsert_state(session, config.id, event["new_state"])
                 session.commit()
@@ -89,6 +91,7 @@ def upsert_state(session, connection_id, state):
 def run():
     record_log("INFO", "ha_worker", "worker_started", "Home Assistant worker started")
     while True:
+        wait_while_maintenance()
         with SessionLocal() as session:
             configs = session.scalars(select(HAConnection).where(HAConnection.enabled)).all()
         if not configs:

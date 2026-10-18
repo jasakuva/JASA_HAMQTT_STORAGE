@@ -68,6 +68,10 @@ def test_settings_subpage_routes_are_registered():
     assert "/settings" in rules
     assert "/settings/<section>" in rules
     assert "/settings/logs" in rules
+    assert "/settings/backup-files" in rules
+    assert "/settings/backup-files/download/<path:filename>" in rules
+    assert "/settings/backup-files/upload" in rules
+    assert "/settings/backup-files/recover/<job_id>" in rules
 
 
 def test_settings_template_contains_requested_sections():
@@ -78,9 +82,12 @@ def test_settings_template_contains_requested_sections():
     assert "Data sources" in content
     assert "settings_logs_view" in content
     assert "PostgreSQL backups" in content
+    assert "Backup files and recovery" in content
 
 
 def test_settings_template_compiles():
     environment = Environment(loader=FileSystemLoader("templates"))
 
     environment.get_template("settings.html")
+    environment.get_template("backup_files.html")
+    environment.get_template("maintenance.html")

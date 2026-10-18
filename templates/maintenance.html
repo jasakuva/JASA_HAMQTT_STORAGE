@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block topbar_title %}Database maintenance{% endblock %}{% block content %}
+<section class="panel maintenance-panel">
+  <h1 class="panel-title">Database recovery in progress</h1>
+  <p>{{ recovery.message }}</p>
+  <dl><dt>Job</dt><dd><code>{{ recovery.job_id }}</code></dd><dt>State</dt><dd>{{ recovery.state }}</dd><dt>Updated</dt><dd>{{ recovery.updated_at }}</dd></dl>
+  <p class="muted">This page will become available again after recovery or automatic rollback finishes. Refresh to check progress.</p>
+</section>
+{% endblock %}

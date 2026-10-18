@@ -4,8 +4,10 @@ __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+.ruff_cache/
 docs/SECURITY_REVIEW.md
 docs/SECURITY_TODO.md
+artifacts/
 
 # Local pgBackRest repository and troubleshooting artifacts.
 backups/
@@ -17,3 +19,11 @@ pgedge-inspect.json
 pgedge.tar
 postgres-current.json
 postgres-inspect.json
+
+# Local UI captures and ad-hoc troubleshooting output.
+*-current.html
+*-live.html
+*-live-check.html
+live-*.css
+detail-check.txt
+first-row.txt

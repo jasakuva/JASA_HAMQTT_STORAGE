@@ -4,12 +4,27 @@ import json
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from flask import Flask, Response, jsonify, redirect, render_template, request, session as flask_session, url_for
+from flask import Flask, Response, abort, jsonify, redirect, render_template, request, send_file, session as flask_session, url_for
 from sqlalchemy import func, or_, select
 from .auth import get_user, password_matches, reset_authentication_if_requested, set_password, valid_credentials
 from .config import settings
 from .services.dashboard_cache import get_dashboard_entities, get_dashboard_messages
-from .services.backup import backup_repository_size, get_backup_config, normalize_config, request_backup
+from .services.backup import (
+    backup_repository_size,
+    get_backup_config,
+    list_portable_dumps,
+    normalize_config,
+    portable_dump_file,
+    request_backup,
+)
+from .services.recovery import (
+    CONFIRMATION_PHRASE,
+    list_jobs,
+    maintenance_status,
+    max_upload_bytes,
+    request_recovery,
+    stage_upload,
+)
 from .services.ingestion import should_skip_mqtt_parsing
 from .db import (
     HAConnection,
@@ -40,6 +55,7 @@ def create_app():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = settings.session_cookie_secure
+    app.config["MAX_CONTENT_LENGTH"] = max_upload_bytes() + (1024 * 1024)
     app.jinja_env.filters["pretty_json"] = lambda value: json.dumps(value or {}, indent=2, sort_keys=True, default=str)
 
     @app.context_processor
@@ -61,6 +77,9 @@ def create_app():
     @app.before_request
     def require_authentication():
         reset_authentication_if_requested()
+        maintenance = maintenance_status()
+        if maintenance and request.endpoint not in {"health", "static"}:
+            return render_template("maintenance.html", recovery=maintenance), 503
         if request.endpoint in {"health", "setup", "setup_submit", "login", "login_submit", "logout", "static"}:
             return None
         with SessionLocal() as db_session:
@@ -258,6 +277,9 @@ def create_app():
 
     @app.get("/health")
     def health():
+        maintenance = maintenance_status()
+        if maintenance:
+            return jsonify(status="maintenance", database="paused", recovery=maintenance), 503
         try:
             with engine.connect() as connection:
                 connection.exec_driver_sql("SELECT 1")
@@ -590,6 +612,63 @@ def create_app():
             return "Unsupported backup type", 400
         run = request_backup(backup_type)
         return redirect(url_for("settings_view", section="backups", queued=run.id, backup_type=backup_type))
+
+    @app.get("/settings/backup-files")
+    def backup_files_view():
+        with SessionLocal() as session:
+            backup_config = get_backup_config(session)
+        return render_template(
+            "backup_files.html",
+            backup_files=list_portable_dumps(backup_config),
+            recovery_jobs=list_jobs(),
+            confirmation_phrase=CONFIRMATION_PHRASE,
+            recovery_max_upload_bytes=max_upload_bytes(),
+            recovery_error=request.args.get("error"),
+            recovery_message=request.args.get("message"),
+            settings_section="backup-files",
+        )
+
+    @app.post("/settings/backup-files/upload")
+    def upload_backup_file():
+        upload = request.files.get("backup_file")
+        if upload is None:
+            return redirect(url_for("backup_files_view", error="Select a .dump file to upload"))
+        with SessionLocal() as session:
+            user = get_user(session)
+            try:
+                job = stage_upload(upload, uploader_id=user.id, uploader_name=user.username)
+            except ValueError as exc:
+                return redirect(url_for("backup_files_view", error=str(exc)))
+        return redirect(url_for("backup_files_view", message=f"Upload {job['id'][:8]} queued for validation"))
+
+    @app.post("/settings/backup-files/recover/<job_id>")
+    def recover_backup_file(job_id):
+        if request.form.get("confirmation", "").strip() != CONFIRMATION_PHRASE:
+            return redirect(url_for("backup_files_view", error=f"Type {CONFIRMATION_PHRASE} exactly"))
+        with SessionLocal() as session:
+            user = get_user(session)
+            if not password_matches(user, request.form.get("current_password", "")):
+                return redirect(url_for("backup_files_view", error="Current password is incorrect"))
+            try:
+                job = request_recovery(job_id, confirmed_by=user.username)
+            except ValueError as exc:
+                return redirect(url_for("backup_files_view", error=str(exc)))
+        return redirect(url_for("backup_files_view", message=f"Recovery {job['id'][:8]} queued"))
+
+    @app.get("/settings/backup-files/download/<path:filename>")
+    def download_backup_file(filename):
+        with SessionLocal() as session:
+            backup_config = get_backup_config(session)
+        path = portable_dump_file(backup_config, filename)
+        if path is None:
+            abort(404)
+        return send_file(
+            path,
+            as_attachment=True,
+            download_name=path.name,
+            mimetype="application/octet-stream",
+            conditional=True,
+        )
 
     @app.get("/logs")
     def logs_view():

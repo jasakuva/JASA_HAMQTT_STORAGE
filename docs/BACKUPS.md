@@ -30,7 +30,13 @@ portable dumps are always available; enabling the option queues one dump per day
 These values can be changed in **Settings → Backups**. A manual run
 is queued for the backup service rather than executed by the web request.
 
-The Backups page also shows the repository size, recent backup runs, status, completion time, and recorded error details. Use **Run full backup now**, **Run differential now**, or **Create portable dump now** for an on-demand request.
+The Backups page also shows the repository size, recent backup runs, status,
+completion time, and recorded error details. Use **Run full backup now**, **Run
+differential now**, or **Create portable dump now** for an on-demand request.
+Authenticated users can list, download, upload, validate, and recover portable
+`.dump` files from **Settings → Backup files and recovery**. The public web
+container receives read-only access to the backup repository; uploaded files and
+durable recovery job records are stored in `hamqtt-app-data`.
 
 ## PostgreSQL 17 and pgBackRest validation
 
@@ -55,20 +61,24 @@ The normal Podman workflow starts the backup service after migrations:
 
 ```text
 podman-compose run --rm --no-deps migrate
-podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup
+podman-compose up -d --no-deps web mqtt-ingestor ha-ingestor mcp cleanup backup recovery
 ```
 
-The existing `start-hamqtt.cmd`, `update-hamqtt.cmd`, and
-`scripts/update.sh` commands include `backup` automatically. They preserve the
+The Windows `start-hamqtt.cmd` and `update-hamqtt.cmd` scripts and the Unix
+`hamqtt.sh` launcher include `backup` and `recovery` automatically. The legacy
+`scripts/update.sh` path delegates to `hamqtt.sh update`. All preserve the
 PostgreSQL and application volumes.
 
 ## Restore workflow
 
-Restore is intentionally an administrative command-line operation, not a web
-action. Stop application services first, then use pgBackRest in the backup
-image/container with an explicitly selected backup label. Validate the
-restored database before starting the application services again. Do not
-delete `hamqtt-postgres-data` or the backup repository during routine updates.
+Browser recovery is implemented as an authenticated staged job. The dedicated
+`hamqtt-recovery` service validates uploads, creates a verified rollback dump,
+places the application in maintenance mode, replaces the database, runs Alembic,
+and attempts automatic rollback on failure. It does not mount the Podman socket.
+For the complete workflow and the offline fallback commands, see
+[`BACKUP_RECOVERY.md`](BACKUP_RECOVERY.md). Do not delete
+`hamqtt-postgres-data`, `hamqtt-app-data`, or the backup repository during
+recovery or routine updates.
 
 Remote providers (S3-compatible storage, SFTP, and rclone/Google Drive) are
 represented in the configuration model but are not enabled until their

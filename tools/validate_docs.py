@@ -1,9 +1,8 @@
 from pathlib import Path
 from zipfile import ZipFile
 
-
 root = Path(__file__).resolve().parents[1]
-plan = root / "IMPLEMENTATION_PLAN.md"
+plan = root / "docs" / "IMPLEMENTATION_PLAN.md"
 architecture = root / "docs" / "ARCHITECTURE.md"
 docx = root / "docs" / "HAMQTT_STORE_ARCHITECTURE.docx"
 

@@ -1,7 +1,7 @@
 # HA MQTT Store - Implementation Plan
 
 **Status:** Active implementation roadmap
-**Last updated:** 2026-10-15
+**Last updated:** 2026-10-16
 **Repository:** `%INSTALL_PATH%`
 
 `%INSTALL_PATH%` means the local directory where this repository is installed.
@@ -66,12 +66,26 @@ The application must preserve source data while also extracting useful structure
 ## 4. Current repository structure
 
 ```text
-IMPLEMENTATION_PLAN.md
 README.md
 compose.yml
-Dockerfile
 pyproject.toml
+pgbackrest.conf
+start-hamqtt.cmd
+stop-hamqtt.cmd
+update-hamqtt.cmd
+rebuild-hamqtt.cmd
+hamqtt.sh
+build/
+  Dockerfile
+  BackupDockerfile
+  PostgresBackupDockerfile
+config/
+  alembic.ini
+  python/
+    requirements.txt
 docs/
+  IMPLEMENTATION_PLAN.md
+  RELEASE_NOTES.md
   ARCHITECTURE.md
   HAMQTT_STORE_ARCHITECTURE.docx
   POSTGRESQL_SETUP.md
@@ -191,6 +205,8 @@ static/
 - `[x]` Add PostgreSQL 17-compatible pgBackRest backup and restore documentation.
 - `[x]` Add local authentication, CSRF protection, authenticated sessions, and credential invalidation.
 - `[x]` Add focused Settings subpages for authentication, data sources, logs, and backups.
+- `[x]` Add an authenticated Settings page for listing and downloading portable database dumps from a read-only repository mount.
+- `[x]` Add authenticated staged dump upload, isolated validation, durable recovery coordination, maintenance gating, pre-restore rollback backup, automatic rollback, and recovery audit metadata as specified in `docs/BACKUP_RECOVERY.md`.
 - `[~]` Production authorization, secure-cookie policy, HTTPS termination, throttling, and external secret management remain deployment hardening work.
 - [ ] Add integration tests using disposable services.
 - [ ] Add reconnect, malformed payload, duplicate message, and migration tests.

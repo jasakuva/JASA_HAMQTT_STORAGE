@@ -1,10 +1,11 @@
 {% extends "base.html" %}{% block topbar_title %}System settings{% endblock %}{% block content %}
-<div class="page-header"><div><h1>System settings</h1><p>Configure authentication, data sources, logs, and PostgreSQL backups.</p></div></div>
+<div class="page-header"><div><h1>System settings</h1><p>Configure authentication, data sources, logs, PostgreSQL backups, and recovery files.</p></div></div>
 <nav class="settings-tabs" aria-label="Settings sections">
   <a class="settings-tab{% if settings_section == 'authentication' %} active{% endif %}" href="{{ url_for('settings_view', section='authentication') }}">Authentication</a>
   <a class="settings-tab{% if settings_section == 'data-sources' %} active{% endif %}" href="{{ url_for('settings_view', section='data-sources') }}">Data sources</a>
   <a class="settings-tab{% if settings_section == 'logs' %} active{% endif %}" href="{{ url_for('settings_logs_view') }}">Logs</a>
   <a class="settings-tab{% if settings_section == 'backups' %} active{% endif %}" href="{{ url_for('settings_view', section='backups') }}">Backups</a>
+  <a class="settings-tab{% if settings_section == 'backup-files' %} active{% endif %}" href="{{ url_for('backup_files_view') }}">Backup files and recovery</a>
 </nav>
 {% if settings_section == 'authentication' %}
 <section class="panel"><h2 class="panel-title">Authentication</h2><p class="panel-subtitle">Change the administrator username or password.</p><form method="post" class="settings-form settings-form-labeled"><input type="hidden" name="kind" value="auth"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="field"><label for="auth-username">Username</label><input id="auth-username" name="username" value="{{ auth_user.username }}" required></div><div class="field"><label for="current-password">Current password</label><input id="current-password" name="current_password" type="password" required></div><div class="field"><label for="new-password">New password</label><input id="new-password" name="new_password" type="password" minlength="6"><small>Leave blank to keep the current password.</small></div><div class="field"><label for="password-confirmation">Confirm new password</label><input id="password-confirmation" name="password_confirmation" type="password" minlength="6"></div><button>Save authentication settings</button></form><p class="muted">Saving invalidates the current session; sign in again afterward.</p></section>

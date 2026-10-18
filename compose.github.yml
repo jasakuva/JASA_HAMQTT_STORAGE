@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: ghcr.io/jasakuva/hamqtt-postgres-pgbackrest:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  migrate:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  web:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  mqtt-ingestor:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  ha-ingestor:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  mcp:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  cleanup:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  backup:
+    image: ghcr.io/jasakuva/hamqtt-backup-pgbackrest:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+
+  recovery:
+    image: ghcr.io/jasakuva/hamqtt-backup-pgbackrest:${HAMQTT_VERSION:?Set HAMQTT_VERSION}

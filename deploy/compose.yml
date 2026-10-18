@@ -1,0 +1,244 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: hamqtt-redis
+    restart: unless-stopped
+    networks:
+      - hamqtt-store
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "redis"
+
+  postgres:
+    image: ghcr.io/jasakuva/hamqtt-postgres-pgbackrest:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hamqtt_store}
+      POSTGRES_USER: ${POSTGRES_USER:-hamqtt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - unix_socket_directories=/var/run/postgresql
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=pgbackrest --stanza=hamqtt archive-push %p
+    ports:
+      - "${POSTGRES_BIND_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ${POSTGRES_VOLUME:-hamqtt-postgres-data}:/var/lib/postgresql/data
+      - hamqtt-postgres-socket:/var/run/postgresql
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest
+      - ./pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - hamqtt-store
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "postgres"
+
+  migrate:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-migrate
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - hamqtt-store
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "migrate"
+
+  web:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-web
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      APP_DATA_DIR: /app/data
+      REDIS_URL: redis://redis:6379/0
+      BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
+      RECOVERY_MAX_UPLOAD_MB: ${RECOVERY_MAX_UPLOAD_MB:-1024}
+      SESSION_DAYS: ${SESSION_DAYS:-365}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest:ro
+    networks:
+      - hamqtt-store
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "web"
+    command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "hamqtt_store.wsgi:app"]
+
+  mqtt-ingestor:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-mqtt-ingestor
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      REDIS_URL: redis://redis:6379/0
+      APP_DATA_DIR: /app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "mqtt-ingestor"
+    command: ["python", "-m", "hamqtt_store.cli", "mqtt"]
+
+  ha-ingestor:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-ha-ingestor
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      REDIS_URL: redis://redis:6379/0
+      APP_DATA_DIR: /app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "ha-ingestor"
+    command: ["python", "-m", "hamqtt_store.cli", "ha"]
+
+  mcp:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-mcp
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      MCP_TRANSPORT: streamable-http
+      APP_DATA_DIR: /app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${MCP_BIND_IP:-127.0.0.1}:${MCP_PORT:-8001}:8000"
+    networks:
+      - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "mcp"
+    command: ["python", "-m", "hamqtt_store.cli", "mcp"]
+
+  cleanup:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-cleanup
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      CLEANUP_HOUR_UTC: ${CLEANUP_HOUR_UTC:-2}
+      CLEANUP_MINUTE_UTC: ${CLEANUP_MINUTE_UTC:-0}
+      APP_DATA_DIR: /app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "cleanup"
+    command: ["python", "-m", "hamqtt_store.cli", "cleanup"]
+
+  backup:
+    image: ghcr.io/jasakuva/hamqtt-backup-pgbackrest:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-backup
+    user: "999:999"
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
+      APP_DATA_DIR: /app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    network_mode: "service:postgres"
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest
+      - ${POSTGRES_VOLUME:-hamqtt-postgres-data}:/var/lib/postgresql/data:ro
+      - hamqtt-postgres-socket:/var/run/postgresql
+      - ./pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "backup"
+    command: ["python", "-m", "hamqtt_store.cli", "backup"]
+
+  recovery:
+    image: ghcr.io/jasakuva/hamqtt-backup-pgbackrest:${HAMQTT_VERSION:-latest}
+    container_name: hamqtt-recovery
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      POSTGRES_USER: ${POSTGRES_USER:-hamqtt}
+      APP_DATA_DIR: /app/data
+      BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
+      RECOVERY_MAX_UPLOAD_MB: ${RECOVERY_MAX_UPLOAD_MB:-1024}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - hamqtt-store
+    volumes:
+      - ${APP_DATA_VOLUME:-hamqtt-app-data}:/app/data
+      - ${BACKUP_HOST_PATH:-./backups}:/var/lib/pgbackrest
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "recovery"
+    command: ["python", "-m", "hamqtt_store.cli", "recovery"]
+
+networks:
+  hamqtt-store:
+    name: ${POSTGRES_NETWORK:-hamqtt-store-network}
+    external: true
+
+volumes:
+  hamqtt-postgres-socket:
+    name: hamqtt-postgres-socket
+  hamqtt-app-data:
+    name: ${APP_DATA_VOLUME:-hamqtt-app-data}
+    external: true
+  hamqtt-postgres-data:
+    name: ${POSTGRES_VOLUME:-hamqtt-postgres-data}
+    external: true

@@ -1,10 +1,12 @@
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$log = Join-Path $root "build-image.log"
-$err = Join-Path $root "build-image.err"
+$logDirectory = Join-Path $root "artifacts\logs"
+New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+$log = Join-Path $logDirectory "build-image.log"
+$err = Join-Path $logDirectory "build-image.err"
 Remove-Item $log, $err -Force -ErrorAction SilentlyContinue
 $process = Start-Process -FilePath "podman" `
-  -ArgumentList @("build", "-t", "localhost/hamqtt-store:dev", ".") `
+  -ArgumentList @("build", "-f", "build/Dockerfile", "-t", "localhost/hamqtt-store:dev", ".") `
   -WorkingDirectory $root `
   -RedirectStandardOutput $log `
   -RedirectStandardError $err `

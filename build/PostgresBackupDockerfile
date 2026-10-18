@@ -1,6 +1,15 @@
 FROM docker.io/pgedge/pgbackrest:2.58 AS pgbackrest
 FROM pgvector/pgvector:0.8.7-pg17-bookworm
 
+ARG IMAGE_VERSION=dev
+ARG IMAGE_REVISION=unknown
+
+LABEL org.opencontainers.image.title="HAMQTT PostgreSQL with pgBackRest" \
+      org.opencontainers.image.description="PostgreSQL 17 with pgvector and pgBackRest for HAMQTT Store" \
+      org.opencontainers.image.source="https://github.com/jasakuva/JASA_HAMQTT_STORAGE" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.revision="${IMAGE_REVISION}"
+
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         bzip2 \

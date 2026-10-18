@@ -21,6 +21,7 @@ from .db import (
     SessionLocal,
     SystemSetting,
 )
+from .services.recovery import maintenance_status
 
 mcp = MCPServer("HA MQTT Store")
 
@@ -33,6 +34,8 @@ def _setting():
 
 
 def _require_read_access():
+    if maintenance_status() is not None:
+        raise RuntimeError("Database recovery is in progress")
     config = _setting()
     if not config["enabled"]:
         raise PermissionError("MCP read access is disabled in application settings")

@@ -1,7 +1,7 @@
 # HA MQTT Store
 
 ![Release](https://img.shields.io/github/v/release/jasakuva/JASA_HAMQTT_STORAGE?display_name=tag&sort=semver)
-![Tests](https://img.shields.io/badge/tests-33%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-53%20passing-2ea44f)
 ![Python](https://img.shields.io/badge/python-3.12%2B-3776ab)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791)
 ![Podman](https://img.shields.io/badge/containers-Podman-892ca0)
@@ -12,7 +12,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
-> **Current release:** **0.3.2** improves PostgreSQL backup scheduling and portable dumps, replaces unreliable Plotly range controls with stable HTML controls, and removes Zigbee2MQTT bridge/system topics from Graph and Export selectors without deleting stored data. See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) and the [0.3.2 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.2).
+> **Current release:** **0.3.3** adds secure browser-driven database recovery, unified container launchers, published GHCR images, and a self-contained Linux Docker installer that downloads from `master` and uses `latest` by default. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.3 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.3).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -34,12 +34,14 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - Local web authentication with first-run account setup, hashed passwords, authenticated sessions, logout, and CSRF protection.
 - Settings subpages for Authentication, Data sources, Logs, and Backups.
 - PostgreSQL 17-compatible pgBackRest full and differential backup service with schedule/retention profiles, portable custom-format dumps, backup history, and error reporting.
+- Authenticated portable-dump upload, validation, recovery, rollback, and maintenance mode through a dedicated recovery service.
+- Published GHCR images and a self-contained first-install script for Linux Docker hosts.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
-Detailed worker heartbeats, ingestion freshness monitoring, and a full system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
+Detailed worker heartbeats, ingestion freshness monitoring, and a full system-health dashboard are planned; see the [self-diagnostics and monitoring roadmap](docs/IMPLEMENTATION_PLAN.md#phase-9---self-diagnostics-and-monitoring).
 
-For the full implementation status, see [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). For restarting or resuming work later, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
+For the full implementation status, see [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md). For restarting or resuming work later, see [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md).
 
 ## Architecture
 
@@ -57,17 +59,51 @@ The local stack contains these services:
 
 The PostgreSQL data is stored in the named Podman volume `hamqtt-postgres-data`.
 
+## Simple Linux installation with published images
+
+For a new Linux host with Docker Engine and Docker Compose v2, download the
+self-contained installer directly from `master`. With `wget`:
+
+```bash
+wget -O install-hamqtt.sh \
+  https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
+chmod +x install-hamqtt.sh
+./install-hamqtt.sh
+```
+
+Or with `curl`:
+
+```bash
+curl -fsSLo install-hamqtt.sh \
+  https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
+chmod +x install-hamqtt.sh
+./install-hamqtt.sh
+```
+
+The installer defaults to the `latest` published image tag and creates
+`./jasa_hamqtt_storage`. To install a fixed release instead, run:
+
+```bash
+./install-hamqtt.sh --version 0.3.3
+```
+
+Only the installer file is required. It generates the Compose configuration,
+secrets, pgBackRest configuration, and PostgreSQL initialization SQL; creates
+the persistent resources; pulls the images; runs migrations; and starts the
+complete stack. See [`deploy/README.md`](deploy/README.md) for requirements,
+installed files, management commands, and data-safety guidance.
+
 ## Installation with Podman
 
 The documented local setup uses Podman and `podman-compose`. It works on Windows through the Podman machine and is also suitable for Linux.
 
 ### Prerequisites
 
-Install:
+Install either:
 
 - Git
 - Python 3.12 or newer for local development commands
-- Podman and `podman-compose`
+- Podman and `podman-compose` (preferred), or Docker Engine with Docker Compose
 
 On Windows, make sure the Podman machine is initialized and running. The commands below use PowerShell syntax where applicable.
 
@@ -96,9 +132,10 @@ POSTGRES_PASSWORD=change-this-development-password
 
 For a production or HTTPS deployment, set a unique `SECRET_KEY` and change `SESSION_COOKIE_SECURE=true`. The default session duration is 365 days and can be changed with `SESSION_DAYS`.
 
-### 3. Start Podman
+### 3. Start the container engine
 
-On Windows or Linux, start the Podman machine when required:
+Podman is the preferred and tested engine. On Windows, or on Linux/macOS setups
+that use a Podman machine, start it when required:
 
 ```powershell
 podman machine start
@@ -106,14 +143,36 @@ podman machine start
 
 If the machine is already running, Podman will report that and no action is needed.
 
+Docker Engine with the Docker Compose plugin is supported by the Unix launcher
+as a fallback. Do not mix Podman and Docker for one installation.
+
 ### 4. Validate and start the services
+
+Windows with Podman:
 
 ```powershell
 podman-compose config
-podman-compose up -d --build
+update-hamqtt.cmd
 ```
 
-`podman-compose` builds the application image, starts PostgreSQL, waits for it to become healthy, applies database migrations, and only then starts the web, MQTT, Home Assistant, MCP, cleanup, and backup services.
+Linux or macOS with automatic engine selection:
+
+```bash
+chmod +x hamqtt.sh
+./hamqtt.sh update
+```
+
+The Unix launcher prefers Podman with `podman-compose`, then falls back to
+Docker with `docker compose`. Select explicitly when both are installed:
+
+```bash
+./hamqtt.sh --engine podman update
+./hamqtt.sh --engine docker update
+```
+
+The first-install commands build the application images, start PostgreSQL and
+Redis, wait for health checks, apply database migrations, and only then start
+the web, MQTT, Home Assistant, MCP, cleanup, backup, and recovery services.
 
 Open the application at:
 
@@ -217,37 +276,71 @@ After enabling it in Settings, restart the service. The local Streamable HTTP en
 
 ## Updating an existing installation
 
-Use the supplied update script. It builds the new image, creates missing infrastructure, waits for PostgreSQL, applies pending migrations automatically, and recreates only the application containers:
+Use the supplied launcher. It builds the images, creates missing infrastructure,
+waits for PostgreSQL and Redis, applies pending migrations, recreates containers,
+and verifies web health:
 
 ```bash
 git fetch origin
-git checkout v0.3.2
-bash scripts/update.sh
+git checkout v0.3.3
+./hamqtt.sh update
 ```
 
-The script uses the project’s Podman and `podman-compose` workflow. It keeps the fixed HAMQTT container names. If a different, unrecognized container already uses one of those names, the script stops without removing anything and reports the conflict.
+`bash scripts/update.sh` remains available as a backward-compatible alias for
+`./hamqtt.sh update`. The launcher refuses to replace an existing container that
+is not recognized as belonging to HAMQTT.
 
 The database volume is preserved during updates. Do not remove `hamqtt-postgres-data` or `hamqtt-app-data` unless you intentionally want to delete application data.
 
-For Windows Podman users, `start-hamqtt.cmd` starts the stack and `update-hamqtt.cmd` builds and updates it while preserving named volumes.
+For Windows Podman users:
 
-For a first installation, use the same command:
+- `start-hamqtt.cmd` starts the stack from existing images without building.
+- `stop-hamqtt.cmd` stops containers without removing them or their volumes.
+- `update-hamqtt.cmd` builds and updates the stack while preserving named volumes.
+- `rebuild-hamqtt.cmd` performs a no-cache rebuild and controlled recreation while preserving named volumes.
 
-```powershell
-git clone <repository-url> hamqtt-store
-cd hamqtt-store
-Copy-Item .env.example .env
-# Edit .env and set POSTGRES_PASSWORD and any deployment-specific values.
-bash scripts/update.sh
+For Linux and macOS users:
+
+```bash
+./hamqtt.sh start
+./hamqtt.sh stop
+./hamqtt.sh update
+./hamqtt.sh rebuild
+./hamqtt.sh status
+./hamqtt.sh logs web
 ```
 
-## Docker Compose compatibility
+Use `HAMQTT_ENGINE=podman` or `HAMQTT_ENGINE=docker`, or pass `--engine`, to
+override automatic engine selection. `--dry-run` prints mutating commands
+without executing them.
 
-Podman with `podman-compose` is the canonical and tested workflow for this
-repository. Docker users can use the same `compose.yml` with Docker Compose,
-but should replace each `podman-compose` command with `docker compose` and
-omit `podman machine start`. Do not mix Podman and Docker commands in the same
-startup or update procedure.
+For a first installation, build the required images with `update`:
+
+```bash
+git clone <repository-url> hamqtt-store
+cd hamqtt-store
+cp .env.example .env
+# Edit .env and set POSTGRES_PASSWORD and deployment-specific values.
+chmod +x hamqtt.sh
+./hamqtt.sh update
+```
+
+After installation, `./hamqtt.sh start` starts existing images without building
+or explicitly tearing down the stack. Use `update` when source or dependencies
+have changed, and `rebuild` when a full no-cache build is required.
+
+## Container-engine support
+
+| Platform | Podman | Docker |
+|---|---|---|
+| Windows | Preferred and tested through the `.cmd` scripts | Manual/best effort |
+| Linux | Preferred through `hamqtt.sh` | Supported fallback through `hamqtt.sh` |
+| macOS | Supported through `hamqtt.sh` | Supported fallback through `hamqtt.sh` |
+
+Podman with `podman-compose` remains the canonical project workflow. The Unix
+launcher keeps one selected engine for the complete command and never switches
+engines midway. Normal start, stop, update, and rebuild operations never delete
+named volumes.
 
 ## Local development
 
@@ -266,7 +359,7 @@ python -m pytest -q
 Run migrations against the configured database:
 
 ```powershell
-python -m alembic upgrade head
+python -m alembic -c config/alembic.ini upgrade head
 ```
 
 Other useful checks:
@@ -292,7 +385,8 @@ Only run the volume removal command when a complete development reset is intende
 
 ## Documentation
 
-- [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — current implementation status and remaining roadmap.
+- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — current implementation status and remaining roadmap.
+- [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) — release history.
 - [`docs/RESTART_GUIDE.md`](docs/RESTART_GUIDE.md) — how to resume the project after a break.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture and data model.
 - [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) — dashboard live-data pipeline, graphs, CSV export, and troubleshooting.
