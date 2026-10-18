@@ -51,8 +51,8 @@ configured backup repository.
 - 53 automated Python tests passed.
 - Python compilation and documentation validation passed.
 - Root and standalone deployment Compose rendering passed.
-- Installer regression coverage was added; `git diff --check` passed. The Bash
-  test requires a Linux or functional Bash environment.
+- The standalone installer regression passed in Ubuntu 24.04, and
+  `git diff --check` passed.
 
 ## Known limitations
 
