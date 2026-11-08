@@ -1,4 +1,26 @@
-# HA MQTT Store 0.3.3
+# HA MQTT Store 0.3.4-rc3
+
+Release date: 2026-11-08
+
+## Release candidate 3
+
+This release candidate combines the 0.3.4 RC1 export aggregation feature with
+the current MCP read-only history tools and the latest installer, updater,
+uninstaller, migration, and `.env` version-persistence fixes.
+
+- Added CSV export timestamp aggregation to one-second buckets, preserving the
+  last value for duplicate timestamps and allowing exact timestamps when the
+  checkbox is cleared.
+- Preserved bounded MCP history aggregation with 15-minute and one-hour buckets,
+  multiple aggregation methods, UTC timestamp validation, pagination, and
+  counter-delta handling.
+- Included the current self-contained installer, separated deployment updater,
+  uninstall workflow, executable permissions, migration fixes, and persistent
+  `HAMQTT_VERSION` updates.
+- Validated with 61 Python tests, Python compilation, Compose rendering, and
+  local Podman builds for all three release images.
+
+---
 
 Release date: 2026-10-18
 
