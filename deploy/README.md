@@ -3,8 +3,8 @@
 `install.sh` is a self-contained, single-file installer. It creates a new Docker Compose installation in
 `./jasa_hamqtt_storage`, relative to the directory from which the installer is
 run. It pulls published images from GHCR; it does not build the application from
-source. The generated `update-from-github.sh` is self-contained too; no second
-script download is required after installation.
+source. After installation, the installer downloads the separate
+`update-from-github.sh` and `uninstall.sh` scripts into the installation folder.
 
 ## Requirements
 
@@ -41,7 +41,8 @@ chmod +x install-hamqtt.sh
 
 Only `install-hamqtt.sh` needs to be downloaded. The installer writes the
 Compose file, pgBackRest configuration, PostgreSQL initialization SQL, `.env`,
-installation metadata, and an executable `update-from-github.sh` helper itself.
+installation metadata, and downloads executable `update-from-github.sh` and
+`uninstall.sh` helpers into the installation folder.
 
 For example, running the installer from `/opt` creates:
 
@@ -68,6 +69,7 @@ release.
 jasa_hamqtt_storage/
 ├── compose.yml
 ├── update-from-github.sh
+├── uninstall.sh
 ├── .env
 ├── install-info
 ├── pgbackrest.conf
@@ -130,7 +132,14 @@ in the installation's `backups/` directory. Normal management must not use
 PostgreSQL and MCP bind to loopback by default. The web dashboard is available
 at `http://localhost:8000` after installation.
 
-The generated update helper downloads the current updater from the repository
-before running it. This keeps existing installations able to receive updater
-fixes without reinstalling HAMQTT. It does not delete the persistent PostgreSQL
-or application-data volumes.
+The installed update and uninstall helpers resolve `compose.yml`, `.env`, and
+the installation directory from their own script location. They can therefore
+be run from any working directory, for example:
+
+```bash
+sudo /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage/update-from-github.sh 0.3.4-rc1
+sudo /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage/uninstall.sh
+```
+
+The update helper does not delete the persistent PostgreSQL or application-data
+volumes.
