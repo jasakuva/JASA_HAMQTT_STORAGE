@@ -95,6 +95,12 @@ grep -q '^SECRET_KEY=[0-9a-f]\{64\}$' "$DEFAULT_INSTALL/.env"
 [[ -f "$DEFAULT_INSTALL/compose.yml" ]]
 [[ -f "$DEFAULT_INSTALL/update-from-github.sh" ]]
 [[ "$(stat -c '%a' "$DEFAULT_INSTALL/update-from-github.sh")" == "755" ]]
+grep -q 'Update to version' "$DEFAULT_INSTALL/update-from-github.sh"
+grep -q 'docker-compose version' "$DEFAULT_INSTALL/update-from-github.sh"
+if grep -q 'BASE_URL\|download.*update-from-github' "$DEFAULT_INSTALL/update-from-github.sh"; then
+    printf 'Generated updater unexpectedly downloads another script\n' >&2
+    exit 1
+fi
 [[ -f "$DEFAULT_INSTALL/pgbackrest.conf" ]]
 [[ -f "$DEFAULT_INSTALL/db/init/001-enable-extensions.sql" ]]
 [[ -d "$DEFAULT_INSTALL/backups" ]]

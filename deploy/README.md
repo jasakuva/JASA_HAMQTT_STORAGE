@@ -3,7 +3,8 @@
 `install.sh` is a self-contained, single-file installer. It creates a new Docker Compose installation in
 `./jasa_hamqtt_storage`, relative to the directory from which the installer is
 run. It pulls published images from GHCR; it does not build the application from
-source.
+source. The generated `update-from-github.sh` is self-contained too; no second
+script download is required after installation.
 
 ## Requirements
 

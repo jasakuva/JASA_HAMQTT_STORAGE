@@ -510,29 +510,103 @@ cat >"$INSTALL_DIR/update-from-github.sh" <<'UPDATE_SCRIPT'
 set -Eeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_URL="https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master"
-TEMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TEMP_DIR"' EXIT
+DEFAULT_VERSION="latest"
+APP_SERVICES=(web mqtt-ingestor ha-ingestor cleanup mcp backup recovery)
+COMPOSE_BASE=()
+VERSION="$DEFAULT_VERSION"
+VERSION_SET=false
+DRY_RUN=false
 
-download() {
-    local url="$1"
-    local destination="$2"
-    if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "$url" -o "$destination"
-    elif command -v wget >/dev/null 2>&1; then
-        wget -qO "$destination" "$url"
-    else
-        printf 'ERROR: curl or wget is required to update HAMQTT\n' >&2
-        exit 1
-    fi
+log() { printf '\n[hamqtt-update] %s\n' "$*"; }
+fail() { printf '\n[hamqtt-update] ERROR: %s\n' "$*" >&2; exit 1; }
+
+usage() {
+    cat <<EOF
+Usage: ./update-from-github.sh [VERSION] [--dry-run]
+
+Update HAMQTT using the installed compose.yml and published GHCR images.
+EOF
 }
 
-[[ "$(id -u)" == "0" ]] \
-    || { printf 'ERROR: This updater must be run as root. Re-run it with: sudo %s\n' "$0" >&2; exit 1; }
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run) DRY_RUN=true ;;
+        -h|--help) usage; exit 0 ;;
+        -*) fail "Unknown option: $1" ;;
+        *)
+            [[ "$VERSION_SET" == false ]] || fail "Only one version may be supplied"
+            VERSION="$1"
+            VERSION_SET=true
+            ;;
+    esac
+    shift
+done
 
-download "$BASE_URL/update-from-github.sh" "$TEMP_DIR/update-from-github.sh"
-chmod +x "$TEMP_DIR/update-from-github.sh"
-HAMQTT_INSTALL_ROOT="$ROOT" exec "$TEMP_DIR/update-from-github.sh" "$@"
+[[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
+    || fail "Invalid image version '$VERSION'"
+[[ "$(id -u)" == "0" ]] \
+    || fail "This updater must be run as root. Re-run it with: sudo $0"
+
+command -v docker >/dev/null 2>&1 || fail "Docker is not installed"
+if docker compose version >/dev/null 2>&1; then
+    COMPOSE_BASE=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1 \
+    && docker-compose version >/dev/null 2>&1; then
+    COMPOSE_BASE=(docker-compose)
+else
+    fail "Docker Compose is not available. Install Docker Compose v2 ('docker compose') or Docker Compose v1 ('docker-compose')."
+fi
+
+if [[ "$DRY_RUN" != true ]]; then
+    docker info >/dev/null 2>&1 || fail "Docker daemon is not running or is not accessible"
+fi
+[[ -f "$ROOT/compose.yml" ]] || fail "Missing $ROOT/compose.yml"
+[[ -f "$ROOT/.env" ]] || fail "Missing $ROOT/.env; create it from .env.example and set secure values"
+
+export HAMQTT_VERSION="$VERSION"
+COMPOSE=("${COMPOSE_BASE[@]}" --project-name hamqtt-store --project-directory "$ROOT" --env-file "$ROOT/.env" -f "$ROOT/compose.yml")
+
+NETWORK="$(sed -n 's/^POSTGRES_NETWORK=//p' "$ROOT/.env" | tail -n 1)"
+POSTGRES_VOLUME="$(sed -n 's/^POSTGRES_VOLUME=//p' "$ROOT/.env" | tail -n 1)"
+APP_DATA_VOLUME="$(sed -n 's/^APP_DATA_VOLUME=//p' "$ROOT/.env" | tail -n 1)"
+NETWORK="${NETWORK:-hamqtt-store-network}"
+POSTGRES_VOLUME="${POSTGRES_VOLUME:-hamqtt-postgres-data}"
+APP_DATA_VOLUME="${APP_DATA_VOLUME:-hamqtt-app-data}"
+
+run() {
+    printf '[hamqtt-update] +'
+    printf ' %q' "$@"
+    printf '\n'
+    [[ "$DRY_RUN" == true ]] || "$@"
+}
+
+compose() { run "${COMPOSE[@]}" "$@"; }
+
+log "Selected HAMQTT version: $HAMQTT_VERSION"
+[[ "$DRY_RUN" == true ]] && log "Dry-run mode: mutating commands will only be printed"
+log "Validating Compose configuration"
+"${COMPOSE[@]}" config --quiet
+log "Pulling version $HAMQTT_VERSION from GitHub Container Registry"
+compose pull
+log "Stopping and removing old HAMQTT containers without deleting volumes"
+compose down --remove-orphans
+if ! docker network inspect "$NETWORK" >/dev/null 2>&1; then
+    run docker network create --driver bridge "$NETWORK"
+fi
+if ! docker volume inspect "$POSTGRES_VOLUME" >/dev/null 2>&1; then
+    run docker volume create "$POSTGRES_VOLUME"
+fi
+if ! docker volume inspect "$APP_DATA_VOLUME" >/dev/null 2>&1; then
+    run docker volume create "$APP_DATA_VOLUME"
+fi
+log "Starting PostgreSQL and Redis"
+compose up -d --no-deps postgres redis
+log "Applying database migrations"
+compose run --rm --no-deps migrate
+log "Starting HAMQTT application services"
+compose up -d --no-deps "${APP_SERVICES[@]}"
+log "Update to version $HAMQTT_VERSION completed"
+"${COMPOSE[@]}" ps -a
 UPDATE_SCRIPT
 chmod 0644 "$INSTALL_DIR/install-info" "$INSTALL_DIR/compose.yml" \
     "$INSTALL_DIR/pgbackrest.conf" "$INSTALL_DIR/db/init/001-enable-extensions.sql"
