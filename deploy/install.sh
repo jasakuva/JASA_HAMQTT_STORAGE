@@ -521,7 +521,7 @@ download() {
     fi
 }
 
-download "$BASE_URL/update-from-github.sh" "$INSTALL_DIR/update-from-github.sh"
+download "$BASE_URL/deploy/update-from-github.sh" "$INSTALL_DIR/update-from-github.sh"
 download "$BASE_URL/deploy/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
 chmod 0644 "$INSTALL_DIR/install-info" "$INSTALL_DIR/compose.yml" \
     "$INSTALL_DIR/pgbackrest.conf" "$INSTALL_DIR/db/init/001-enable-extensions.sql"

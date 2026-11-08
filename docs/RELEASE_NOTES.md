@@ -47,8 +47,9 @@ Install exactly version 0.3.3:
   `hamqtt-postgres-pgbackrest`, and `hamqtt-backup-pgbackrest` on `linux/amd64`.
 - The release publishes both the `0.3.3` and `latest` image tags.
 - Added OCI image version, revision, source, title, and description metadata.
-- Added `compose.github.yml` and `update-from-github.sh` for existing Linux
-  Docker installations that pull published images instead of building locally.
+- Added `compose.github.yml` and `deploy/update-from-github.sh` for existing
+  Linux Docker installations that pull published images instead of building
+  locally.
 
 ## Database backup and recovery
 

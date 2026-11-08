@@ -6,7 +6,7 @@ TEMP="$(mktemp -d)"
 trap 'rm -rf "$TEMP"' EXIT
 
 mkdir -p "$TEMP/deploy" "$TEMP/bin"
-cp "$ROOT/update-from-github.sh" "$ROOT/compose.yml" "$ROOT/pgbackrest.conf" "$TEMP/deploy/"
+cp "$ROOT/deploy/update-from-github.sh" "$ROOT/compose.yml" "$ROOT/pgbackrest.conf" "$TEMP/deploy/"
 cp -R "$ROOT/db" "$TEMP/deploy/db"
 cp "$ROOT/.env.example" "$TEMP/deploy/.env"
 

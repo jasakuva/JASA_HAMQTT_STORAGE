@@ -60,8 +60,8 @@ while [[ $# -gt 0 ]]; do
     if [[ "$1" == "-o" ]]; then
         shift
         destination="$1"
-    elif [[ "$1" == https://raw.githubusercontent.com/*/update-from-github.sh ]]; then
-        source="$MOCK_REPO_ROOT/update-from-github.sh"
+    elif [[ "$1" == https://raw.githubusercontent.com/*/deploy/update-from-github.sh ]]; then
+        source="$MOCK_REPO_ROOT/deploy/update-from-github.sh"
     elif [[ "$1" == https://raw.githubusercontent.com/*/deploy/uninstall.sh ]]; then
         source="$MOCK_REPO_ROOT/deploy/uninstall.sh"
     fi
