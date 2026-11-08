@@ -35,7 +35,7 @@ def upgrade():
             LIMIT 1;
 
             IF constraint_name IS NOT NULL THEN
-                EXECUTE format('ALTER TABLE mqtt_payload_fields DROP CONSTRAINT %I', constraint_name);
+                EXECUTE format('ALTER TABLE mqtt_payload_fields DROP CONSTRAINT %%I', constraint_name);
             ELSE
                 SELECT i.relname
                 INTO index_name
@@ -52,7 +52,7 @@ def upgrade():
                 LIMIT 1;
 
                 IF index_name IS NOT NULL THEN
-                    EXECUTE format('DROP INDEX %I', index_name);
+                    EXECUTE format('DROP INDEX %%I', index_name);
                 END IF;
             END IF;
         END $$;
