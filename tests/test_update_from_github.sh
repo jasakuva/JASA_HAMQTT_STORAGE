@@ -57,6 +57,8 @@ grep -q 'docker volume create hamqtt-app-data' "$TEMP/output"
 grep -q 'up -d --no-deps postgres redis' "$TEMP/output"
 grep -q 'run --rm --no-deps migrate' "$TEMP/output"
 grep -q 'up -d --no-deps web mqtt-ingestor ha-ingestor cleanup mcp backup recovery' "$TEMP/output"
+grep -q 'persist_version' "$ROOT/deploy/update-from-github.sh"
+grep -q 'HAMQTT_VERSION=' "$ROOT/deploy/update-from-github.sh"
 
 if grep -Eq 'down -v|volume rm' "$TEMP/output"; then
     printf 'Updater attempted to delete persistent volumes\n' >&2

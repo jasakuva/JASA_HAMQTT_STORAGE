@@ -107,6 +107,35 @@ env_value() {
     fi
 }
 
+persist_version() {
+    local env_file="$ROOT/.env"
+    local temp_file
+
+    [[ -f "$env_file" ]] || fail "Missing $env_file; create it from .env.example and set secure values"
+
+    temp_file="$(mktemp "$ROOT/.env.update.XXXXXX")"
+    if awk -v version="$VERSION" '
+        BEGIN { replaced = 0 }
+        /^HAMQTT_VERSION=/ {
+            if (!replaced) {
+                print "HAMQTT_VERSION=" version
+                replaced = 1
+            }
+            next
+        }
+        { print }
+        END {
+            if (!replaced) print "HAMQTT_VERSION=" version
+        }
+    ' "$env_file" >"$temp_file"; then
+        chmod 0600 "$temp_file"
+        mv -f -- "$temp_file" "$env_file"
+    else
+        rm -f -- "$temp_file"
+        fail "Unable to persist HAMQTT_VERSION in $env_file"
+    fi
+}
+
 container_exists() {
     docker container inspect "$1" >/dev/null 2>&1
 }
@@ -288,6 +317,11 @@ if [[ "$DRY_RUN" == true ]]; then
     compose pull
 elif ! "${COMPOSE[@]}" pull; then
     fail "Image pull failed. Confirm that version '$HAMQTT_VERSION' is published. If the packages are private, run: docker login ghcr.io"
+fi
+
+if [[ "$DRY_RUN" != true ]]; then
+    persist_version
+    log "Persisted HAMQTT_VERSION=$VERSION in $ROOT/.env"
 fi
 
 log "Stopping and removing old HAMQTT containers without deleting volumes"
