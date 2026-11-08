@@ -258,7 +258,7 @@ Each observation is linked to its source message through `mqtt_observations.sour
 
 The main dashboard combines durable database counters with a small live-data path. MQTT and Home Assistant workers write compact updates to Redis after their PostgreSQL writes. The browser polls the MQTT endpoint every two seconds and a sampled Home Assistant endpoint every ten seconds, updating only the feed tiles. Redis is best-effort and bounded; PostgreSQL remains the source of truth for history, graphs, and exports.
 
-The **Graphs** page reads historical HA state and MQTT observation rows, supports one to four selected series, and uses Plotly zooming, a range slider, and stable HTML buttons for `1h`, `6h`, `1d`, and `all`. The **Export CSV** page reads the same historical sources, supports one to ten series, and returns timestamped rows with source, identifier, value, type, unit, and state columns. Both selectors hide `zigbee2mqtt/bridge` and descendant system topics; this filtering does not delete previously stored MQTT messages or observations.
+The **Graphs** page reads historical HA state and MQTT observation rows, supports one to four selected series, and uses Plotly zooming, a range slider, and stable HTML buttons for `1h`, `6h`, `1d`, and `all`. The **Export CSV** page reads the same historical sources, supports one to ten selected series, and returns a wide time-aligned CSV with one timestamp column and one column per selected series. Timestamp aggregation to one-second buckets is enabled by default; duplicate values for one dataset in the same second use the last observation, while users can clear the checkbox to retain exact timestamp precision. Rows are chronological, and missing values are empty rather than forward-filled or interpolated. Both selectors hide `zigbee2mqtt/bridge` and descendant system topics; this filtering does not delete previously stored MQTT messages or observations.
 
 See [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) for the complete live-data flow, Redis keys, polling behavior, graph downsampling, export format, and troubleshooting steps.
 
@@ -270,9 +270,17 @@ State-changing form submissions use CSRF tokens, and changing the account creden
 
 ## MCP service
 
-The optional MCP service exposes read-only tools and resources for Home Assistant entities, state history, MQTT topics, messages, parsed fields, current values, and the object catalog. It never publishes MQTT messages, calls Home Assistant services, or writes to the database.
+The optional MCP service exposes read-only tools and resources for Home Assistant entities, state history, MQTT topics, messages, parsed fields, current values, and the object catalog. `get_home_assistant_history` preserves its original newest-first raw-history behavior when called with only `entity_id` and `limit`; it also supports UTC time bounds, cursor pagination, and PostgreSQL-side `15m` or `1h` aggregation for fast-updating variables. Aggregated responses include bucket boundaries, method, counts, coverage, and missing-data markers. It never publishes MQTT messages, calls Home Assistant services, or writes to the database.
 
 After enabling it in Settings, restart the service. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`.
+
+To connect this private endpoint to ChatGPT without publishing it on the
+Internet, see [`docs/OPENAI_SECURE_MCP_TUNNEL.md`](docs/OPENAI_SECURE_MCP_TUNNEL.md).
+The guide covers the OpenAI `tunnel-client` systemd service, installation and
+reinstallation, protected configuration, SSH access to its loopback-only UI,
+health checks, ChatGPT connector setup, and troubleshooting. The older
+[`docs/CHATGPT_MCP_NGROK_SETUP.md`](docs/CHATGPT_MCP_NGROK_SETUP.md) remains an
+alternative temporary public-URL workflow and is not the Secure MCP Tunnel.
 
 ## Updating an existing installation
 
@@ -309,6 +317,23 @@ For Linux and macOS users:
 ./hamqtt.sh status
 ./hamqtt.sh logs web
 ```
+
+For a Linux Docker host that should pull already-built release images from
+GitHub Container Registry instead of building locally, use:
+
+```bash
+chmod +x update-from-github.sh
+./update-from-github.sh 0.3.2
+```
+
+The version can be supplied as the first argument or changed in
+`DEFAULT_VERSION` near the top of
+[`update-from-github.sh`](update-from-github.sh). The script uses
+[`compose.github.yml`](compose.github.yml), preserves named data volumes,
+pulls all version-matched images before downtime, removes only recognized
+HAMQTT containers, waits for PostgreSQL and Redis, runs database migrations,
+and starts application services only after migration succeeds. If the GitHub
+packages are private, authenticate first with `docker login ghcr.io`.
 
 Use `HAMQTT_ENGINE=podman` or `HAMQTT_ENGINE=docker`, or pass `--engine`, to
 override automatic engine selection. `--dry-run` prints mutating commands
@@ -392,6 +417,8 @@ Only run the volume removal command when a complete development reset is intende
 - [`docs/DASHBOARD_DATA_FLOW.md`](docs/DASHBOARD_DATA_FLOW.md) — dashboard live-data pipeline, graphs, CSV export, and troubleshooting.
 - [`docs/POSTGRESQL_SETUP.md`](docs/POSTGRESQL_SETUP.md) — PostgreSQL/pgvector details.
 - [`docs/BACKUPS.md`](docs/BACKUPS.md) — pgBackRest backup configuration, verification, and restore safety.
+- [`docs/OPENAI_SECURE_MCP_TUNNEL.md`](docs/OPENAI_SECURE_MCP_TUNNEL.md) — connect the private MCP service to ChatGPT through the OpenAI Secure MCP Tunnel.
+- [`docs/CHATGPT_MCP_NGROK_SETUP.md`](docs/CHATGPT_MCP_NGROK_SETUP.md) — alternative temporary ngrok connection for ChatGPT.
 - [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) — current security review and release limitations.
 
 ## License

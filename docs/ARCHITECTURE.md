@@ -360,7 +360,7 @@ The HA worker maintains one `ha_entities` row, one `ha_state_current` row, and m
 
 The main dashboard route uses PostgreSQL for summary counts and Redis for the initial MQTT preview. The browser then refreshes the live MQTT and sampled HA tiles through the JSON endpoints described above. The dashboard cache is bounded and disposable; it is not used for historical analysis.
 
-The `/graph` route reads `ha_state_history` and `mqtt_observations` for one to four selected catalog objects, sorts the results by timestamp, and downsamples numeric rows above 4,000 points before rendering Plotly traces. The `/export` route reads the same historical sources for one to ten selected objects and, with `download=1`, returns `hamqtt-export.csv` with timestamp, series, source, identifier, value, value type, unit, and state columns. Both routes use the shared `objects` catalog and UTC-normalized time ranges.
+The `/graph` route reads `ha_state_history` and `mqtt_observations` for one to four selected catalog objects, sorts the results by timestamp, and downsamples numeric rows above 4,000 points before rendering Plotly traces. The `/export` route reads the same historical sources for one to ten selected objects and, with `download=1`, returns `hamqtt-export.csv` in wide format: one timestamp column followed by one distinct column per selected object. Exact timestamps are retained, rows are chronological, and missing object values remain empty. Both routes use the shared `objects` catalog and UTC-normalized time ranges.
 
 ## 7. SQL query examples
 
@@ -508,7 +508,7 @@ LIMIT 10;
 | `search_objects` | `objects` |
 | `list_home_assistant_entities` | `ha_entities`, `ha_state_current`, `objects` |
 | `get_home_assistant_entity` | `ha_entities`, `ha_state_current` |
-| `get_home_assistant_history` | `ha_entities`, `ha_state_history` |
+| `get_home_assistant_history` | `ha_entities`, `ha_state_history`; raw history remains backwards compatible, while `start`/`end` with `interval=15m` or `1h` uses PostgreSQL `date_bin`/`generate_series` aggregation |
 | `list_mqtt_topics` | `mqtt_topics`, `mqtt_connections` |
 | `list_mqtt_fields` | `mqtt_topics`, `mqtt_payload_fields` |
 | `get_mqtt_current_value` | `mqtt_current_values` |

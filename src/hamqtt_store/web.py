@@ -48,6 +48,41 @@ from .db import (
     engine,
 )
 
+
+def export_column_names(catalog, object_ids):
+    selected = {item["id"]: item for item in catalog}
+    names = {}
+    used = set()
+    for object_id in object_ids:
+        item = selected[object_id]
+        name = item["label"]
+        if name in used:
+            name = f"{name} [{item['identifier']}]"
+        suffix = 2
+        unique_name = name
+        while unique_name in used:
+            unique_name = f"{name} ({suffix})"
+            suffix += 1
+        names[object_id] = unique_name
+        used.add(unique_name)
+    return names
+
+
+def wide_export_rows(rows, catalog, object_ids, aggregate_seconds=True):
+    column_names = export_column_names(catalog, object_ids)
+    values_by_timestamp = {}
+    for row in rows:
+        timestamp = row["timestamp"]
+        if aggregate_seconds:
+            timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00")).replace(microsecond=0).isoformat()
+        values_by_timestamp.setdefault(timestamp, {})[column_names[row["object_id"]]] = row["value"]
+    fieldnames = ["timestamp", *[column_names[object_id] for object_id in object_ids]]
+    return fieldnames, [
+        {"timestamp": timestamp, **values}
+        for timestamp, values in sorted(values_by_timestamp.items())
+    ]
+
+
 def create_app():
     app = Flask(__name__, template_folder="../../templates", static_folder="../../static")
     app.config["SECRET_KEY"] = settings.secret_key
@@ -202,14 +237,14 @@ def create_app():
         rows = list({row["id"]: row for row in rows}.values())
         return sorted(rows, key=lambda row: (row["source"], row["label"]))
 
-    def history_rows(session, object_ids, start, end, downsample=False):
+    def history_rows(session, object_ids, start, end, downsample=False, include_object_id=False):
         result = []
         entities = session.execute(select(
-            HAEntity.id.label("entity_id"), HAEntity.entity_id.label("identifier"),
+            HAEntity.id.label("entity_id"), HAEntity.object_id.label("object_id"), HAEntity.entity_id.label("identifier"),
             Object.nickname.label("nickname"), Object.display_name.label("display_name"),
         ).join(Object, Object.id == HAEntity.object_id).where(HAEntity.object_id.in_(object_ids))).mappings().all() if object_ids else []
         fields = session.execute(select(
-            MQTTPayloadField.id.label("field_id"), MQTTPayloadField.field_path.label("identifier"),
+            MQTTPayloadField.id.label("field_id"), MQTTPayloadField.object_id.label("object_id"), MQTTPayloadField.field_path.label("identifier"),
             MQTTPayloadField.unit.label("unit"), Object.nickname.label("nickname"),
             Object.display_name.label("display_name"),
         ).join(Object, Object.id == MQTTPayloadField.object_id).where(
@@ -225,6 +260,7 @@ def create_app():
             for row in rows:
                 value = row["state_numeric"] if row["state_numeric"] is not None else row["state_boolean"] if row["state_boolean"] is not None else row["state_text"]
                 result.append({"timestamp": row["observed_at"].isoformat(), "series": entity["nickname"] or entity["display_name"] or entity["identifier"],
+                               **({"object_id": entity["object_id"]} if include_object_id else {}),
                                "source": "Home Assistant", "identifier": entity["identifier"], "value": value,
                                "value_type": "numeric" if row["state_numeric"] is not None else "boolean" if row["state_boolean"] is not None else "text",
                                "unit": None, "state": row["state_text"]})
@@ -239,6 +275,7 @@ def create_app():
             for row in rows:
                 value = row["value_numeric"] if row["value_numeric"] is not None else row["value_boolean"] if row["value_boolean"] is not None else row["value_text"]
                 result.append({"timestamp": row["observed_at"].isoformat(), "series": field["nickname"] or field["display_name"] or field["identifier"],
+                               **({"object_id": field["object_id"]} if include_object_id else {}),
                                "source": "MQTT", "identifier": field["identifier"], "value": value,
                                "value_type": row["value_type"], "unit": row["unit"] or field["unit"], "state": row["value_text"]})
         result.sort(key=lambda row: row["timestamp"])
@@ -309,14 +346,17 @@ def create_app():
             valid_ids = {item["id"] for item in catalog}
             error = ("Select a valid time range." if start is None else
                      "Select between 1 and 10 available series." if not 1 <= len(object_ids) <= 10 or not set(object_ids) <= valid_ids else None)
-            data = history_rows(session, object_ids, start, end) if not error else []
+            data = history_rows(session, object_ids, start, end, include_object_id=True) if not error else []
+        aggregate_seconds = request.args.get("aggregate_seconds", "1") == "1"
         if request.args.get("download") == "1" and not error:
+            fieldnames, wide_rows = wide_export_rows(data, catalog, object_ids, aggregate_seconds=aggregate_seconds)
             output = io.StringIO()
-            writer = csv.DictWriter(output, fieldnames=["timestamp", "series", "source", "identifier", "value", "value_type", "unit", "state"])
+            writer = csv.DictWriter(output, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(data)
+            writer.writerows(wide_rows)
             return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=hamqtt-export.csv"})
-        return render_template("export.html", catalog=catalog, selected=object_ids, start=start, end=end, error=error)
+        return render_template("export.html", catalog=catalog, selected=object_ids, start=start, end=end,
+                               error=error, aggregate_seconds=aggregate_seconds)
 
     @app.get("/plot/<int:object_id>")
     def plot_object(object_id):

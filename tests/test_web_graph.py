@@ -32,6 +32,66 @@ def test_plot_link_redirects_to_standalone_graph(monkeypatch):
     assert response.headers["Location"].endswith("/graph?object_id=42&standalone=1")
 
 
+def test_wide_export_rows_aligns_values_by_timestamp():
+    catalog = [
+        {"id": 1, "label": "Temperature", "identifier": "sensor.temperature"},
+        {"id": 2, "label": "Humidity", "identifier": "sensor.humidity"},
+    ]
+    fields, rows = web.wide_export_rows([
+        {"object_id": 2, "timestamp": "2026-11-07T10:00:05+00:00", "value": 45},
+        {"object_id": 1, "timestamp": "2026-11-07T10:00:00+00:00", "value": 21.5},
+        {"object_id": 1, "timestamp": "2026-11-07T10:00:05+00:00", "value": 21.6},
+    ], catalog, [1, 2])
+
+    assert fields == ["timestamp", "Temperature", "Humidity"]
+    assert rows == [
+        {"timestamp": "2026-11-07T10:00:00+00:00", "Temperature": 21.5},
+        {"timestamp": "2026-11-07T10:00:05+00:00", "Temperature": 21.6, "Humidity": 45},
+    ]
+
+
+def test_wide_export_rows_make_duplicate_labels_unique():
+    catalog = [
+        {"id": 1, "label": "Temperature", "identifier": "sensor.inside"},
+        {"id": 2, "label": "Temperature", "identifier": "sensor.outside"},
+    ]
+
+    fields, rows = web.wide_export_rows([
+        {"object_id": 1, "timestamp": "2026-11-07T10:00:00+00:00", "value": 20},
+        {"object_id": 2, "timestamp": "2026-11-07T10:00:00+00:00", "value": 10},
+    ], catalog, [1, 2])
+
+    assert fields == ["timestamp", "Temperature", "Temperature [sensor.outside]"]
+    assert rows[0]["Temperature"] == 20
+    assert rows[0]["Temperature [sensor.outside]"] == 10
+
+
+def test_wide_export_rows_aggregates_to_seconds_and_keeps_last_value():
+    catalog = [{"id": 1, "label": "Temperature", "identifier": "sensor.temperature"}]
+
+    fields, rows = web.wide_export_rows([
+        {"object_id": 1, "timestamp": "2026-11-07T10:00:01.120000+00:00", "value": 20},
+        {"object_id": 1, "timestamp": "2026-11-07T10:00:01.850000+00:00", "value": 21},
+        {"object_id": 1, "timestamp": "2026-11-07T10:00:02.010000+00:00", "value": 22},
+    ], catalog, [1])
+
+    assert fields == ["timestamp", "Temperature"]
+    assert rows == [
+        {"timestamp": "2026-11-07T10:00:01+00:00", "Temperature": 21},
+        {"timestamp": "2026-11-07T10:00:02+00:00", "Temperature": 22},
+    ]
+
+
+def test_wide_export_rows_can_preserve_exact_timestamps():
+    catalog = [{"id": 1, "label": "Temperature", "identifier": "sensor.temperature"}]
+
+    _, rows = web.wide_export_rows([
+        {"object_id": 1, "timestamp": "2026-11-07T10:00:01.120000+00:00", "value": 20},
+    ], catalog, [1], aggregate_seconds=False)
+
+    assert rows == [{"timestamp": "2026-11-07T10:00:01.120000+00:00", "Temperature": 20}]
+
+
 def test_standalone_graph_layout_contract_is_present():
     with open("templates/graph.html", encoding="utf-8") as template:
         content = template.read()

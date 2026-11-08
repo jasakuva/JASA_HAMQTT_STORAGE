@@ -99,14 +99,19 @@ If an older bookmarked URL still contains the object ID of a filtered bridge fie
 The **Export CSV** page uses the same historical catalog and range semantics as graphs, but permits one to ten selected series. The download request is:
 
 ```text
-/export?from=<ISO timestamp>&to=<ISO timestamp>&object_id=<id>&download=1
+/export?from=<ISO timestamp>&to=<ISO timestamp>&object_id=<id>&aggregate_seconds=1&download=1
 ```
 
-The generated `hamqtt-export.csv` contains:
+The generated `hamqtt-export.csv` uses a wide, time-aligned format. It contains one `timestamp` column followed by one column for each selected dataset:
 
-```text
-timestamp,series,source,identifier,value,value_type,unit,state
+```csv
+timestamp,Temperature,Humidity,Pressure
+2026-11-07T10:00:00+00:00,21.5,,
+2026-11-07T10:00:05+00:00,,45,
+2026-11-07T10:00:10+00:00,,,1012.4
 ```
+
+By default, timestamps are truncated to one-second buckets. If multiple observations for the same dataset fall in one second, the last observation in chronological order is used. Clear the **Aggregate timestamps to one second** checkbox to preserve exact stored timestamp precision, including milliseconds or microseconds. Rows are chronological, missing values remain empty, and the export does not forward-fill or interpolate observations.
 
 Exports read PostgreSQL history directly. They are not limited to the six MQTT messages or five sampled HA entities shown by the dashboard.
 

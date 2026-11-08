@@ -1,4 +1,6 @@
 import pytest
+from datetime import UTC, datetime
+from types import SimpleNamespace
 
 
 def test_mcp_module_imports_and_registers_read_only_server():
@@ -44,3 +46,60 @@ def test_mcp_limits_are_clamped(monkeypatch):
     mcp_server.search_objects("sensor", 999999)
     assert captured
     assert captured[0]._limit_clause.value == 500
+
+
+def test_history_timestamp_is_normalized_to_utc():
+    mcp_server = pytest.importorskip("hamqtt_store.mcp_server")
+
+    parsed = mcp_server._parse_history_timestamp("2026-11-08T14:00:00+02:00", "start")
+
+    assert parsed == datetime(2026, 11, 8, 12, 0, tzinfo=UTC)
+
+
+def test_history_aggregation_defaults_to_counter_for_energy_units():
+    mcp_server = pytest.importorskip("hamqtt_store.mcp_server")
+    entity = SimpleNamespace(raw_entity={"attributes": {"unit_of_measurement": "Wh"}})
+
+    assert mcp_server._aggregation_method(None, entity) == "counter_delta"
+    assert mcp_server._aggregation_method("avg", entity) == "avg"
+
+
+def test_history_aggregation_rejects_unknown_method():
+    mcp_server = pytest.importorskip("hamqtt_store.mcp_server")
+    entity = SimpleNamespace(raw_entity={"attributes": {}})
+
+    with pytest.raises(ValueError, match="aggregation_method"):
+        mcp_server._aggregation_method("median", entity)
+
+
+def test_history_aggregation_query_is_server_side_and_bounded(monkeypatch):
+    mcp_server = pytest.importorskip("hamqtt_store.mcp_server")
+    executed = []
+
+    class FakeResult:
+        def mappings(self):
+            return self
+
+        def all(self):
+            return []
+
+    class FakeSession:
+        def execute(self, statement, params=None):
+            executed.append((str(statement), params))
+            return FakeResult()
+
+    result = mcp_server._aggregated_history(
+        FakeSession(),
+        entity_id=4,
+        start=datetime(2026, 11, 8, tzinfo=UTC),
+        end=datetime(2026, 11, 8, 1, tzinfo=UTC),
+        interval="15m",
+        method="avg",
+        page_size=20,
+        cursor=None,
+    )
+
+    assert result["items"] == []
+    assert "generate_series" in executed[1][0]
+    assert "date_bin" in executed[1][0]
+    assert executed[1][1]["page_size"] == 21

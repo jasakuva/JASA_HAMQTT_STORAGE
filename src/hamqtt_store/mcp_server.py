@@ -1,12 +1,12 @@
 """Read-only MCP interface for HA MQTT Store."""
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 
 from .db import (
     HAEntity,
@@ -45,6 +45,169 @@ def _require_read_access():
 
 def _iso(value: Any):
     return value.isoformat() if isinstance(value, datetime) else value
+
+
+_AGGREGATION_INTERVALS = {"15m": 900, "1h": 3600}
+_AGGREGATION_METHODS = {"avg", "min", "max", "first", "last", "sum", "counter_delta"}
+_MAX_HISTORY_PAGE_SIZE = 500
+_MAX_AGGREGATED_BUCKETS = 10_000
+_STATEMENT_TIMEOUT_MS = 30_000
+
+
+def _parse_history_timestamp(value: str | None, name: str) -> datetime | None:
+    if value is None:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be an ISO-8601 timestamp") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{name} must include a timezone")
+    return parsed.astimezone(UTC)
+
+
+def _history_page_size(value: int) -> int:
+    return max(1, min(int(value), _MAX_HISTORY_PAGE_SIZE))
+
+
+def _aggregation_method(method: str | None, entity: Any) -> str:
+    if method is not None:
+        if method not in _AGGREGATION_METHODS:
+            raise ValueError(f"aggregation_method must be one of {sorted(_AGGREGATION_METHODS)}")
+        return method
+    unit = ((entity.raw_entity or {}).get("attributes") or {}).get("unit_of_measurement", "")
+    return "counter_delta" if unit.lower() in {"wh", "kwh", "mwh", "bytes", "l"} else "avg"
+
+
+def _aggregate_query(method: str) -> str:
+    aggregate = {
+        "avg": "avg(samples.state_numeric)",
+        "min": "min(samples.state_numeric)",
+        "max": "max(samples.state_numeric)",
+        "sum": "sum(samples.state_numeric)",
+        "first": "(array_agg(samples.state_numeric ORDER BY samples.observed_at ASC))[1]",
+        "last": "(array_agg(samples.state_numeric ORDER BY samples.observed_at DESC))[1]",
+        "counter_delta": "sum(CASE WHEN samples.delta_value > 0 THEN samples.delta_value ELSE 0 END)",
+    }
+    return aggregate[method]
+
+
+def _aggregated_history(session, entity_id: int, start: datetime, end: datetime,
+                        interval: str, method: str, page_size: int,
+                        cursor: str | None) -> dict:
+    step_seconds = _AGGREGATION_INTERVALS[interval]
+    bucket_count = max(1, int((end - start).total_seconds() + step_seconds - 1) // step_seconds)
+    if bucket_count > _MAX_AGGREGATED_BUCKETS:
+        raise ValueError("requested range produces too many aggregated buckets")
+    cursor_time = _parse_history_timestamp(cursor, "cursor") if cursor else start
+    if cursor_time < start or cursor_time >= end:
+        return {"items": [], "interval": interval, "aggregation_method": method, "next_cursor": None}
+
+    aggregate_expression = _aggregate_query(method)
+    delta_expression = "source_samples.state_numeric - lag(source_samples.state_numeric) OVER (ORDER BY source_samples.observed_at)" if method == "counter_delta" else "NULL"
+    statement = text(f"""
+        WITH source_samples AS (
+            SELECT observed_at, state_numeric
+            FROM ha_state_history
+            WHERE ha_entity_id = :entity_id
+              AND observed_at < :end_time
+              AND state_numeric IS NOT NULL
+              AND (
+                  observed_at >= :start_time
+                  OR observed_at = (
+                      SELECT max(previous.observed_at)
+                      FROM ha_state_history AS previous
+                      WHERE previous.ha_entity_id = :entity_id
+                        AND previous.observed_at < :start_time
+                        AND previous.state_numeric IS NOT NULL
+                  )
+              )
+        ), samples AS (
+            SELECT observed_at, state_numeric,
+                   {delta_expression} AS delta_value
+            FROM source_samples
+        ), bucket_range AS (
+            SELECT date_bin(
+                       (:step_seconds || ' seconds')::interval,
+                       :cursor_time,
+                       TIMESTAMPTZ '1970-01-01 00:00:00+00'
+                   ) AS first_bucket
+        ), buckets AS (
+            SELECT generate_series(
+                bucket_range.first_bucket,
+                date_bin(
+                    (:step_seconds || ' seconds')::interval,
+                    :end_time - (:step_seconds || ' seconds')::interval,
+                    TIMESTAMPTZ '1970-01-01 00:00:00+00'
+                ),
+                (:step_seconds || ' seconds')::interval
+            ) AS bucket_start
+            FROM bucket_range
+        ), grouped AS (
+            SELECT date_bin(
+                       (:step_seconds || ' seconds')::interval,
+                       samples.observed_at,
+                       TIMESTAMPTZ '1970-01-01 00:00:00+00'
+                   ) AS bucket_start,
+                   {aggregate_expression} AS value,
+                   count(*) AS sample_count,
+                   count(*) FILTER (WHERE samples.state_numeric IS NOT NULL) AS valid_sample_count,
+                   count(*) FILTER (WHERE samples.delta_value > 0) AS valid_delta_count,
+                   max(samples.observed_at) AS last_observed_at
+            FROM samples
+            WHERE samples.observed_at >= :start_time
+            GROUP BY 1
+        )
+        SELECT buckets.bucket_start,
+               buckets.bucket_start + (:step_seconds || ' seconds')::interval AS bucket_end,
+               grouped.value,
+               COALESCE(grouped.sample_count, 0) AS sample_count,
+               COALESCE(grouped.valid_sample_count, 0) AS valid_sample_count,
+               COALESCE(grouped.valid_delta_count, 0) AS valid_delta_count,
+               grouped.last_observed_at
+        FROM buckets
+        LEFT JOIN grouped ON grouped.bucket_start = buckets.bucket_start
+        ORDER BY buckets.bucket_start
+        LIMIT :page_size
+    """)
+    session.execute(text("SET LOCAL statement_timeout = :timeout_ms"), {"timeout_ms": _STATEMENT_TIMEOUT_MS})
+    rows = session.execute(statement, {
+        "entity_id": entity_id,
+        "start_time": start,
+        "end_time": end,
+        "cursor_time": cursor_time,
+        "step_seconds": step_seconds,
+        "page_size": page_size + 1,
+    }).mappings().all()
+    has_more = len(rows) > page_size
+    rows = rows[:page_size]
+    items = []
+    for row in rows:
+        sample_count = int(row["sample_count"] or 0)
+        valid_count = int(row["valid_sample_count"] or 0)
+        items.append({
+            "bucket_start": _iso(row["bucket_start"]),
+            "bucket_end": _iso(row["bucket_end"]),
+            "value": row["value"],
+            "interval": interval,
+            "aggregation_method": method,
+            "sample_count": sample_count,
+            "valid_sample_count": valid_count,
+            "valid_delta_count": int(row["valid_delta_count"] or 0),
+            "coverage_percent": round(valid_count / sample_count * 100, 2) if sample_count else 0.0,
+            "missing": sample_count == 0,
+            "has_gap": sample_count == 0,
+            "last_observed_at": _iso(row["last_observed_at"]),
+        })
+    next_cursor = _iso(rows[-1]["bucket_start"]) if has_more and rows else None
+    return {
+        "items": items,
+        "interval": interval,
+        "aggregation_method": method,
+        "start": _iso(start),
+        "end": _iso(end),
+        "next_cursor": next_cursor,
+    }
 
 
 _SENSITIVE_KEYS = {"password", "passwd", "secret", "token", "access_token", "api_key", "apikey", "client_secret"}
@@ -134,14 +297,38 @@ def get_home_assistant_entity(entity_id: str) -> dict:
 
 
 @mcp.tool(annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False))
-def get_home_assistant_history(entity_id: str, limit: int = 100) -> list[dict]:
-    """Return newest-first state history for a Home Assistant entity."""
-    _require_read_access(); limit = max(1, min(limit, 500))
+def get_home_assistant_history(entity_id: str, limit: int = 100,
+                               start: str | None = None, end: str | None = None,
+                               interval: str | None = None,
+                               aggregation_method: str | None = None,
+                               cursor: str | None = None,
+                               page_size: int | None = None) -> list[dict] | dict:
+    """Return HA history, or PostgreSQL-aggregated 15-minute/1-hour buckets.
+
+    With only entity_id and limit, the original newest-first raw-history list is
+    returned. Supplying start/end and interval returns chronological, complete
+    server-side buckets with quality metadata and an optional next_cursor.
+    """
+    _require_read_access()
+    if interval is None and any(value is not None for value in (start, end, aggregation_method, cursor, page_size)):
+        raise ValueError("interval is required when using time bounds, aggregation, cursor, or page_size")
     with SessionLocal() as session:
         entity = session.scalar(select(HAEntity).where(HAEntity.entity_id == entity_id))
-        if not entity: return []
-        rows = session.scalars(select(HAStateHistory).where(HAStateHistory.ha_entity_id == entity.id).order_by(HAStateHistory.observed_at.desc()).limit(limit)).all()
-        return [{"observed_at": _iso(row.observed_at), "state": row.state_text, "numeric": row.state_numeric, "boolean": row.state_boolean, "attributes": _redact(row.attributes)} for row in rows]
+        if not entity:
+            return [] if interval is None else {"items": [], "next_cursor": None}
+        if interval is None:
+            limit = max(1, min(limit, _MAX_HISTORY_PAGE_SIZE))
+            rows = session.scalars(select(HAStateHistory).where(HAStateHistory.ha_entity_id == entity.id).order_by(HAStateHistory.observed_at.desc()).limit(limit)).all()
+            return [{"observed_at": _iso(row.observed_at), "state": row.state_text, "numeric": row.state_numeric, "boolean": row.state_boolean, "attributes": _redact(row.attributes)} for row in rows]
+        if interval not in _AGGREGATION_INTERVALS:
+            raise ValueError("interval must be one of ['15m', '1h']")
+        start_time = _parse_history_timestamp(start, "start")
+        end_time = _parse_history_timestamp(end, "end")
+        if start_time is None or end_time is None or end_time <= start_time:
+            raise ValueError("start and end are required and end must be after start")
+        method = _aggregation_method(aggregation_method, entity)
+        size = _history_page_size(page_size if page_size is not None else limit)
+        return _aggregated_history(session, entity.id, start_time, end_time, interval, method, size, cursor)
 
 
 @mcp.tool(annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False))
