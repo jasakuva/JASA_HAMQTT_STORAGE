@@ -40,7 +40,7 @@ chmod +x install-hamqtt.sh
 
 Only `install-hamqtt.sh` needs to be downloaded. The installer writes the
 Compose file, pgBackRest configuration, PostgreSQL initialization SQL, `.env`,
-and installation metadata itself.
+installation metadata, and an executable `update-from-github.sh` helper itself.
 
 For example, running the installer from `/opt` creates:
 
@@ -66,6 +66,7 @@ release.
 ```text
 jasa_hamqtt_storage/
 ├── compose.yml
+├── update-from-github.sh
 ├── .env
 ├── install-info
 ├── pgbackrest.conf
@@ -90,6 +91,8 @@ Run Compose commands from the installed directory:
 
 ```bash
 cd ./jasa_hamqtt_storage
+./update-from-github.sh              # update to the current latest images
+./update-from-github.sh 0.3.4-rc1    # update to an explicit image tag
 docker compose --project-name hamqtt-store ps -a
 docker compose --project-name hamqtt-store logs --tail 100 web
 docker compose --project-name hamqtt-store stop
@@ -103,3 +106,8 @@ in the installation's `backups/` directory. Normal management must not use
 
 PostgreSQL and MCP bind to loopback by default. The web dashboard is available
 at `http://localhost:8000` after installation.
+
+The generated update helper downloads the current updater from the repository
+before running it. This keeps existing installations able to receive updater
+fixes without reinstalling HAMQTT. It does not delete the persistent PostgreSQL
+or application-data volumes.

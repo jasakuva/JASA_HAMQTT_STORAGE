@@ -2,12 +2,12 @@
 set -Eeuo pipefail
 
 # Change this value when no version is supplied on the command line.
-# Example published tags: 0.3.2, 0.3.3-rc1, latest
-DEFAULT_VERSION="0.3.2"
+# Example published tags: 0.3.3, 0.3.4-rc1, latest
+DEFAULT_VERSION="latest"
 
 readonly APP_SERVICES=(web mqtt-ingestor ha-ingestor cleanup mcp backup recovery)
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${HAMQTT_INSTALL_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 COMPOSE=(docker compose --project-name hamqtt-store -f "$ROOT/compose.yml" -f "$ROOT/compose.github.yml")
 VERSION="$DEFAULT_VERSION"
 VERSION_SET=false

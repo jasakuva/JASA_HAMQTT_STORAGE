@@ -79,6 +79,8 @@ grep -q '^POSTGRES_PASSWORD=[0-9a-f]\{48\}$' "$DEFAULT_INSTALL/.env"
 grep -q '^SECRET_KEY=[0-9a-f]\{64\}$' "$DEFAULT_INSTALL/.env"
 [[ "$(stat -c '%a' "$DEFAULT_INSTALL/.env")" == "600" ]]
 [[ -f "$DEFAULT_INSTALL/compose.yml" ]]
+[[ -f "$DEFAULT_INSTALL/update-from-github.sh" ]]
+[[ "$(stat -c '%a' "$DEFAULT_INSTALL/update-from-github.sh")" == "755" ]]
 [[ -f "$DEFAULT_INSTALL/pgbackrest.conf" ]]
 [[ -f "$DEFAULT_INSTALL/db/init/001-enable-extensions.sql" ]]
 [[ -d "$DEFAULT_INSTALL/backups" ]]

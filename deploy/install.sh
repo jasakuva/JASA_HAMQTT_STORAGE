@@ -490,8 +490,37 @@ installed_version=$VERSION
 installed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 compose_project=$PROJECT_NAME
 EOF
+
+cat >"$INSTALL_DIR/update-from-github.sh" <<'UPDATE_SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_URL="https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master"
+TEMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
+download() {
+    local url="$1"
+    local destination="$2"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$url" -o "$destination"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$destination" "$url"
+    else
+        printf 'ERROR: curl or wget is required to update HAMQTT\n' >&2
+        exit 1
+    fi
+}
+
+download "$BASE_URL/update-from-github.sh" "$TEMP_DIR/update-from-github.sh"
+download "$BASE_URL/compose.github.yml" "$ROOT/compose.github.yml"
+chmod +x "$TEMP_DIR/update-from-github.sh"
+HAMQTT_INSTALL_ROOT="$ROOT" exec "$TEMP_DIR/update-from-github.sh" "$@"
+UPDATE_SCRIPT
 chmod 0644 "$INSTALL_DIR/install-info" "$INSTALL_DIR/compose.yml" \
     "$INSTALL_DIR/pgbackrest.conf" "$INSTALL_DIR/db/init/001-enable-extensions.sql"
+chmod 0755 "$INSTALL_DIR/update-from-github.sh"
 
 "${SUDO[@]}" chown -R 999:999 "$INSTALL_DIR/backups"
 chmod 0770 "$INSTALL_DIR/backups"
