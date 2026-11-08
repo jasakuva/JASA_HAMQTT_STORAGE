@@ -10,18 +10,23 @@ depends_on = None
 
 
 def upgrade():
-    op.create_table(
-        "application_users",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("username", sa.String(length=150), nullable=False),
-        sa.Column("password_hash", sa.Text(), nullable=False),
-        sa.Column("session_version", sa.Integer(), nullable=False, server_default="1"),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint("username"),
-    )
-    op.create_index("ix_application_users_username", "application_users", ["username"])
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "application_users" not in inspector.get_table_names():
+        op.create_table(
+            "application_users",
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("username", sa.String(length=150), nullable=False),
+            sa.Column("password_hash", sa.Text(), nullable=False),
+            sa.Column("session_version", sa.Integer(), nullable=False, server_default="1"),
+            sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+            sa.UniqueConstraint("username"),
+        )
+    index_names = {index["name"] for index in sa.inspect(bind).get_indexes("application_users")}
+    if "ix_application_users_username" not in index_names:
+        op.create_index("ix_application_users_username", "application_users", ["username"])
 
 
 def downgrade():

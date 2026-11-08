@@ -14,8 +14,11 @@ printf 'docker' >>"$MOCK_DOCKER_LOG"
 printf ' %q' "$@" >>"$MOCK_DOCKER_LOG"
 printf '\n' >>"$MOCK_DOCKER_LOG"
 
-if [[ "$1" == "compose" && "$2" == "version" ]]; then
+if [[ "$1" == "compose" && "$2" == "version" && "${MOCK_COMPOSE_V2:-true}" == "true" ]]; then
     exit 0
+fi
+if [[ "$1" == "compose" && "$2" == "version" ]]; then
+    exit 1
 fi
 if [[ "$1" == "info" ]]; then
     exit 0
@@ -40,8 +43,31 @@ fi
 exit 0
 EOF
 
+cat >"$TEMP/bin/docker-compose" <<'EOF'
+#!/usr/bin/env bash
+printf 'docker-compose' >>"$MOCK_DOCKER_LOG"
+printf ' %q' "$@" >>"$MOCK_DOCKER_LOG"
+printf '\n' >>"$MOCK_DOCKER_LOG"
+if [[ "$1" == "version" ]]; then
+    exit 0
+fi
+exit 0
+EOF
+
 cat >"$TEMP/bin/curl" <<'EOF'
 #!/usr/bin/env bash
+while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "-o" ]]; then
+        shift
+        destination="$1"
+    elif [[ "$1" == https://raw.githubusercontent.com/*/deploy/update-from-github.sh ]]; then
+        source="$MOCK_REPO_ROOT/deploy/update-from-github.sh"
+    elif [[ "$1" == https://raw.githubusercontent.com/*/deploy/uninstall.sh ]]; then
+        source="$MOCK_REPO_ROOT/deploy/uninstall.sh"
+    fi
+    shift
+done
+cp "$source" "$destination"
 exit 0
 EOF
 
@@ -58,7 +84,7 @@ cat >"$TEMP/bin/chown" <<'EOF'
 exit 0
 EOF
 
-chmod +x "$TEMP/bin/docker" "$TEMP/bin/curl" "$TEMP/bin/sudo" "$TEMP/bin/chown"
+chmod +x "$TEMP/bin/docker" "$TEMP/bin/docker-compose" "$TEMP/bin/curl" "$TEMP/bin/sudo" "$TEMP/bin/chown"
 
 run_install() {
     local work="$1"
@@ -67,7 +93,7 @@ run_install() {
     : >"$work/docker.log"
     (
         cd "$work"
-        PATH="$TEMP/bin:/usr/bin:/bin" MOCK_DOCKER_LOG="$work/docker.log" \
+        PATH="$TEMP/bin:/usr/bin:/bin" MOCK_REPO_ROOT="$ROOT" MOCK_DOCKER_LOG="$work/docker.log" \
             bash "$TEMP/install.sh" "$@" >"$work/output" 2>&1
     )
 }
@@ -79,6 +105,12 @@ grep -q '^POSTGRES_PASSWORD=[0-9a-f]\{48\}$' "$DEFAULT_INSTALL/.env"
 grep -q '^SECRET_KEY=[0-9a-f]\{64\}$' "$DEFAULT_INSTALL/.env"
 [[ "$(stat -c '%a' "$DEFAULT_INSTALL/.env")" == "600" ]]
 [[ -f "$DEFAULT_INSTALL/compose.yml" ]]
+[[ -f "$DEFAULT_INSTALL/update-from-github.sh" ]]
+[[ "$(stat -c '%a' "$DEFAULT_INSTALL/update-from-github.sh")" == "755" ]]
+[[ -f "$DEFAULT_INSTALL/uninstall.sh" ]]
+[[ "$(stat -c '%a' "$DEFAULT_INSTALL/uninstall.sh")" == "755" ]]
+grep -q 'ROOT="\${HAMQTT_INSTALL_ROOT:-' "$DEFAULT_INSTALL/update-from-github.sh"
+grep -q 'SCRIPT_DIR=' "$DEFAULT_INSTALL/uninstall.sh"
 [[ -f "$DEFAULT_INSTALL/pgbackrest.conf" ]]
 [[ -f "$DEFAULT_INSTALL/db/init/001-enable-extensions.sql" ]]
 [[ -d "$DEFAULT_INSTALL/backups" ]]
@@ -108,6 +140,22 @@ grep -q '^HAMQTT_VERSION=0.3.3-rc2$' "$TEMP/versioned/jasa_hamqtt_storage/.env"
 
 run_install "$TEMP/positional" 9.8.7
 grep -q '^HAMQTT_VERSION=9.8.7$' "$TEMP/positional/jasa_hamqtt_storage/.env"
+
+run_install_legacy() {
+    local work="$1"
+    shift
+    mkdir -p "$work"
+    : >"$work/docker.log"
+    (
+        cd "$work"
+        PATH="$TEMP/bin:/usr/bin:/bin" MOCK_REPO_ROOT="$ROOT" MOCK_COMPOSE_V2=false MOCK_DOCKER_LOG="$work/docker.log" \
+            bash "$TEMP/install.sh" "$@" >"$work/output" 2>&1
+    )
+}
+
+run_install_legacy "$TEMP/legacy" --version 0.3.4-rc2
+grep -q '^HAMQTT_VERSION=0.3.4-rc2$' "$TEMP/legacy/jasa_hamqtt_storage/.env"
+grep -q '^docker-compose ' "$TEMP/legacy/docker.log"
 
 mkdir -p "$TEMP/existing/jasa_hamqtt_storage"
 : >"$TEMP/existing/docker.log"

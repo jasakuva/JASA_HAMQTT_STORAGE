@@ -2,13 +2,13 @@
 set -Eeuo pipefail
 
 # Change this value when no version is supplied on the command line.
-# Example published tags: 0.3.2, 0.3.3-rc1, latest
-DEFAULT_VERSION="0.3.2"
+# Example published tags: 0.3.3, 0.3.4-rc1, latest
+DEFAULT_VERSION="latest"
 
 readonly APP_SERVICES=(web mqtt-ingestor ha-ingestor cleanup mcp backup recovery)
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE=(docker compose --project-name hamqtt-store -f "$ROOT/compose.yml" -f "$ROOT/compose.github.yml")
+ROOT="${HAMQTT_INSTALL_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+COMPOSE_BASE=()
 VERSION="$DEFAULT_VERSION"
 VERSION_SET=false
 DRY_RUN=false
@@ -20,6 +20,24 @@ log() {
 fail() {
     printf '\n[hamqtt-update] ERROR: %s\n' "$*" >&2
     exit 1
+}
+
+require_root() {
+    [[ "$(id -u)" == "0" ]] \
+        || fail "This updater must be run as root. Re-run it with: sudo $0"
+}
+
+detect_compose() {
+    if docker compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker compose)
+        return
+    fi
+    if command -v docker-compose >/dev/null 2>&1 \
+        && docker-compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker-compose)
+        return
+    fi
+    fail "Docker Compose is not available. Install Docker Compose v2 ('docker compose') or Docker Compose v1 ('docker-compose')."
 }
 
 usage() {
@@ -60,6 +78,7 @@ done
 
 [[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
     || fail "Invalid image version '$VERSION'"
+require_root
 export HAMQTT_VERSION="$VERSION"
 
 print_command() {
@@ -85,6 +104,35 @@ env_value() {
         printf '%s' "${!key}"
     elif [[ -f "$ROOT/.env" ]]; then
         awk -F= -v key="$key" '$1 == key {sub(/^[^=]*=/, ""); sub(/[[:space:]]+#.*/, ""); gsub(/^"|"$/, ""); print; exit}' "$ROOT/.env"
+    fi
+}
+
+persist_version() {
+    local env_file="$ROOT/.env"
+    local temp_file
+
+    [[ -f "$env_file" ]] || fail "Missing $env_file; create it from .env.example and set secure values"
+
+    temp_file="$(mktemp "$ROOT/.env.update.XXXXXX")"
+    if awk -v version="$VERSION" '
+        BEGIN { replaced = 0 }
+        /^HAMQTT_VERSION=/ {
+            if (!replaced) {
+                print "HAMQTT_VERSION=" version
+                replaced = 1
+            }
+            next
+        }
+        { print }
+        END {
+            if (!replaced) print "HAMQTT_VERSION=" version
+        }
+    ' "$env_file" >"$temp_file"; then
+        chmod 0600 "$temp_file"
+        mv -f -- "$temp_file" "$env_file"
+    else
+        rm -f -- "$temp_file"
+        fail "Unable to persist HAMQTT_VERSION in $env_file"
     fi
 }
 
@@ -220,12 +268,11 @@ verify_web() {
 }
 
 command -v docker >/dev/null 2>&1 || fail "Docker is not installed"
-docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is not available"
+detect_compose
 if [[ "$DRY_RUN" != true ]]; then
     docker info >/dev/null 2>&1 || fail "Docker daemon is not running or is not accessible"
 fi
 [[ -f "$ROOT/compose.yml" ]] || fail "Missing $ROOT/compose.yml"
-[[ -f "$ROOT/compose.github.yml" ]] || fail "Missing $ROOT/compose.github.yml"
 [[ -f "$ROOT/.env" ]] || fail "Missing $ROOT/.env; create it from .env.example and set secure values"
 
 cd "$ROOT"
@@ -252,6 +299,7 @@ readonly CONTAINERS=(
     hamqtt-backup
     hamqtt-recovery
 )
+COMPOSE=("${COMPOSE_BASE[@]}" --project-name hamqtt-store -f "$ROOT/compose.yml")
 
 log "Selected HAMQTT version: $HAMQTT_VERSION"
 [[ "$DRY_RUN" == true ]] && log "Dry-run mode: mutating commands will only be printed"
@@ -269,6 +317,11 @@ if [[ "$DRY_RUN" == true ]]; then
     compose pull
 elif ! "${COMPOSE[@]}" pull; then
     fail "Image pull failed. Confirm that version '$HAMQTT_VERSION' is published. If the packages are private, run: docker login ghcr.io"
+fi
+
+if [[ "$DRY_RUN" != true ]]; then
+    persist_version
+    log "Persisted HAMQTT_VERSION=$VERSION in $ROOT/.env"
 fi
 
 log "Stopping and removing old HAMQTT containers without deleting volumes"

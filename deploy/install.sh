@@ -26,6 +26,7 @@ VERSION="$DEFAULT_VERSION"
 VERSION_SET=false
 CREATED_INSTALL_DIR=false
 SUDO=()
+COMPOSE_BASE=()
 
 log() {
     printf '\n[hamqtt-install] %s\n' "$*"
@@ -34,6 +35,24 @@ log() {
 fail() {
     printf '\n[hamqtt-install] ERROR: %s\n' "$*" >&2
     exit 1
+}
+
+require_root() {
+    [[ "$(id -u)" == "0" ]] \
+        || fail "This installer must be run as root. Re-run it with: sudo $0"
+}
+
+detect_compose() {
+    if docker compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker compose)
+        return
+    fi
+    if command -v docker-compose >/dev/null 2>&1 \
+        && docker-compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker-compose)
+        return
+    fi
+    fail "Docker Compose is not available. Install Docker Compose v2 ('docker compose') or Docker Compose v1 ('docker-compose')."
 }
 
 usage() {
@@ -81,20 +100,15 @@ done
 [[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
     || fail "Invalid image version '$VERSION'"
 
+require_root
+
 # Refuse an existing installation before checking Docker or changing anything.
 [[ ! -e "$INSTALL_DIR" ]] \
     || fail "$INSTALL_DIR already exists. Rename or remove it before performing a new installation. No files or containers were changed."
 
 command -v docker >/dev/null 2>&1 || fail "Docker Engine is not installed"
-docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is not available"
+detect_compose
 docker info >/dev/null 2>&1 || fail "Docker daemon is not running or is not accessible"
-
-if [[ "$(id -u)" != "0" ]]; then
-    command -v sudo >/dev/null 2>&1 \
-        || fail "sudo is required to assign the backup directory to UID/GID 999:999"
-    sudo -v || fail "Unable to obtain sudo access for backup-directory permissions"
-    SUDO=(sudo)
-fi
 
 for container in "${CONTAINERS[@]}"; do
     if docker container inspect "$container" >/dev/null 2>&1; then
@@ -142,7 +156,7 @@ wait_healthy() {
         sleep 2
     done
 
-    docker compose --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
+    "${COMPOSE_BASE[@]}" --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
         -f "$INSTALL_DIR/compose.yml" logs --tail 100 "$service" || true
     fail "$container did not become healthy"
 }
@@ -167,7 +181,7 @@ verify_web() {
         sleep 2
     done
 
-    docker compose --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
+    "${COMPOSE_BASE[@]}" --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
         -f "$INSTALL_DIR/compose.yml" logs --tail 100 web || true
     fail "Web service did not become healthy at $health_url"
 }
@@ -490,14 +504,35 @@ installed_version=$VERSION
 installed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 compose_project=$PROJECT_NAME
 EOF
+
+BASE_URL="https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master"
+TEMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
+download() {
+    local url="$1"
+    local destination="$2"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$url" -o "$destination"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$destination" "$url"
+    else
+        fail "curl or wget is required to download installation helpers"
+    fi
+}
+
+download "$BASE_URL/deploy/update-from-github.sh" "$INSTALL_DIR/update-from-github.sh"
+download "$BASE_URL/deploy/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
 chmod 0644 "$INSTALL_DIR/install-info" "$INSTALL_DIR/compose.yml" \
     "$INSTALL_DIR/pgbackrest.conf" "$INSTALL_DIR/db/init/001-enable-extensions.sql"
+chmod 0755 "$INSTALL_DIR/update-from-github.sh"
+chmod 0755 "$INSTALL_DIR/uninstall.sh"
 
 "${SUDO[@]}" chown -R 999:999 "$INSTALL_DIR/backups"
 chmod 0770 "$INSTALL_DIR/backups"
 
 readonly COMPOSE=(
-    docker compose
+    "${COMPOSE_BASE[@]}"
     --project-name "$PROJECT_NAME"
     --project-directory "$INSTALL_DIR"
     --env-file "$INSTALL_DIR/.env"
@@ -548,10 +583,10 @@ Dashboard:
 
 Management commands:
   cd "$INSTALL_DIR"
-  docker compose --project-name $PROJECT_NAME ps -a
-  docker compose --project-name $PROJECT_NAME logs --tail 100 web
-  docker compose --project-name $PROJECT_NAME stop
-  docker compose --project-name $PROJECT_NAME start
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME ps -a
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME logs --tail 100 web
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME stop
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME start
 
 Configuration and generated secrets:
   $INSTALL_DIR/.env
