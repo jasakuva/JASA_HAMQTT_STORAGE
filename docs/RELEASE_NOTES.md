@@ -4,21 +4,109 @@ Release date: 2026-11-08
 
 ## Release candidate 3
 
-This release candidate combines the 0.3.4 RC1 export aggregation feature with
-the current MCP read-only history tools and the latest installer, updater,
-uninstaller, migration, and `.env` version-persistence fixes.
+This is a cumulative prerelease. It includes the data and MCP features from
+`0.3.4-rc1`, the fresh-install and migration fixes from `0.3.4-rc2`, and the
+additional updater, installer, uninstaller, and release-line reconciliation
+work completed for RC3.
 
-- Added CSV export timestamp aggregation to one-second buckets, preserving the
-  last value for duplicate timestamps and allowing exact timestamps when the
-  checkbox is cleared.
-- Preserved bounded MCP history aggregation with 15-minute and one-hour buckets,
-  multiple aggregation methods, UTC timestamp validation, pagination, and
-  counter-delta handling.
-- Included the current self-contained installer, separated deployment updater,
-  uninstall workflow, executable permissions, migration fixes, and persistent
-  `HAMQTT_VERSION` updates.
-- Validated with 61 Python tests, Python compilation, Compose rendering, and
-  local Podman builds for all three release images.
+### Included from 0.3.4-rc1
+
+#### Wide-format CSV export
+
+- Exported CSV files use one row per timestamp and one column per selected Home
+  Assistant entity or MQTT field.
+- Missing values remain empty; values are not forward-filled or interpolated.
+- Timestamp aggregation to one-second buckets is enabled by default.
+- When multiple values for the same dataset occur in one second, the last
+  chronological value is retained.
+- Clearing the aggregation checkbox preserves exact timestamp precision,
+  including milliseconds and microseconds.
+- Existing date-range selection, dataset selection, validation, authentication,
+  and download behavior remain available.
+
+#### MCP history aggregation
+
+- `get_home_assistant_history` retains backwards-compatible raw-history behavior.
+- Added UTC time-bounded history queries with cursor pagination.
+- Added PostgreSQL-side `15m` and `1h` aggregation intervals.
+- Supported aggregation methods include `avg`, `min`, `max`, `first`, `last`,
+  `sum`, and `counter_delta`.
+- Aggregation is performed in PostgreSQL before results reach Python or MCP
+  clients.
+- Empty buckets, sample counts, validity, coverage, and missing-data markers
+  remain visible.
+- Counter-like units can use automatic `counter_delta` handling, including
+  protection against negative reset deltas.
+
+### Included from 0.3.4-rc2
+
+- Fixed psycopg escaping in migrations `0004` and `0005` for PostgreSQL
+  `format()` `%I` identifiers.
+- Fixed migration `0001` so fresh databases include tables introduced by later
+  migrations and avoid the `application_users already exists` failure in
+  migration `0007`.
+- Made migrations `0007` and `0008` safe when their tables or indexes already
+  exist.
+- Included the self-contained Linux installer and the separate deployment
+  updater with root checks and persistent-volume protection.
+- Added generated executable `update-from-github.sh` and `uninstall.sh`
+  helpers.
+
+### RC3 fixes and reconciliation
+
+- Reconciled the RC1 export and MCP features with the current `master` deployment
+  line instead of dropping them during release preparation.
+- Persisted the selected `HAMQTT_VERSION` in `.env` after a successful image
+  update.
+- Kept the updater in `deploy/update-from-github.sh` and aligned installer,
+  updater, uninstall, executable-permission, and documentation changes.
+- Updated package metadata and active documentation to identify `0.3.4-rc3`.
+
+## Install and upgrade
+
+Install exactly version `0.3.4-rc3` on a new Linux Docker host:
+
+```bash
+wget -O install-hamqtt.sh \
+  https://raw.githubusercontent.com/jasakuva/JASA_HAMQTT_STORAGE/master/deploy/install.sh
+chmod +x install-hamqtt.sh
+./install-hamqtt.sh --version 0.3.4-rc3
+```
+
+Update an existing GHCR installation:
+
+```bash
+cd /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage
+sudo ./update-from-github.sh 0.3.4-rc3
+grep '^HAMQTT_VERSION=' .env
+docker compose --project-name hamqtt-store ps -a
+curl -fsS http://localhost:8000/health
+```
+
+The update workflow preserves `hamqtt-postgres-data`, `hamqtt-app-data`, and the
+configured backup repository. Do not use `down -v` during a routine update.
+
+## Validation
+
+- 61 automated Python tests passed.
+- Python compilation passed.
+- Root and standalone deployment Compose configuration rendered successfully.
+- Local Podman builds passed for all three release images.
+- GitHub Actions container publication completed successfully for all three
+  `0.3.4-rc3` images.
+- `git diff --check` passed.
+
+## Known limitations
+
+- Published images currently target `linux/amd64`.
+- The MCP aggregation slice currently targets numeric Home Assistant history
+  values.
+- Boolean/categorical aggregation, multi-entity aligned MCP aggregation, Nord
+  Pool price normalization, and consumption-weighted price comparison remain
+  future work.
+- HTTPS termination, login throttling, audit logging, external secret
+  management, fine-grained authorization, and authenticated MCP transport remain
+  deployment or future hardening work.
 
 ---
 

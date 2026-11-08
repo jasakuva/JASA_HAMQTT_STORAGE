@@ -55,8 +55,8 @@ For example, running the installer from `/opt` creates:
 Either form is accepted:
 
 ```bash
-./install-hamqtt.sh --version 0.3.3
-./install-hamqtt.sh 0.3.3
+./install-hamqtt.sh --version 0.3.4-rc3
+./install-hamqtt.sh 0.3.4-rc3
 ```
 
 The default version is `latest`, so running the installer without an argument
@@ -115,7 +115,7 @@ Run Compose commands from the installed directory:
 ```bash
 cd ./jasa_hamqtt_storage
 sudo ./update-from-github.sh              # update to the current latest images
-sudo ./update-from-github.sh 0.3.4-rc1    # update to an explicit image tag
+sudo ./update-from-github.sh 0.3.4-rc3    # update to the RC3 image tag
 # Use `docker compose` when Compose v2 is installed, otherwise use
 # `docker-compose` for Compose v1.
 docker compose --project-name hamqtt-store ps -a
@@ -137,7 +137,7 @@ the installation directory from their own script location. They can therefore
 be run from any working directory, for example:
 
 ```bash
-sudo /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage/update-from-github.sh 0.3.4-rc1
+sudo /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage/update-from-github.sh 0.3.4-rc3
 sudo /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage/uninstall.sh
 ```
 
