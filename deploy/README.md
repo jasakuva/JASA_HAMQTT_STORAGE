@@ -9,11 +9,12 @@ source.
 
 - Linux
 - Docker Engine
-- Docker Compose v2 (`docker compose`)
+- Docker Compose v2 (`docker compose`) or Docker Compose v1 (`docker-compose`)
 - root access (`sudo`)
 
 Run the installer with `sudo`, for example `sudo ./install-hamqtt.sh`. The
-installer checks this before changing Docker or filesystem state.
+installer checks this before changing Docker or filesystem state and prefers
+`docker compose`, falling back to `docker-compose` when necessary.
 
 ## Install the latest release
 
@@ -84,6 +85,26 @@ before performing another first installation. Do not remove an active
 installation directory unless its backup repository and `.env` have been
 preserved.
 
+## Uninstall
+
+The uninstall script is safe by default. It removes HAMQTT containers, the
+HAMQTT network, and deployment files while preserving `.env`, `backups/`, and
+the persistent Docker volumes:
+
+```bash
+sudo ./uninstall.sh --install-dir /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage
+```
+
+To permanently remove the database, application data, backups, `.env`, and the
+installation directory, pass `--delete-data`. The script requires typing
+`DELETE` before it removes persistent data:
+
+```bash
+sudo ./uninstall.sh \
+  --install-dir /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage \
+  --delete-data
+```
+
 ## Management
 
 Run Compose commands from the installed directory:
@@ -92,6 +113,8 @@ Run Compose commands from the installed directory:
 cd ./jasa_hamqtt_storage
 sudo ./update-from-github.sh              # update to the current latest images
 sudo ./update-from-github.sh 0.3.4-rc1    # update to an explicit image tag
+# Use `docker compose` when Compose v2 is installed, otherwise use
+# `docker-compose` for Compose v1.
 docker compose --project-name hamqtt-store ps -a
 docker compose --project-name hamqtt-store logs --tail 100 web
 docker compose --project-name hamqtt-store stop

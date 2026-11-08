@@ -26,6 +26,7 @@ VERSION="$DEFAULT_VERSION"
 VERSION_SET=false
 CREATED_INSTALL_DIR=false
 SUDO=()
+COMPOSE_BASE=()
 
 log() {
     printf '\n[hamqtt-install] %s\n' "$*"
@@ -39,6 +40,19 @@ fail() {
 require_root() {
     [[ "$(id -u)" == "0" ]] \
         || fail "This installer must be run as root. Re-run it with: sudo $0"
+}
+
+detect_compose() {
+    if docker compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker compose)
+        return
+    fi
+    if command -v docker-compose >/dev/null 2>&1 \
+        && docker-compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker-compose)
+        return
+    fi
+    fail "Docker Compose is not available. Install Docker Compose v2 ('docker compose') or Docker Compose v1 ('docker-compose')."
 }
 
 usage() {
@@ -93,7 +107,7 @@ require_root
     || fail "$INSTALL_DIR already exists. Rename or remove it before performing a new installation. No files or containers were changed."
 
 command -v docker >/dev/null 2>&1 || fail "Docker Engine is not installed"
-docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is not available"
+detect_compose
 docker info >/dev/null 2>&1 || fail "Docker daemon is not running or is not accessible"
 
 for container in "${CONTAINERS[@]}"; do
@@ -142,7 +156,7 @@ wait_healthy() {
         sleep 2
     done
 
-    docker compose --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
+    "${COMPOSE_BASE[@]}" --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
         -f "$INSTALL_DIR/compose.yml" logs --tail 100 "$service" || true
     fail "$container did not become healthy"
 }
@@ -167,7 +181,7 @@ verify_web() {
         sleep 2
     done
 
-    docker compose --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
+    "${COMPOSE_BASE[@]}" --project-name "$PROJECT_NAME" --project-directory "$INSTALL_DIR" \
         -f "$INSTALL_DIR/compose.yml" logs --tail 100 web || true
     fail "Web service did not become healthy at $health_url"
 }
@@ -517,7 +531,6 @@ download() {
     || { printf 'ERROR: This updater must be run as root. Re-run it with: sudo %s\n' "$0" >&2; exit 1; }
 
 download "$BASE_URL/update-from-github.sh" "$TEMP_DIR/update-from-github.sh"
-download "$BASE_URL/compose.github.yml" "$ROOT/compose.github.yml"
 chmod +x "$TEMP_DIR/update-from-github.sh"
 HAMQTT_INSTALL_ROOT="$ROOT" exec "$TEMP_DIR/update-from-github.sh" "$@"
 UPDATE_SCRIPT
@@ -529,7 +542,7 @@ chmod 0755 "$INSTALL_DIR/update-from-github.sh"
 chmod 0770 "$INSTALL_DIR/backups"
 
 readonly COMPOSE=(
-    docker compose
+    "${COMPOSE_BASE[@]}"
     --project-name "$PROJECT_NAME"
     --project-directory "$INSTALL_DIR"
     --env-file "$INSTALL_DIR/.env"
@@ -580,10 +593,10 @@ Dashboard:
 
 Management commands:
   cd "$INSTALL_DIR"
-  docker compose --project-name $PROJECT_NAME ps -a
-  docker compose --project-name $PROJECT_NAME logs --tail 100 web
-  docker compose --project-name $PROJECT_NAME stop
-  docker compose --project-name $PROJECT_NAME start
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME ps -a
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME logs --tail 100 web
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME stop
+  ${COMPOSE_BASE[*]} --project-name $PROJECT_NAME start
 
 Configuration and generated secrets:
   $INSTALL_DIR/.env

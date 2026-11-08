@@ -8,7 +8,7 @@ DEFAULT_VERSION="latest"
 readonly APP_SERVICES=(web mqtt-ingestor ha-ingestor cleanup mcp backup recovery)
 
 ROOT="${HAMQTT_INSTALL_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-COMPOSE=(docker compose --project-name hamqtt-store -f "$ROOT/compose.yml" -f "$ROOT/compose.github.yml")
+COMPOSE_BASE=()
 VERSION="$DEFAULT_VERSION"
 VERSION_SET=false
 DRY_RUN=false
@@ -25,6 +25,19 @@ fail() {
 require_root() {
     [[ "$(id -u)" == "0" ]] \
         || fail "This updater must be run as root. Re-run it with: sudo $0"
+}
+
+detect_compose() {
+    if docker compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker compose)
+        return
+    fi
+    if command -v docker-compose >/dev/null 2>&1 \
+        && docker-compose version >/dev/null 2>&1; then
+        COMPOSE_BASE=(docker-compose)
+        return
+    fi
+    fail "Docker Compose is not available. Install Docker Compose v2 ('docker compose') or Docker Compose v1 ('docker-compose')."
 }
 
 usage() {
@@ -226,12 +239,11 @@ verify_web() {
 }
 
 command -v docker >/dev/null 2>&1 || fail "Docker is not installed"
-docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is not available"
+detect_compose
 if [[ "$DRY_RUN" != true ]]; then
     docker info >/dev/null 2>&1 || fail "Docker daemon is not running or is not accessible"
 fi
 [[ -f "$ROOT/compose.yml" ]] || fail "Missing $ROOT/compose.yml"
-[[ -f "$ROOT/compose.github.yml" ]] || fail "Missing $ROOT/compose.github.yml"
 [[ -f "$ROOT/.env" ]] || fail "Missing $ROOT/.env; create it from .env.example and set secure values"
 
 cd "$ROOT"
@@ -258,6 +270,7 @@ readonly CONTAINERS=(
     hamqtt-backup
     hamqtt-recovery
 )
+COMPOSE=("${COMPOSE_BASE[@]}" --project-name hamqtt-store -f "$ROOT/compose.yml")
 
 log "Selected HAMQTT version: $HAMQTT_VERSION"
 [[ "$DRY_RUN" == true ]] && log "Dry-run mode: mutating commands will only be printed"
