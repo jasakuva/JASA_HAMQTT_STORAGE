@@ -22,6 +22,11 @@ fail() {
     exit 1
 }
 
+require_root() {
+    [[ "$(id -u)" == "0" ]] \
+        || fail "This updater must be run as root. Re-run it with: sudo $0"
+}
+
 usage() {
     cat <<EOF
 Usage: ./update-from-github.sh [VERSION] [--dry-run]
@@ -60,6 +65,7 @@ done
 
 [[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
     || fail "Invalid image version '$VERSION'"
+require_root
 export HAMQTT_VERSION="$VERSION"
 
 print_command() {

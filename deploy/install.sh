@@ -36,6 +36,11 @@ fail() {
     exit 1
 }
 
+require_root() {
+    [[ "$(id -u)" == "0" ]] \
+        || fail "This installer must be run as root. Re-run it with: sudo $0"
+}
+
 usage() {
     cat <<EOF
 Usage: ./install.sh [VERSION]
@@ -81,6 +86,8 @@ done
 [[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
     || fail "Invalid image version '$VERSION'"
 
+require_root
+
 # Refuse an existing installation before checking Docker or changing anything.
 [[ ! -e "$INSTALL_DIR" ]] \
     || fail "$INSTALL_DIR already exists. Rename or remove it before performing a new installation. No files or containers were changed."
@@ -88,13 +95,6 @@ done
 command -v docker >/dev/null 2>&1 || fail "Docker Engine is not installed"
 docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is not available"
 docker info >/dev/null 2>&1 || fail "Docker daemon is not running or is not accessible"
-
-if [[ "$(id -u)" != "0" ]]; then
-    command -v sudo >/dev/null 2>&1 \
-        || fail "sudo is required to assign the backup directory to UID/GID 999:999"
-    sudo -v || fail "Unable to obtain sudo access for backup-directory permissions"
-    SUDO=(sudo)
-fi
 
 for container in "${CONTAINERS[@]}"; do
     if docker container inspect "$container" >/dev/null 2>&1; then
@@ -512,6 +512,9 @@ download() {
         exit 1
     fi
 }
+
+[[ "$(id -u)" == "0" ]] \
+    || { printf 'ERROR: This updater must be run as root. Re-run it with: sudo %s\n' "$0" >&2; exit 1; }
 
 download "$BASE_URL/update-from-github.sh" "$TEMP_DIR/update-from-github.sh"
 download "$BASE_URL/compose.github.yml" "$ROOT/compose.github.yml"

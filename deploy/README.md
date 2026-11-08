@@ -10,11 +10,10 @@ source.
 - Linux
 - Docker Engine
 - Docker Compose v2 (`docker compose`)
-- `sudo` when the current user is not root
+- root access (`sudo`)
 
-The installer uses `sudo` only to assign the bind-mounted pgBackRest repository
-to UID/GID `999:999`, the PostgreSQL filesystem identity used by the published
-images.
+Run the installer with `sudo`, for example `sudo ./install-hamqtt.sh`. The
+installer checks this before changing Docker or filesystem state.
 
 ## Install the latest release
 
@@ -91,8 +90,8 @@ Run Compose commands from the installed directory:
 
 ```bash
 cd ./jasa_hamqtt_storage
-./update-from-github.sh              # update to the current latest images
-./update-from-github.sh 0.3.4-rc1    # update to an explicit image tag
+sudo ./update-from-github.sh              # update to the current latest images
+sudo ./update-from-github.sh 0.3.4-rc1    # update to an explicit image tag
 docker compose --project-name hamqtt-store ps -a
 docker compose --project-name hamqtt-store logs --tail 100 web
 docker compose --project-name hamqtt-store stop
