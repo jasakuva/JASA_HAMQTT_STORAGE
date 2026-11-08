@@ -103,6 +103,8 @@
 .selection-card label{display:grid;gap:6px;color:var(--text);font-size:12px;font-weight:700}
 .selection-card input,.selection-card select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
 .selection-card select{min-height:180px}
+.selection-card .field-check{display:flex;align-items:center;gap:7px}
+.selection-card .field-check input[type="checkbox"]{width:auto;margin:0;padding:0}
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .form-error{margin:0;color:#b91c1c;font-weight:700}
 .graph-panel{min-height:560px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
