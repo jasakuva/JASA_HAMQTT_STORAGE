@@ -12,7 +12,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
-> **Current release:** **0.3.4-rc4** fixes MCP history aggregation and exposes it through a dedicated, explicitly parameterized tool. It includes the cumulative RC1 export/MCP features, RC2 deployment fixes, and RC3 updater/install reconciliation. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.4-rc4 GitHub prerelease](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.4-rc4).
+> **Current release:** **0.3.4** is the stable release of the cumulative 0.3.4 feature line. It includes the wide-format CSV export, explicit MCP history aggregation, migration fixes, and deployment/updater improvements validated through the RC1–RC4 prerelease cycle. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.4 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.4).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -86,7 +86,7 @@ The installer defaults to the `latest` published image tag and creates
 `./jasa_hamqtt_storage`. To install a fixed release instead, run:
 
 ```bash
-./install-hamqtt.sh --version 0.3.4-rc4
+./install-hamqtt.sh --version 0.3.4
 ```
 
 Only the installer file is required. It generates the Compose configuration,
@@ -292,7 +292,7 @@ and verifies web health:
 
 ```bash
 git fetch origin
-git checkout v0.3.4-rc4
+git checkout v0.3.4
 ./hamqtt.sh update
 ```
 

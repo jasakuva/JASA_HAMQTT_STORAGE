@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 # Change this value when no version is supplied on the command line.
-# Example published tags: 0.3.3, 0.3.4-rc4, latest
+# Example published tags: 0.3.3, 0.3.4, latest
 DEFAULT_VERSION="latest"
 
 readonly APP_SERVICES=(web mqtt-ingestor ha-ingestor cleanup mcp backup recovery)
@@ -49,7 +49,7 @@ Pull and deploy a version of HAMQTT from GitHub Container Registry.
 Examples:
   ./update-from-github.sh
   ./update-from-github.sh 0.3.3
-  ./update-from-github.sh 0.3.4-rc4 --dry-run
+  ./update-from-github.sh 0.3.4 --dry-run
 
 Default version: $DEFAULT_VERSION
 EOF

@@ -1,32 +1,46 @@
-# HA MQTT Store 0.3.4-rc4
+# HA MQTT Store 0.3.4
 
 Release date: 2026-11-09
 
-## Release candidate 4
+## Stable release
 
-RC4 is a corrective release for the cumulative 0.3.4 prerelease line. It keeps
-the RC1 export/MCP features, RC2 deployment fixes, and RC3 updater/install work,
-while fixing the MCP aggregation execution path and making the tool contract
-explicit for agents.
+Version 0.3.4 is the stable release of the cumulative 0.3.4 feature line. The
+implementation was validated through release candidates 0.3.4-rc1 through
+0.3.4-rc4.
 
-### MCP aggregation fixes
+### Included features and fixes
 
-- Added `get_home_assistant_history_aggregated` as a dedicated MCP tool.
-- The aggregated tool requires `entity_id`, timezone-aware `start`, `end`, and
-  `interval` (`15m` or `1h`) directly in its tool schema.
-- Supported aggregation methods are explicitly declared as `avg`, `min`, `max`,
-  `first`, `last`, `sum`, and `counter_delta`.
-- Kept `get_home_assistant_history` focused on backwards-compatible raw history.
-- Fixed PostgreSQL `statement_timeout` setup so it no longer binds a parameter in
-  a `SET LOCAL` statement, which PostgreSQL rejects.
-- Added regression coverage for tool registration, explicit interval validation,
-  and the corrected timeout SQL.
+- Wide-format CSV export aligns selected Home Assistant entities and MQTT fields
+  by timestamp while preserving missing values.
+- `get_home_assistant_history` provides backwards-compatible raw Home Assistant
+  history.
+- `get_home_assistant_history_aggregated` provides explicit, read-only MCP
+  aggregation with required `entity_id`, timezone-aware `start`, `end`, and
+  `interval` values (`15m` or `1h`).
+- Supported aggregation methods are `avg`, `min`, `max`, `first`, `last`, `sum`,
+  and `counter_delta`.
+- PostgreSQL performs aggregation server-side and returns bucket quality metadata,
+  coverage, and missing-data markers.
+- Fixed PostgreSQL `statement_timeout` execution by avoiding a bind parameter in
+  `SET LOCAL statement_timeout`.
+- Included the RC2 fresh-install and migration safety fixes.
+- Included the RC3 installer, updater, persistent-volume, and release-line fixes.
+- Published GHCR images use the immutable `0.3.4` tag and the moving `latest`
+  tag.
 
 ### Validation
 
 - 62 Python tests passed.
 - Python compilation passed.
+- Root Compose configuration rendered successfully.
 - `git diff --check` passed.
+
+## Prerelease history
+
+- `0.3.4-rc1`: wide-format CSV export and initial MCP history aggregation.
+- `0.3.4-rc2`: fresh-install, migration, installer, and updater fixes.
+- `0.3.4-rc3`: release-line reconciliation and version persistence fixes.
+- `0.3.4-rc4`: dedicated MCP aggregation tool and PostgreSQL timeout fix.
 
 ---
 
