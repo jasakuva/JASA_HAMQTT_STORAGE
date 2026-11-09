@@ -1,7 +1,7 @@
 # HA MQTT Store
 
 ![Release](https://img.shields.io/github/v/release/jasakuva/JASA_HAMQTT_STORAGE?display_name=tag&sort=semver)
-![Tests](https://img.shields.io/badge/tests-61%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-62%20passing-2ea44f)
 ![Python](https://img.shields.io/badge/python-3.12%2B-3776ab)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791)
 ![Podman](https://img.shields.io/badge/containers-Podman-892ca0)
@@ -12,7 +12,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
-> **Current release:** **0.3.4-rc3** is the cumulative prerelease containing the RC1 time-aligned CSV export and MCP history aggregation features, RC2 fresh-install migration and deployment fixes, and RC3 updater persistence, installer, uninstaller, and release-line reconciliation fixes. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.4-rc3 GitHub prerelease](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.4-rc3).
+> **Current release:** **0.3.4-rc4** fixes MCP history aggregation and exposes it through a dedicated, explicitly parameterized tool. It includes the cumulative RC1 export/MCP features, RC2 deployment fixes, and RC3 updater/install reconciliation. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.4-rc4 GitHub prerelease](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.4-rc4).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -86,7 +86,7 @@ The installer defaults to the `latest` published image tag and creates
 `./jasa_hamqtt_storage`. To install a fixed release instead, run:
 
 ```bash
-./install-hamqtt.sh --version 0.3.4-rc3
+./install-hamqtt.sh --version 0.3.4-rc4
 ```
 
 Only the installer file is required. It generates the Compose configuration,
@@ -272,7 +272,7 @@ State-changing form submissions use CSRF tokens, and changing the account creden
 
 ## MCP service
 
-The optional MCP service exposes read-only tools and resources for Home Assistant entities, state history, MQTT topics, messages, parsed fields, current values, and the object catalog. `get_home_assistant_history` preserves its original newest-first raw-history behavior when called with only `entity_id` and `limit`; it also supports UTC time bounds, cursor pagination, and PostgreSQL-side `15m` or `1h` aggregation for fast-updating variables. Aggregated responses include bucket boundaries, method, counts, coverage, and missing-data markers. It never publishes MQTT messages, calls Home Assistant services, or writes to the database.
+The optional MCP service exposes read-only tools and resources for Home Assistant entities, state history, MQTT topics, messages, parsed fields, current values, and the object catalog. Use `get_home_assistant_history` only for newest-first raw history with `entity_id` and `limit`. Use the separate `get_home_assistant_history_aggregated` tool for time-bounded aggregation; its required arguments are `entity_id`, timezone-aware `start`, `end`, and `interval` (`15m` or `1h`). It also accepts `aggregation_method`, `cursor`, and `page_size`. Aggregated responses include bucket boundaries, method, counts, coverage, and missing-data markers. It never publishes MQTT messages, calls Home Assistant services, or writes to the database.
 
 After enabling it in Settings, restart the service. The local Streamable HTTP endpoint is `http://localhost:8001/mcp`.
 
@@ -292,7 +292,7 @@ and verifies web health:
 
 ```bash
 git fetch origin
-git checkout v0.3.4-rc3
+git checkout v0.3.4-rc4
 ./hamqtt.sh update
 ```
 

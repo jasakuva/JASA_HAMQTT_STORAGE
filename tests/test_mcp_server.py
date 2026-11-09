@@ -7,6 +7,7 @@ def test_mcp_module_imports_and_registers_read_only_server():
     mcp_server = pytest.importorskip("hamqtt_store.mcp_server")
     assert mcp_server.mcp.name == "HA MQTT Store"
     assert "get_system_summary" in mcp_server.mcp._tool_manager._tools
+    assert "get_home_assistant_history_aggregated" in mcp_server.mcp._tool_manager._tools
 
 
 def test_disabled_mcp_access_is_rejected(monkeypatch):
@@ -72,6 +73,19 @@ def test_history_aggregation_rejects_unknown_method():
         mcp_server._aggregation_method("median", entity)
 
 
+def test_aggregated_history_requires_explicit_interval(monkeypatch):
+    mcp_server = pytest.importorskip("hamqtt_store.mcp_server")
+    monkeypatch.setattr(mcp_server, "_require_read_access", lambda: None)
+
+    with pytest.raises(ValueError, match="interval"):
+        mcp_server.get_home_assistant_history_aggregated(
+            "sensor.test",
+            "2026-11-08T00:00:00Z",
+            "2026-11-08T01:00:00Z",
+            "5m",
+        )
+
+
 def test_history_aggregation_query_is_server_side_and_bounded(monkeypatch):
     mcp_server = pytest.importorskip("hamqtt_store.mcp_server")
     executed = []
@@ -103,3 +117,5 @@ def test_history_aggregation_query_is_server_side_and_bounded(monkeypatch):
     assert "generate_series" in executed[1][0]
     assert "date_bin" in executed[1][0]
     assert executed[1][1]["page_size"] == 21
+    assert executed[0][0] == "SET LOCAL statement_timeout = '30000ms'"
+    assert executed[0][1] is None

@@ -65,8 +65,8 @@ Install HAMQTT Store into:
 
 Examples:
   ./install.sh
-  ./install.sh 0.3.4-rc3
-  ./install.sh --version 0.3.4-rc3
+  ./install.sh 0.3.4-rc4
+  ./install.sh --version 0.3.4-rc4
 
 Default version: $DEFAULT_VERSION
 EOF

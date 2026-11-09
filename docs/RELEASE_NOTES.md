@@ -1,3 +1,35 @@
+# HA MQTT Store 0.3.4-rc4
+
+Release date: 2026-11-09
+
+## Release candidate 4
+
+RC4 is a corrective release for the cumulative 0.3.4 prerelease line. It keeps
+the RC1 export/MCP features, RC2 deployment fixes, and RC3 updater/install work,
+while fixing the MCP aggregation execution path and making the tool contract
+explicit for agents.
+
+### MCP aggregation fixes
+
+- Added `get_home_assistant_history_aggregated` as a dedicated MCP tool.
+- The aggregated tool requires `entity_id`, timezone-aware `start`, `end`, and
+  `interval` (`15m` or `1h`) directly in its tool schema.
+- Supported aggregation methods are explicitly declared as `avg`, `min`, `max`,
+  `first`, `last`, `sum`, and `counter_delta`.
+- Kept `get_home_assistant_history` focused on backwards-compatible raw history.
+- Fixed PostgreSQL `statement_timeout` setup so it no longer binds a parameter in
+  a `SET LOCAL` statement, which PostgreSQL rejects.
+- Added regression coverage for tool registration, explicit interval validation,
+  and the corrected timeout SQL.
+
+### Validation
+
+- 62 Python tests passed.
+- Python compilation passed.
+- `git diff --check` passed.
+
+---
+
 # HA MQTT Store 0.3.4-rc3
 
 Release date: 2026-11-08

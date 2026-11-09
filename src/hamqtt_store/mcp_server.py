@@ -2,7 +2,7 @@
 import json
 import os
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
@@ -49,6 +49,8 @@ def _iso(value: Any):
 
 _AGGREGATION_INTERVALS = {"15m": 900, "1h": 3600}
 _AGGREGATION_METHODS = {"avg", "min", "max", "first", "last", "sum", "counter_delta"}
+AggregationInterval = Literal["15m", "1h"]
+AggregationMethod = Literal["avg", "min", "max", "first", "last", "sum", "counter_delta"]
 _MAX_HISTORY_PAGE_SIZE = 500
 _MAX_AGGREGATED_BUCKETS = 10_000
 _STATEMENT_TIMEOUT_MS = 30_000
@@ -170,7 +172,7 @@ def _aggregated_history(session, entity_id: int, start: datetime, end: datetime,
         ORDER BY buckets.bucket_start
         LIMIT :page_size
     """)
-    session.execute(text("SET LOCAL statement_timeout = :timeout_ms"), {"timeout_ms": _STATEMENT_TIMEOUT_MS})
+    session.execute(text(f"SET LOCAL statement_timeout = '{_STATEMENT_TIMEOUT_MS}ms'"))
     rows = session.execute(statement, {
         "entity_id": entity_id,
         "start_time": start,
@@ -297,38 +299,54 @@ def get_home_assistant_entity(entity_id: str) -> dict:
 
 
 @mcp.tool(annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False))
-def get_home_assistant_history(entity_id: str, limit: int = 100,
-                               start: str | None = None, end: str | None = None,
-                               interval: str | None = None,
-                               aggregation_method: str | None = None,
-                               cursor: str | None = None,
-                               page_size: int | None = None) -> list[dict] | dict:
-    """Return HA history, or PostgreSQL-aggregated 15-minute/1-hour buckets.
+def get_home_assistant_history(entity_id: str, limit: int = 100) -> list[dict]:
+    """Return raw Home Assistant history for one entity.
 
-    With only entity_id and limit, the original newest-first raw-history list is
-    returned. Supplying start/end and interval returns chronological, complete
-    server-side buckets with quality metadata and an optional next_cursor.
+    Use only ``entity_id`` and optionally ``limit`` with this backwards-compatible
+    raw-history tool. For time-bounded or aggregated history, use
+    ``get_home_assistant_history_aggregated`` and provide its required ``start``,
+    ``end``, and ``interval`` arguments.
     """
     _require_read_access()
-    if interval is None and any(value is not None for value in (start, end, aggregation_method, cursor, page_size)):
-        raise ValueError("interval is required when using time bounds, aggregation, cursor, or page_size")
     with SessionLocal() as session:
         entity = session.scalar(select(HAEntity).where(HAEntity.entity_id == entity_id))
         if not entity:
-            return [] if interval is None else {"items": [], "next_cursor": None}
-        if interval is None:
-            limit = max(1, min(limit, _MAX_HISTORY_PAGE_SIZE))
-            rows = session.scalars(select(HAStateHistory).where(HAStateHistory.ha_entity_id == entity.id).order_by(HAStateHistory.observed_at.desc()).limit(limit)).all()
-            return [{"observed_at": _iso(row.observed_at), "state": row.state_text, "numeric": row.state_numeric, "boolean": row.state_boolean, "attributes": _redact(row.attributes)} for row in rows]
-        if interval not in _AGGREGATION_INTERVALS:
-            raise ValueError("interval must be one of ['15m', '1h']")
-        start_time = _parse_history_timestamp(start, "start")
-        end_time = _parse_history_timestamp(end, "end")
-        if start_time is None or end_time is None or end_time <= start_time:
-            raise ValueError("start and end are required and end must be after start")
+            return []
+        limit = max(1, min(limit, _MAX_HISTORY_PAGE_SIZE))
+        rows = session.scalars(select(HAStateHistory).where(HAStateHistory.ha_entity_id == entity.id).order_by(HAStateHistory.observed_at.desc()).limit(limit)).all()
+        return [{"observed_at": _iso(row.observed_at), "state": row.state_text, "numeric": row.state_numeric, "boolean": row.state_boolean, "attributes": _redact(row.attributes)} for row in rows]
+
+
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False))
+def get_home_assistant_history_aggregated(
+    entity_id: str,
+    start: str,
+    end: str,
+    interval: AggregationInterval,
+    aggregation_method: AggregationMethod | None = None,
+    cursor: str | None = None,
+    page_size: int = 100,
+) -> dict:
+    """Return PostgreSQL-aggregated Home Assistant history.
+
+    Required arguments are ``entity_id``, timezone-aware ISO-8601 ``start`` and
+    ``end``, and ``interval`` (exactly ``15m`` or ``1h``). Optional aggregation
+    methods are ``avg``, ``min``, ``max``, ``first``, ``last``, ``sum``, and
+    ``counter_delta``. Use ``cursor`` to fetch the next page.
+    """
+    _require_read_access()
+    if interval not in _AGGREGATION_INTERVALS:
+        raise ValueError("interval must be one of ['15m', '1h']")
+    start_time = _parse_history_timestamp(start, "start")
+    end_time = _parse_history_timestamp(end, "end")
+    if start_time is None or end_time is None or end_time <= start_time:
+        raise ValueError("start and end are required and end must be after start")
+    with SessionLocal() as session:
+        entity = session.scalar(select(HAEntity).where(HAEntity.entity_id == entity_id))
+        if not entity:
+            return {"items": [], "next_cursor": None}
         method = _aggregation_method(aggregation_method, entity)
-        size = _history_page_size(page_size if page_size is not None else limit)
-        return _aggregated_history(session, entity.id, start_time, end_time, interval, method, size, cursor)
+        return _aggregated_history(session, entity.id, start_time, end_time, interval, method, _history_page_size(page_size), cursor)
 
 
 @mcp.tool(annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False))
