@@ -25,6 +25,7 @@ from .services.recovery import (
     request_recovery,
     stage_upload,
 )
+from .services.updater_client import UpdaterUnavailable, create_job, get_latest_release, get_status, rollback_job
 from .services.ingestion import should_skip_mqtt_parsing
 from .db import (
     HAConnection,
@@ -491,6 +492,20 @@ def create_app():
                 }.get(request.form.get("kind"), "authentication")
             else:
                 return redirect(url_for("settings_view", section="authentication"))
+        if section == "updates":
+            update_status = {"self_update_supported": False, "error": "Updater service is unavailable"}
+            release = None
+            try:
+                update_status = get_status()
+                release = get_latest_release()
+            except UpdaterUnavailable as exc:
+                update_status["error"] = str(exc)
+            return render_template(
+                "updates.html",
+                settings_section="updates",
+                update_status=update_status,
+                release=release,
+            )
         if section not in {"authentication", "data-sources", "backups"}:
             return redirect(url_for("settings_view", section="authentication"))
         with SessionLocal() as session:
@@ -645,6 +660,36 @@ def create_app():
             backup_size=backup_size,
             auth_user=auth_user,
         )
+
+    @app.get("/settings/updates")
+    def settings_updates_view():
+        return settings_view("updates")
+
+    @app.get("/api/system/updates")
+    def system_update_status():
+        try:
+            status = get_status()
+            release = get_latest_release()
+        except UpdaterUnavailable as exc:
+            return jsonify({"self_update_supported": False, "error": str(exc)}), 503
+        return jsonify({"status": status, "release": release})
+
+    @app.post("/api/system/updates")
+    def start_system_update():
+        target_version = request.form.get("target_version", "").strip()
+        if not target_version:
+            return jsonify({"error": "target_version is required"}), 400
+        try:
+            return jsonify(create_job(target_version)), 202
+        except UpdaterUnavailable as exc:
+            return jsonify({"error": str(exc)}), 503
+
+    @app.post("/api/system/updates/<int:job_id>/rollback")
+    def rollback_system_update(job_id: int):
+        try:
+            return jsonify(rollback_job(job_id)), 202
+        except UpdaterUnavailable as exc:
+            return jsonify({"error": str(exc)}), 503
 
     @app.post("/settings/backup/run/<backup_type>")
     def run_backup_now(backup_type):

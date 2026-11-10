@@ -8,6 +8,10 @@ services:
   web:
     image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
 
+  updater:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+    command: ["gunicorn", "--bind", "0.0.0.0:8100", "--workers", "1", "hamqtt_store.updater_server:app"]
+
   mqtt-ingestor:
     image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
 

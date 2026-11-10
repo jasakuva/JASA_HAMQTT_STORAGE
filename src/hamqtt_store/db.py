@@ -37,6 +37,42 @@ class BackupRun(Base):
     error_message: Mapped[str | None] = mapped_column(Text)
     triggered_by: Mapped[str] = mapped_column(String(30), default="schedule")
 
+class UpdateSafePoint(Base):
+    __tablename__ = "update_safe_points"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    created_by_user_id: Mapped[int | None] = mapped_column(Integer)
+    application_version: Mapped[str] = mapped_column(String(80))
+    image_tag: Mapped[str] = mapped_column(String(255))
+    image_digests: Mapped[dict | None] = mapped_column(JSON)
+    backup_run_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    env_file_hash: Mapped[str | None] = mapped_column(String(64))
+    compose_file_hash: Mapped[str | None] = mapped_column(String(64))
+    engine: Mapped[str] = mapped_column(String(20), default="podman")
+    project_name: Mapped[str] = mapped_column(String(100), default="hamqtt-store")
+    status: Mapped[str] = mapped_column(String(20), default="ready", index=True)
+    invalid_reason: Mapped[str | None] = mapped_column(Text)
+
+class UpdateJob(Base):
+    __tablename__ = "update_jobs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    requested_by_user_id: Mapped[int | None] = mapped_column(Integer)
+    operation: Mapped[str] = mapped_column(String(20), default="update", index=True)
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    current_step: Mapped[str | None] = mapped_column(String(80))
+    current_version: Mapped[str | None] = mapped_column(String(80))
+    target_version: Mapped[str] = mapped_column(String(80))
+    previous_version: Mapped[str | None] = mapped_column(String(80))
+    engine: Mapped[str] = mapped_column(String(20), default="podman")
+    safe_point_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    error_code: Mapped[str | None] = mapped_column(String(80))
+    error_summary: Mapped[str | None] = mapped_column(Text)
+    rollback_available: Mapped[bool] = mapped_column(Boolean, default=False)
+    requires_manual_action: Mapped[bool] = mapped_column(Boolean, default=False)
+
 class ApplicationUser(Base, TimestampMixin):
     __tablename__ = "application_users"
     id: Mapped[int] = mapped_column(primary_key=True)

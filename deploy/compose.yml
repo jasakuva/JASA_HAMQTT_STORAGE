@@ -77,6 +77,11 @@ services:
       REDIS_URL: redis://redis:6379/0
       BACKUP_REPOSITORY_PATH: /var/lib/pgbackrest
       RECOVERY_MAX_UPLOAD_MB: ${RECOVERY_MAX_UPLOAD_MB:-1024}
+      UPDATER_URL: ${UPDATER_URL:-http://updater:8100}
+      UPDATER_TOKEN: ${UPDATER_TOKEN:?Set UPDATER_TOKEN}
+      UPDATE_REPOSITORY: ${UPDATE_REPOSITORY:-jasakuva/JASA_HAMQTT_STORAGE}
+      UPDATE_INCLUDE_PRERELEASES: ${UPDATE_INCLUDE_PRERELEASES:-false}
+      HAMQTT_ENGINE: ${HAMQTT_ENGINE:-podman}
       SESSION_DAYS: ${SESSION_DAYS:-365}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
     depends_on:
@@ -95,6 +100,25 @@ services:
       com.hamqtt.product: "hamqtt-store"
       com.hamqtt.service: "web"
     command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "hamqtt_store.wsgi:app"]
+
+  updater:
+    image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+    container_name: hamqtt-updater
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
+      UPDATER_TOKEN: ${UPDATER_TOKEN:?Set UPDATER_TOKEN}
+      UPDATE_REPOSITORY: ${UPDATE_REPOSITORY:-jasakuva/JASA_HAMQTT_STORAGE}
+      HAMQTT_ENGINE: ${HAMQTT_ENGINE:-podman}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - hamqtt-store
+    command: ["gunicorn", "--bind", "0.0.0.0:8100", "--workers", "1", "hamqtt_store.updater_server:app"]
+    labels:
+      com.hamqtt.product: "hamqtt-store"
+      com.hamqtt.service: "updater"
 
   mqtt-ingestor:
     image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:-latest}

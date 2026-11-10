@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block topbar_title %}System updates{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>System updates</h1><p>Check trusted releases and start updates through the dedicated updater service.</p></div></div>
+<nav class="settings-tabs" aria-label="Settings sections">
+  <a class="settings-tab active" href="{{ url_for('settings_updates_view') }}">Updates</a>
+  <a class="settings-tab" href="{{ url_for('settings_view', section='backups') }}">Backups</a>
+</nav>
+<section class="panel">
+  <h2 class="panel-title">Updater status</h2>
+  {% if update_status.error %}
+    <div class="backup-notice">{{ update_status.error }}</div>
+    <p class="muted">Automatic updates are unavailable until the updater service and its container-engine access are ready.</p>
+  {% else %}
+    <p><strong>Engine:</strong> {{ update_status.engine }}</p>
+    <p><strong>Automatic updates:</strong> {{ 'available' if update_status.self_update_supported else 'unavailable' }}</p>
+  {% endif %}
+</section>
+{% if release %}
+<section class="panel">
+  <h2 class="panel-title">Latest release</h2>
+  <p><strong>{{ release.version }}</strong>{% if release.published_at %} — published {{ release.published_at }}{% endif %}</p>
+  <p><a class="button secondary" href="{{ release.release_notes_url }}" target="_blank" rel="noopener">Read release notes</a></p>
+  {% if update_status.self_update_supported %}
+  <form method="post" action="{{ url_for('start_system_update') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="target_version" value="{{ release.version }}">
+    <button>Start update</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+<section class="panel">
+  <h2 class="panel-title">Rollback safety</h2>
+  <p>Application rollback is handled by the updater service. Database migrations are not automatically downgraded or restored during application rollback.</p>
+</section>
+{% endblock %}
