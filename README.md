@@ -12,7 +12,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
-> **Current release:** **0.3.4** is the stable release of the cumulative 0.3.4 feature line. It includes the wide-format CSV export, explicit MCP history aggregation, migration fixes, and deployment/updater improvements validated through the RC1–RC4 prerelease cycle. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.4 GitHub release](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.4).
+> **Current release:** **0.3.5-rc1** is the current prerelease from the `feature-autoupdate` branch. It adds the immediate-save GitHub prerelease preference on the Updates page and documents the updater workflow. It is not the stable release; production installations should remain on `0.3.4` until a stable `0.3.5` is published. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.5-rc1 GitHub prerelease](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.5-rc1).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
