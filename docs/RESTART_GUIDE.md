@@ -24,6 +24,8 @@ The current application includes:
 - PostgreSQL 17-compatible pgBackRest backup service with full/differential schedule profiles, retention profiles, portable custom-format dumps, and recorded backup errors.
 - Alembic database migrations.
 - Basic parser tests and documentation validation.
+- GitHub release updater with persisted stable/prerelease selection on the
+  Updates settings page; see [`UPDATER.md`](UPDATER.md).
 
 ## 2. Important files
 
@@ -207,6 +209,8 @@ Likely next tasks include:
 - Add HA/MQTT linking workflows.
 - Improve authorization boundaries, secure cookies, HTTPS deployment, throttling, and secret management.
 - Improve production backup, monitoring, and integration-test documentation.
+- Continue updater execution/rollback integration work while preserving the
+  current safe migration and volume behavior.
 
 When adding a feature, update both `docs/IMPLEMENTATION_PLAN.md` and this guide if the startup process, important files, or current behavior changes.
 

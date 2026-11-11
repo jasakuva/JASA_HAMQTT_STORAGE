@@ -28,6 +28,10 @@
 .settings-form-labeled .field-check .checkbox-control{display:flex;align-items:center;justify-content:flex-start;gap:7px;width:100%;height:36px;min-height:36px;color:var(--text);font-size:11px;line-height:1.25}
 .settings-form-labeled .field-check input[type="checkbox"]{width:auto;height:auto;min-height:0;margin:0}
 .settings-form-labeled button{grid-column:1 / -1;align-self:start;justify-self:start;margin-top:2px;padding:7px 11px;white-space:nowrap}
+.update-preferences-form{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:0 0 14px}
+.update-preferences-toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;line-height:1.25}
+.update-preferences-toggle input[type="checkbox"]{width:auto;margin:0}
+.update-preferences-form small{color:var(--muted);font-size:11px;line-height:1.35}
 .mqtt-settings-form .field-port{max-width:130px}
 .mqtt-settings-form .topic-filter-field{max-width:260px}
 .mqtt-settings-form code{padding:1px 4px;background:var(--soft);border-radius:4px;font-size:10px}

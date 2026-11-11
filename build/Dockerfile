@@ -11,7 +11,8 @@ LABEL org.opencontainers.image.title="HAMQTT Store" \
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/src
+    PYTHONPATH=/app/src \
+    HAMQTT_VERSION=${IMAGE_VERSION}
 
 WORKDIR /app
 

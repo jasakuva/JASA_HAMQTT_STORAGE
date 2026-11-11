@@ -8,11 +8,24 @@
 </nav>
 <section class="panel">
   <h2 class="panel-title">Updater status</h2>
+  <form method="post" action="{{ url_for('settings_updates_view') }}" class="update-preferences-form">
+    <input type="hidden" name="kind" value="update_preferences">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="update-preferences-toggle" for="include-prereleases">
+      <input id="include-prereleases" type="checkbox" name="include_prereleases" onchange="this.form.submit()"{% if include_prereleases %} checked{% endif %}>
+      <span>Include published prereleases</span>
+    </label>
+    <small>When enabled, beta and release-candidate GitHub releases can be offered as updates.</small>
+  </form>
   {% if update_status.error %}
     <div class="backup-notice">{{ update_status.error }}</div>
+    <p><strong>Current installed version:</strong> {{ update_status.current_version or 'unknown' }}</p>
     <p class="muted">Automatic updates are unavailable until the updater service and its container-engine access are ready.</p>
   {% else %}
     <p><strong>Engine:</strong> {{ update_status.engine }}</p>
+    <p><strong>Current installed version:</strong> {{ update_status.current_version or 'unknown' }}</p>
+    <p><strong>Latest trusted release:</strong> {{ update_status.latest_version or 'unavailable' }}</p>
+    {% if update_status.release_error %}<p class="muted">Release discovery: {{ update_status.release_error }}</p>{% endif %}
     <p><strong>Automatic updates:</strong> {{ 'available' if update_status.self_update_supported else 'unavailable' }}</p>
   {% endif %}
 </section>
@@ -21,12 +34,15 @@
   <h2 class="panel-title">Latest release</h2>
   <p><strong>{{ release.version }}</strong>{% if release.published_at %} — published {{ release.published_at }}{% endif %}</p>
   <p><a class="button secondary" href="{{ release.release_notes_url }}" target="_blank" rel="noopener">Read release notes</a></p>
-  {% if update_status.self_update_supported %}
+  {% if update_status.self_update_supported and update_status.update_available %}
   <form method="post" action="{{ url_for('start_system_update') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="target_version" value="{{ release.version }}">
     <button>Start update</button>
   </form>
+  {% endif %}
+  {% if update_status.self_update_supported and not update_status.update_available %}
+    <p class="muted">This installation is already at the latest trusted release.</p>
   {% endif %}
 </section>
 {% endif %}

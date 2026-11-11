@@ -38,6 +38,8 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - PostgreSQL 17-compatible pgBackRest full and differential backup service with schedule/retention profiles, portable custom-format dumps, backup history, and error reporting.
 - Authenticated portable-dump upload, validation, recovery, rollback, and maintenance mode through a dedicated recovery service.
 - Published GHCR images and a self-contained first-install script for Linux Docker hosts.
+- GitHub release updater with an Updates-page checkbox for immediate opt-in to
+  published prerelease versions; the preference is persisted in `system_settings`.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 
@@ -422,6 +424,7 @@ Only run the volume removal command when a complete development reset is intende
 - [`docs/OPENAI_SECURE_MCP_TUNNEL.md`](docs/OPENAI_SECURE_MCP_TUNNEL.md) — connect the private MCP service to ChatGPT through the OpenAI Secure MCP Tunnel.
 - [`docs/CHATGPT_MCP_NGROK_SETUP.md`](docs/CHATGPT_MCP_NGROK_SETUP.md) — alternative temporary ngrok connection for ChatGPT.
 - [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) — current security review and release limitations.
+- [`docs/UPDATER.md`](docs/UPDATER.md) — GitHub release selection, prerelease opt-in, and safe update behavior.
 
 ## License
 

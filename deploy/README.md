@@ -143,3 +143,11 @@ sudo /opt/JASA-HAMQTT-STORE/jasa_hamqtt_storage/uninstall.sh
 
 The update helper does not delete the persistent PostgreSQL or application-data
 volumes.
+
+The web application's **Settings → Updates** page separately controls whether
+published GitHub prereleases are shown. That checkbox is persisted in
+`system_settings` and submits immediately. It does not change the meaning of
+the deployment `latest` tag: `latest` remains stable-only, while a prerelease
+must be selected by its immutable version tag. See the repository's
+[`docs/UPDATER.md`](../docs/UPDATER.md) for the complete release-selection and
+validation rules.

@@ -82,6 +82,7 @@ services:
       UPDATE_REPOSITORY: ${UPDATE_REPOSITORY:-jasakuva/JASA_HAMQTT_STORAGE}
       UPDATE_INCLUDE_PRERELEASES: ${UPDATE_INCLUDE_PRERELEASES:-false}
       HAMQTT_ENGINE: ${HAMQTT_ENGINE:-podman}
+      HAMQTT_VERSION: ${HAMQTT_VERSION:?Set HAMQTT_VERSION}
       SESSION_DAYS: ${SESSION_DAYS:-365}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
     depends_on:
@@ -109,7 +110,9 @@ services:
       DATABASE_URL: postgresql+psycopg://hamqtt:${POSTGRES_PASSWORD:-hamqtt-local-development-password}@hamqtt-postgres:5432/${POSTGRES_DB:-hamqtt_store}
       UPDATER_TOKEN: ${UPDATER_TOKEN:?Set UPDATER_TOKEN}
       UPDATE_REPOSITORY: ${UPDATE_REPOSITORY:-jasakuva/JASA_HAMQTT_STORAGE}
+      UPDATE_INCLUDE_PRERELEASES: ${UPDATE_INCLUDE_PRERELEASES:-false}
       HAMQTT_ENGINE: ${HAMQTT_ENGINE:-podman}
+      HAMQTT_VERSION: ${HAMQTT_VERSION:?Set HAMQTT_VERSION}
     depends_on:
       migrate:
         condition: service_completed_successfully

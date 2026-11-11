@@ -27,6 +27,9 @@ implementation was validated through release candidates 0.3.4-rc1 through
 - Included the RC3 installer, updater, persistent-volume, and release-line fixes.
 - Published GHCR images use the immutable `0.3.4` tag and the moving `latest`
   tag.
+- The Updates page now provides an immediate-save **Include published
+  prereleases** checkbox. The preference is persisted in `system_settings`,
+  protected by CSRF, and does not alter the stable-only `latest` tag.
 
 ### Validation
 
@@ -41,6 +44,11 @@ implementation was validated through release candidates 0.3.4-rc1 through
 - `0.3.4-rc2`: fresh-install, migration, installer, and updater fixes.
 - `0.3.4-rc3`: release-line reconciliation and version persistence fixes.
 - `0.3.4-rc4`: dedicated MCP aggregation tool and PostgreSQL timeout fix.
+
+## Updater documentation
+
+See [`UPDATER.md`](UPDATER.md) for GitHub release selection, prerelease opt-in,
+immutable version tags, and safe volume-preserving update procedures.
 
 ---
 

@@ -493,18 +493,41 @@ def create_app():
             else:
                 return redirect(url_for("settings_view", section="authentication"))
         if section == "updates":
-            update_status = {"self_update_supported": False, "error": "Updater service is unavailable"}
+            with SessionLocal() as session:
+                update_setting = session.scalar(
+                    select(SystemSetting).where(SystemSetting.setting_key == "update_preferences")
+                )
+                update_preferences = update_setting.setting_value if update_setting else {}
+                include_prereleases = bool(update_preferences.get("include_prereleases", False))
+                if request.method == "POST" and request.form.get("kind") == "update_preferences":
+                    setting = update_setting or SystemSetting(
+                        setting_key="update_preferences", setting_value={}, is_secret=False
+                    )
+                    if update_setting is None:
+                        session.add(setting)
+                    setting.setting_value = {"include_prereleases": bool(request.form.get("include_prereleases"))}
+                    session.commit()
+                    return redirect(url_for("settings_updates_view"))
+            update_status = {
+                "self_update_supported": False,
+                "error": "Updater service is unavailable",
+                "current_version": settings.hamqtt_version,
+                "version_known": settings.hamqtt_version != "dev",
+            }
             release = None
             try:
-                update_status = get_status()
-                release = get_latest_release()
+                update_status = get_status(include_prereleases=include_prereleases)
+                release = get_latest_release(include_prereleases=include_prereleases)
             except UpdaterUnavailable as exc:
                 update_status["error"] = str(exc)
+            update_status.setdefault("current_version", settings.hamqtt_version)
+            update_status.setdefault("version_known", settings.hamqtt_version != "dev")
             return render_template(
                 "updates.html",
                 settings_section="updates",
                 update_status=update_status,
                 release=release,
+                include_prereleases=include_prereleases,
             )
         if section not in {"authentication", "data-sources", "backups"}:
             return redirect(url_for("settings_view", section="authentication"))
@@ -661,15 +684,21 @@ def create_app():
             auth_user=auth_user,
         )
 
-    @app.get("/settings/updates")
+    @app.route("/settings/updates", methods=["GET", "POST"])
     def settings_updates_view():
         return settings_view("updates")
 
     @app.get("/api/system/updates")
     def system_update_status():
+        with SessionLocal() as session:
+            setting = session.scalar(
+                select(SystemSetting).where(SystemSetting.setting_key == "update_preferences")
+            )
+            preferences = setting.setting_value if setting else {}
+        include_prereleases = bool(preferences.get("include_prereleases", False))
         try:
-            status = get_status()
-            release = get_latest_release()
+            status = get_status(include_prereleases=include_prereleases)
+            release = get_latest_release(include_prereleases=include_prereleases)
         except UpdaterUnavailable as exc:
             return jsonify({"self_update_supported": False, "error": str(exc)}), 503
         return jsonify({"status": status, "release": release})
@@ -680,7 +709,17 @@ def create_app():
         if not target_version:
             return jsonify({"error": "target_version is required"}), 400
         try:
-            return jsonify(create_job(target_version)), 202
+            with SessionLocal() as session:
+                setting = session.scalar(
+                    select(SystemSetting).where(SystemSetting.setting_key == "update_preferences")
+                )
+                preferences = setting.setting_value if setting else {}
+            return jsonify(
+                create_job(
+                    target_version,
+                    include_prereleases=bool(preferences.get("include_prereleases", False)),
+                )
+            ), 202
         except UpdaterUnavailable as exc:
             return jsonify({"error": str(exc)}), 503
 

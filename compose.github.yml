@@ -10,6 +10,8 @@ services:
 
   updater:
     image: ghcr.io/jasakuva/hamqtt-store:${HAMQTT_VERSION:?Set HAMQTT_VERSION}
+    environment:
+      UPDATE_INCLUDE_PRERELEASES: ${UPDATE_INCLUDE_PRERELEASES:-false}
     command: ["gunicorn", "--bind", "0.0.0.0:8100", "--workers", "1", "hamqtt_store.updater_server:app"]
 
   mqtt-ingestor:

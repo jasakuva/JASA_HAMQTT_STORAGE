@@ -13,10 +13,19 @@ from .config import settings
 from .db import SessionLocal, UpdateJob, UpdateSafePoint, utcnow
 from .services.update_engine import engine_from_name
 from .services.update_provider import GitHubReleaseProvider
+from .services.versioning import is_upgrade, parse_version
 
 
 def create_updater_app() -> Flask:
     app = Flask(__name__)
+
+    def request_bool(name: str, default: bool = False) -> bool:
+        value = request.args.get(name)
+        if value is None:
+            value = request.form.get(name)
+        if value is None:
+            return default
+        return str(value).lower() in {"1", "true", "yes", "on"}
 
     def authorized() -> bool:
         if not settings.updater_token:
@@ -42,12 +51,40 @@ def create_updater_app() -> Flask:
             engine_name = engine.config.name
         except ValueError:
             engine_name = "unsupported"
-        return jsonify({"service": "updater", "engine": engine_name, "self_update_supported": engine_name != "unsupported"})
+        current_version = settings.hamqtt_version
+        latest_version = None
+        release_error = None
+        include_prereleases = request_bool("include_prereleases", settings.update_include_prereleases)
+        try:
+            latest_version = GitHubReleaseProvider(
+                settings.update_repository,
+                include_prereleases=include_prereleases,
+            ).latest().version
+        except RuntimeError as exc:
+            release_error = str(exc)
+        version_known = parse_version(current_version) is not None
+        update_available = is_upgrade(current_version, latest_version)
+        return jsonify(
+            {
+                "service": "updater",
+                "engine": engine_name,
+                "current_version": current_version,
+                "latest_version": latest_version,
+                "include_prereleases": include_prereleases,
+                "version_known": version_known,
+                "update_available": update_available,
+                "release_error": release_error,
+                "self_update_supported": engine_name != "unsupported" and version_known,
+            }
+        )
 
     @app.get("/v1/releases/latest")
     def latest_release():
         try:
-            release = GitHubReleaseProvider(settings.update_repository, include_prereleases=settings.update_include_prereleases).latest()
+            release = GitHubReleaseProvider(
+                settings.update_repository,
+                include_prereleases=request_bool("include_prereleases", settings.update_include_prereleases),
+            ).latest()
         except RuntimeError as exc:
             return jsonify({"error": str(exc)}), 503
         return jsonify(release.__dict__)
@@ -88,8 +125,24 @@ def create_updater_app() -> Flask:
         payload = request.get_json(silent=True) or {}
         target_version = str(payload.get("target_version", "")).strip()
         operation = payload.get("operation", "update")
+        include_prereleases = bool(payload.get("include_prereleases", settings.update_include_prereleases))
         if not target_version or operation not in {"update", "rollback"}:
             return jsonify({"error": "invalid_job_request"}), 400
+        if operation == "update":
+            if not parse_version(target_version):
+                return jsonify({"error": "invalid_target_version"}), 400
+            try:
+                latest = GitHubReleaseProvider(
+                    settings.update_repository,
+                    include_prereleases=include_prereleases,
+                ).latest().version
+            except RuntimeError as exc:
+                return jsonify({"error": str(exc)}), 503
+            normalized_target = parse_version(target_version).value
+            if normalized_target != latest:
+                return jsonify({"error": "target_version_not_latest", "latest_version": latest}), 409
+            if not is_upgrade(settings.hamqtt_version, normalized_target):
+                return jsonify({"error": "target_version_not_newer", "current_version": settings.hamqtt_version}), 409
         with SessionLocal() as session:
             active = session.scalar(select(UpdateJob).where(UpdateJob.status.in_(["queued", "running"])).limit(1))
             if active:

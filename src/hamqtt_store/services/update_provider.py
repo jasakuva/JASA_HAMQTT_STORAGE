@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from .versioning import compare_versions, parse_version, prerelease_key
+
 VERSION_TAG = re.compile(r"^v?(?P<version>\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)$")
 
 
@@ -48,13 +50,20 @@ class GitHubReleaseProvider:
             if version:
                 candidates.append((version, item))
         if not candidates:
-            raise RuntimeError("no valid stable release found")
+            release_kind = "stable or prerelease" if self.include_prereleases else "stable"
+            raise RuntimeError(f"no valid {release_kind} release found")
         version, item = sorted(candidates, key=lambda value: _version_key(value[0]), reverse=True)[0]
         url = item.get("html_url", "")
         return Release(version, item["tag_name"], url, url, item.get("published_at"), bool(item.get("prerelease")))
 
 
 def _version_key(version: str) -> tuple:
-    main, _, suffix = version.partition("-")
-    numbers = tuple(int(part) for part in main.split("."))
-    return numbers, suffix == "", suffix
+    parsed = parse_version(version)
+    if not parsed:
+        return (), False, ()
+    return parsed.numbers, parsed.suffix == "", prerelease_key(parsed.suffix)
+
+
+def is_newer_version(current: str | None, target: str | None) -> bool:
+    """Return whether target is a strictly newer valid release than current."""
+    return compare_versions(current, target) == -1

@@ -37,6 +37,16 @@ Browser ─────────HTTP────────► Flask web ─
 ChatGPT/Codex ◄── read-only MCP ── MCP service ──► same PostgreSQL database
 ```
 
+### GitHub release updater
+
+The Flask web layer exposes the authenticated Updates page and its
+`POST /settings/updates` preference route. The page reads the persisted
+prerelease preference from `system_settings`; changing the checkbox submits the
+form immediately and keeps CSRF protection enabled. The GitHub provider returns
+published stable releases by default and includes published prereleases only
+when the preference is enabled. See [`UPDATER.md`](UPDATER.md) for operational
+and deployment details.
+
 ### Web authentication
 
 The Flask web layer provides local application authentication. On first startup, `/setup` creates the single application user with a username and password of at least six characters. Passwords are stored as Werkzeug password hashes in `application_users`; the plaintext password is not persisted. Subsequent protected requests require a session containing the user ID and session version. `/login` establishes the session, `/logout` clears it, and changing credentials increments the session version to invalidate older sessions.

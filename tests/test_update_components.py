@@ -1,7 +1,10 @@
+import io
+import json
 from types import SimpleNamespace
 
 from hamqtt_store.services.update_engine import engine_from_name
-from hamqtt_store.services.update_provider import normalize_tag
+from hamqtt_store.services.update_provider import GitHubReleaseProvider, Release, normalize_tag
+from hamqtt_store.services.versioning import compare_versions, is_upgrade, parse_version
 from hamqtt_store import updater_server
 
 
@@ -9,6 +12,63 @@ def test_normalize_tag_accepts_release_tags_and_rejects_paths():
     assert normalize_tag("v0.3.5") == "0.3.5"
     assert normalize_tag("0.3.5-rc1") == "0.3.5-rc1"
     assert normalize_tag("bad/version") is None
+
+
+def test_version_comparison_rejects_unknown_versions_and_orders_prereleases():
+    assert parse_version("v0.3.4").value == "0.3.4"
+    assert compare_versions("0.3.4-rc1", "0.3.4") == -1
+    assert compare_versions("0.3.5-beta2", "0.3.5-beta10") == -1
+    assert is_upgrade("0.3.4", "0.3.5")
+    assert not is_upgrade("dev", "0.3.5")
+    assert compare_versions("dev", "0.3.5") is None
+
+
+def test_github_provider_excludes_prereleases_by_default(monkeypatch):
+    releases = [
+        {"tag_name": "v0.3.5-beta2", "prerelease": True, "draft": False, "html_url": "beta2"},
+        {"tag_name": "v0.3.5-beta10", "prerelease": True, "draft": False, "html_url": "beta10"},
+        {"tag_name": "v0.3.5-beta1", "prerelease": True, "draft": False, "html_url": "beta"},
+        {"tag_name": "v0.3.4", "prerelease": False, "draft": False, "html_url": "stable"},
+    ]
+
+    class Response(io.StringIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    monkeypatch.setattr(
+        "hamqtt_store.services.update_provider.urlopen",
+        lambda request, timeout: Response(json.dumps(releases)),
+    )
+    release = GitHubReleaseProvider("owner/repo").latest()
+    assert release.version == "0.3.4"
+    assert release.is_prerelease is False
+
+
+def test_github_provider_can_select_published_beta_release(monkeypatch):
+    releases = [
+        {"tag_name": "v0.3.5-beta2", "prerelease": True, "draft": False, "html_url": "beta2"},
+        {"tag_name": "v0.3.5-beta10", "prerelease": True, "draft": False, "html_url": "beta10"},
+        {"tag_name": "v0.3.5-beta1", "prerelease": True, "draft": False, "html_url": "beta"},
+        {"tag_name": "v0.3.4", "prerelease": False, "draft": False, "html_url": "stable"},
+    ]
+
+    class Response(io.StringIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    monkeypatch.setattr(
+        "hamqtt_store.services.update_provider.urlopen",
+        lambda request, timeout: Response(json.dumps(releases)),
+    )
+    release = GitHubReleaseProvider("owner/repo", include_prereleases=True).latest()
+    assert release.version == "0.3.5-beta10"
+    assert release.is_prerelease is True
 
 
 def test_engine_command_builders_are_engine_specific_but_workflow_neutral():
@@ -22,6 +82,18 @@ def test_engine_command_builders_are_engine_specific_but_workflow_neutral():
 
 def test_updater_health_is_public_but_api_requires_token(monkeypatch):
     monkeypatch.setattr(
+        updater_server.GitHubReleaseProvider,
+        "latest",
+        lambda self: Release(
+            version="0.3.5",
+            tag="v0.3.5",
+            release_url="https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.5",
+            release_notes_url="https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.5",
+            published_at=None,
+            is_prerelease=False,
+        ),
+    )
+    monkeypatch.setattr(
         updater_server,
         "settings",
         SimpleNamespace(
@@ -29,10 +101,15 @@ def test_updater_health_is_public_but_api_requires_token(monkeypatch):
             hamqtt_engine="podman",
             update_repository="jasakuva/JASA_HAMQTT_STORAGE",
             update_include_prereleases=False,
+            hamqtt_version="0.3.4",
         ),
     )
     app = updater_server.create_updater_app()
     client = app.test_client()
     assert client.get("/health").status_code == 200
     assert client.get("/v1/status").status_code == 401
-    assert client.get("/v1/status", headers={"X-HAMQTT-Updater-Token": "secret"}).status_code == 200
+    response = client.get("/v1/status", headers={"X-HAMQTT-Updater-Token": "secret"})
+    assert response.status_code == 200
+    assert response.json["current_version"] == "0.3.4"
+    assert response.json["latest_version"] == "0.3.5"
+    assert response.json["update_available"] is True

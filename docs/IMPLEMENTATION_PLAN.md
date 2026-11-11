@@ -36,6 +36,8 @@ The application must preserve source data while also extracting useful structure
 - `[x]` Historical graph view with Plotly interaction, range selection, and numeric downsampling.
 - `[x]` Historical CSV export for selected Home Assistant entities and MQTT fields.
 - `[x]` Podman Compose deployment for local development/Linux-style containers.
+- `[x]` GitHub release updater with persisted prerelease opt-in on the Updates
+  page and stable-only `latest` image semantics.
 - `[~]` Health, logging, migration, and test foundations; integration coverage and production operations remain.
 
 ### Not in the first implementation unless explicitly approved

@@ -21,5 +21,6 @@ class Settings:
     update_repository: str = os.getenv("UPDATE_REPOSITORY", "jasakuva/JASA_HAMQTT_STORAGE")
     update_include_prereleases: bool = os.getenv("UPDATE_INCLUDE_PRERELEASES", "false").lower() in {"1", "true", "yes"}
     hamqtt_engine: str = os.getenv("HAMQTT_ENGINE", "podman")
+    hamqtt_version: str = os.getenv("HAMQTT_VERSION", "dev")
 
 settings = Settings()
