@@ -71,6 +71,29 @@ def test_github_provider_can_select_published_beta_release(monkeypatch):
     assert release.is_prerelease is True
 
 
+def test_github_provider_lists_all_eligible_releases_in_version_order(monkeypatch):
+    releases = [
+        {"tag_name": "v0.3.5-rc1", "prerelease": True, "draft": False, "html_url": "rc1"},
+        {"tag_name": "v0.3.4", "prerelease": False, "draft": False, "html_url": "stable"},
+        {"tag_name": "v0.3.5-beta2", "prerelease": True, "draft": False, "html_url": "beta2"},
+        {"tag_name": "v0.3.3", "prerelease": False, "draft": False, "html_url": "old"},
+    ]
+
+    class Response(io.StringIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+    monkeypatch.setattr(
+        "hamqtt_store.services.update_provider.urlopen",
+        lambda request, timeout: Response(json.dumps(releases)),
+    )
+    listed = GitHubReleaseProvider("owner/repo", include_prereleases=True).releases()
+    assert [release.version for release in listed] == ["0.3.5-rc1", "0.3.5-beta2", "0.3.4", "0.3.3"]
+
+
 def test_engine_command_builders_are_engine_specific_but_workflow_neutral():
     podman = engine_from_name("podman")
     docker = engine_from_name("docker")
@@ -113,3 +136,30 @@ def test_updater_health_is_public_but_api_requires_token(monkeypatch):
     assert response.json["current_version"] == "0.3.4"
     assert response.json["latest_version"] == "0.3.5"
     assert response.json["update_available"] is True
+
+
+def test_updater_release_list_endpoint_returns_all_releases(monkeypatch):
+    listed = [
+        Release("0.3.5-rc1", "v0.3.5-rc1", "rc", "rc", None, True),
+        Release("0.3.4", "v0.3.4", "stable", "stable", None, False),
+    ]
+    monkeypatch.setattr(
+        updater_server.GitHubReleaseProvider,
+        "releases",
+        lambda self: listed,
+    )
+    monkeypatch.setattr(
+        updater_server,
+        "settings",
+        SimpleNamespace(
+            updater_token="secret",
+            hamqtt_engine="podman",
+            update_repository="jasakuva/JASA_HAMQTT_STORAGE",
+            update_include_prereleases=True,
+            hamqtt_version="0.3.3",
+        ),
+    )
+    client = updater_server.create_updater_app().test_client()
+    response = client.get("/v1/releases", headers={"X-HAMQTT-Updater-Token": "secret"})
+    assert response.status_code == 200
+    assert [release["version"] for release in response.json["releases"]] == ["0.3.5-rc1", "0.3.4"]

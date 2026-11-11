@@ -12,7 +12,7 @@ HA MQTT Store is a Python/Flask application for collecting Home Assistant and MQ
 
 > **Current status:** Active development. The local dashboard, live MQTT/HA tiles, historical graphs, CSV export, authentication, and core ingestion workflows are implemented. Production hardening, advanced MQTT decoders, retention jobs, and several HA/linking workflows remain planned.
 
-> **Current release:** **0.3.5-rc1** is the current prerelease from the `feature-autoupdate` branch. It adds the immediate-save GitHub prerelease preference on the Updates page and documents the updater workflow. It is not the stable release; production installations should remain on `0.3.4` until a stable `0.3.5` is published. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.5-rc1 GitHub prerelease](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.5-rc1).
+> **Current release:** **0.3.5-rc2** is the current prerelease from the `feature-autoupdate` branch. It adds the immediate-save GitHub prerelease preference and a selectable list of eligible releases on the Updates page. It is not the stable release; production installations should remain on `0.3.4` until a stable `0.3.5` is published. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) and the [0.3.5-rc2 GitHub prerelease](https://github.com/jasakuva/JASA_HAMQTT_STORAGE/releases/tag/v0.3.5-rc2).
 
 Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuva/JASA_HAMQTT_STORAGE)
 
@@ -40,6 +40,7 @@ Repository: [github.com/jasakuva/JASA_HAMQTT_STORAGE](https://github.com/jasakuv
 - Published GHCR images and a self-contained first-install script for Linux Docker hosts.
 - GitHub release updater with an Updates-page checkbox for immediate opt-in to
   published prerelease versions; the preference is persisted in `system_settings`.
+  The page lists eligible releases and allows selecting a specific newer version.
 - SQLAlchemy models and Alembic migrations.
 - Basic JSON API and `/health` endpoint.
 

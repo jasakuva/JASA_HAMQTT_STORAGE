@@ -29,21 +29,30 @@
     <p><strong>Automatic updates:</strong> {{ 'available' if update_status.self_update_supported else 'unavailable' }}</p>
   {% endif %}
 </section>
-{% if release %}
+{% if releases %}
 <section class="panel">
-  <h2 class="panel-title">Latest release</h2>
-  <p><strong>{{ release.version }}</strong>{% if release.published_at %} — published {{ release.published_at }}{% endif %}</p>
-  <p><a class="button secondary" href="{{ release.release_notes_url }}" target="_blank" rel="noopener">Read release notes</a></p>
-  {% if update_status.self_update_supported and update_status.update_available %}
-  <form method="post" action="{{ url_for('start_system_update') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="target_version" value="{{ release.version }}">
-    <button>Start update</button>
-  </form>
-  {% endif %}
-  {% if update_status.self_update_supported and not update_status.update_available %}
-    <p class="muted">This installation is already at the latest trusted release.</p>
-  {% endif %}
+  <h2 class="panel-title">Available trusted releases</h2>
+  <div class="updates-release-list">
+  {% for release in releases %}
+    <article class="updates-release-card">
+      <div>
+        <h3>{{ release.version }}{% if release.is_prerelease %} <span class="status-badge">prerelease</span>{% endif %}</h3>
+        {% if release.published_at %}<p class="muted">Published {{ release.published_at }}</p>{% endif %}
+        {% if release.update_available %}<p><strong>Available for this installation.</strong></p>{% else %}<p class="muted">Not newer than the installed version.</p>{% endif %}
+      </div>
+      <div class="updates-release-actions">
+        <a class="button secondary" href="{{ release.release_notes_url }}" target="_blank" rel="noopener">Release notes</a>
+        {% if update_status.self_update_supported and release.update_available %}
+        <form method="post" action="{{ url_for('start_system_update') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="target_version" value="{{ release.version }}">
+          <button>Update to {{ release.version }}</button>
+        </form>
+        {% endif %}
+      </div>
+    </article>
+  {% endfor %}
+  </div>
 </section>
 {% endif %}
 <section class="panel">

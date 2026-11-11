@@ -32,6 +32,14 @@
 .update-preferences-toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;line-height:1.25}
 .update-preferences-toggle input[type="checkbox"]{width:auto;margin:0}
 .update-preferences-form small{color:var(--muted);font-size:11px;line-height:1.35}
+.updates-release-list{display:grid;gap:10px}
+.updates-release-card{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface)}
+.updates-release-card h3{margin:0 0 4px;font-size:14px}
+.updates-release-card p{margin:3px 0;font-size:11px}
+.updates-release-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;align-items:center}
+.updates-release-actions form{margin:0}
+.status-badge{display:inline-block;padding:2px 5px;border-radius:4px;background:var(--accent-soft);color:var(--accent);font-size:9px;text-transform:uppercase}
+@media (max-width:700px){.updates-release-card{align-items:flex-start;flex-direction:column}.updates-release-actions{justify-content:flex-start}}
 .mqtt-settings-form .field-port{max-width:130px}
 .mqtt-settings-form .topic-filter-field{max-width:260px}
 .mqtt-settings-form code{padding:1px 4px;background:var(--soft);border-radius:4px;font-size:10px}

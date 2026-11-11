@@ -78,13 +78,24 @@ def create_updater_app() -> Flask:
             }
         )
 
+    def release_provider():
+        return GitHubReleaseProvider(
+            settings.update_repository,
+            include_prereleases=request_bool("include_prereleases", settings.update_include_prereleases),
+        )
+
+    @app.get("/v1/releases")
+    def releases():
+        try:
+            releases = release_provider().releases()
+        except RuntimeError as exc:
+            return jsonify({"error": str(exc)}), 503
+        return jsonify({"releases": [release.__dict__ for release in releases]})
+
     @app.get("/v1/releases/latest")
     def latest_release():
         try:
-            release = GitHubReleaseProvider(
-                settings.update_repository,
-                include_prereleases=request_bool("include_prereleases", settings.update_include_prereleases),
-            ).latest()
+            release = release_provider().latest()
         except RuntimeError as exc:
             return jsonify({"error": str(exc)}), 503
         return jsonify(release.__dict__)
@@ -132,15 +143,16 @@ def create_updater_app() -> Flask:
             if not parse_version(target_version):
                 return jsonify({"error": "invalid_target_version"}), 400
             try:
-                latest = GitHubReleaseProvider(
+                eligible_releases = GitHubReleaseProvider(
                     settings.update_repository,
                     include_prereleases=include_prereleases,
-                ).latest().version
+                ).releases()
             except RuntimeError as exc:
                 return jsonify({"error": str(exc)}), 503
             normalized_target = parse_version(target_version).value
-            if normalized_target != latest:
-                return jsonify({"error": "target_version_not_latest", "latest_version": latest}), 409
+            selected = next((release for release in eligible_releases if release.version == normalized_target), None)
+            if selected is None:
+                return jsonify({"error": "target_version_not_available"}), 409
             if not is_upgrade(settings.hamqtt_version, normalized_target):
                 return jsonify({"error": "target_version_not_newer", "current_version": settings.hamqtt_version}), 409
         with SessionLocal() as session:

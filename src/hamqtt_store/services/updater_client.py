@@ -42,6 +42,17 @@ def get_latest_release(*, include_prereleases: bool = False) -> dict:
     )
 
 
+def get_releases(*, include_prereleases: bool = False) -> list[dict]:
+    result = _request(
+        "/v1/releases",
+        query={"include_prereleases": str(include_prereleases).lower()},
+    )
+    releases = result.get("releases")
+    if not isinstance(releases, list):
+        raise UpdaterUnavailable("Updater returned an invalid release list")
+    return releases
+
+
 def create_job(target_version: str, *, operation: str = "update", include_prereleases: bool = False) -> dict:
     return _request(
         "/v1/jobs",

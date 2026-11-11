@@ -1,8 +1,8 @@
-# HA MQTT Store 0.3.5-rc1
+# HA MQTT Store 0.3.5-rc2
 
 Release date: 2026-11-11
 
-## Release candidate 1
+## Release candidate 2
 
 This prerelease is published from the `feature-autoupdate` branch for testing
 the GitHub release updater and its prerelease-selection preference. It does not
@@ -11,18 +11,22 @@ move the stable `latest` container tag.
 ### Included changes
 
 - Added the **Include published prereleases** checkbox to **Settings → Updates**.
+- The Updates page lists all eligible trusted releases in version order and
+  provides a separate action to update to each newer release.
+- The Updates page lists all eligible trusted releases and provides a separate
+  update action for each newer version.
 - Checkbox changes submit immediately without a separate Save button.
 - Preference remains persisted in `system_settings` and protected by CSRF.
 - Stable releases remain the default; published beta and release-candidate
   releases are opt-in.
 - Added `docs/UPDATER.md` and updated updater, architecture, deployment,
   restart, implementation-plan, and release documentation.
-- Published container images use the immutable `0.3.5-rc1` tag; `latest` remains
+- Published container images use the immutable `0.3.5-rc2` tag; `latest` remains
   pointed at the newest stable release.
 
 ### Validation
 
-- 68 Python tests passed.
+- 70 Python tests passed.
 - Python compilation passed.
 - Documentation validation passed.
 - Root Compose configuration rendered successfully.

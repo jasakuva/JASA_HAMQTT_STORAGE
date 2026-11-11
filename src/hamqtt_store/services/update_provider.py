@@ -32,7 +32,7 @@ class GitHubReleaseProvider:
         self.include_prereleases = include_prereleases
         self.timeout = timeout
 
-    def latest(self) -> Release:
+    def releases(self) -> list[Release]:
         request = Request(
             f"https://api.github.com/repos/{self.repository}/releases?per_page=20",
             headers={"Accept": "application/vnd.github+json", "User-Agent": "hamqtt-store-updater"},
@@ -48,13 +48,24 @@ class GitHubReleaseProvider:
                 continue
             version = normalize_tag(item.get("tag_name", ""))
             if version:
-                candidates.append((version, item))
+                url = item.get("html_url", "")
+                candidates.append(
+                    Release(
+                        version,
+                        item["tag_name"],
+                        url,
+                        url,
+                        item.get("published_at"),
+                        bool(item.get("prerelease")),
+                    )
+                )
         if not candidates:
             release_kind = "stable or prerelease" if self.include_prereleases else "stable"
             raise RuntimeError(f"no valid {release_kind} release found")
-        version, item = sorted(candidates, key=lambda value: _version_key(value[0]), reverse=True)[0]
-        url = item.get("html_url", "")
-        return Release(version, item["tag_name"], url, url, item.get("published_at"), bool(item.get("prerelease")))
+        return sorted(candidates, key=lambda release: _version_key(release.version), reverse=True)
+
+    def latest(self) -> Release:
+        return self.releases()[0]
 
 
 def _version_key(version: str) -> tuple:

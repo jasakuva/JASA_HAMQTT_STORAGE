@@ -25,7 +25,8 @@ from .services.recovery import (
     request_recovery,
     stage_upload,
 )
-from .services.updater_client import UpdaterUnavailable, create_job, get_latest_release, get_status, rollback_job
+from .services.updater_client import UpdaterUnavailable, create_job, get_releases, get_status, rollback_job
+from .services.versioning import is_upgrade
 from .services.ingestion import should_skip_mqtt_parsing
 from .db import (
     HAConnection,
@@ -514,10 +515,13 @@ def create_app():
                 "current_version": settings.hamqtt_version,
                 "version_known": settings.hamqtt_version != "dev",
             }
-            release = None
+            releases = []
             try:
                 update_status = get_status(include_prereleases=include_prereleases)
-                release = get_latest_release(include_prereleases=include_prereleases)
+                releases = get_releases(include_prereleases=include_prereleases)
+                current_version = update_status.get("current_version", settings.hamqtt_version)
+                for release in releases:
+                    release["update_available"] = is_upgrade(current_version, release.get("version"))
             except UpdaterUnavailable as exc:
                 update_status["error"] = str(exc)
             update_status.setdefault("current_version", settings.hamqtt_version)
@@ -526,7 +530,7 @@ def create_app():
                 "updates.html",
                 settings_section="updates",
                 update_status=update_status,
-                release=release,
+                releases=releases,
                 include_prereleases=include_prereleases,
             )
         if section not in {"authentication", "data-sources", "backups"}:

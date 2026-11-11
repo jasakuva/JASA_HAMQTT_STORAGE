@@ -16,6 +16,13 @@ the `system_settings` table through `POST /settings/updates`; no separate Save
 button is required. The form remains protected by the application's session and
 CSRF checks.
 
+When the Updates page loads, it displays the complete eligible release list in
+descending version order. Each release has its own release-notes link and, when
+it is newer than the installed version, an **Update to version** action. The
+selected target is checked again by the updater service against the trusted
+GitHub release list before a job is queued; users cannot submit an arbitrary
+image or Git reference.
+
 Only GitHub releases marked as published are eligible. A prerelease is not
 copied to the `latest` container tag: the publishing workflow updates `latest`
 only for a non-prerelease GitHub release. Production installations should use
